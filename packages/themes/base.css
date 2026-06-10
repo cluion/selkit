@@ -8,7 +8,7 @@
 .selkit {
   --selkit-border: #cbd5e1;
   --selkit-border-focus: #6366f1;
-  --selkit-radius: 6px;
+  --selkit-radius: 8px;
   --selkit-bg: #fff;
   --selkit-fg: #1e293b;
   --selkit-muted: #94a3b8;
@@ -50,6 +50,7 @@
 .selkit--open .selkit__control,
 .selkit__control:focus-within {
   border-color: var(--selkit-border-focus);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
   outline: none;
 }
 
@@ -126,13 +127,18 @@
 }
 
 .selkit__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
   border: 0;
   background: transparent;
   color: var(--selkit-muted);
   cursor: pointer;
-  font-size: 1.1em;
+  font-size: 18px;
   line-height: 1;
-  padding: 0 4px;
+  padding: 0;
 }
 
 .selkit__clear:hover {
