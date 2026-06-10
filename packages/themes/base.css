@@ -1,0 +1,206 @@
+/**
+ * @selkit/themes — base theme
+ *
+ * 中性外觀 全部走 CSS custom properties
+ * 使用者可在 .selkit 或任一祖先覆寫 --selkit-* 變數即可換膚
+ */
+
+.selkit {
+  --selkit-border: #cbd5e1;
+  --selkit-border-focus: #6366f1;
+  --selkit-radius: 6px;
+  --selkit-bg: #fff;
+  --selkit-fg: #1e293b;
+  --selkit-muted: #94a3b8;
+  --selkit-active-bg: #eef2ff;
+  --selkit-selected-bg: #e0e7ff;
+  --selkit-tag-bg: #eef2ff;
+  --selkit-disabled-fg: #cbd5e1;
+  --selkit-shadow: 0 6px 24px rgba(15, 23, 42, 0.12);
+  --selkit-control-min-h: 38px;
+  --selkit-font: inherit;
+
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  font-family: var(--selkit-font);
+  color: var(--selkit-fg);
+  box-sizing: border-box;
+}
+
+.selkit *,
+.selkit *::before,
+.selkit *::after {
+  box-sizing: border-box;
+}
+
+/* ── control ──────────────────────────────────────────── */
+.selkit__control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--selkit-control-min-h);
+  padding: 2px 6px;
+  background: var(--selkit-bg);
+  border: 1px solid var(--selkit-border);
+  border-radius: var(--selkit-radius);
+  cursor: text;
+}
+
+.selkit--open .selkit__control,
+.selkit__control:focus-within {
+  border-color: var(--selkit-border-focus);
+  outline: none;
+}
+
+.selkit--disabled .selkit__control {
+  background: #f1f5f9;
+  cursor: not-allowed;
+}
+
+.selkit__field {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.selkit__input {
+  flex: 1 1 40px;
+  min-width: 40px;
+  border: 0;
+  padding: 4px 2px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.selkit__single-value {
+  padding: 4px 2px;
+}
+
+.selkit__input::placeholder {
+  color: var(--selkit-muted);
+}
+
+/* ── tags (multiple) ──────────────────────────────────── */
+.selkit__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 8px;
+  background: var(--selkit-tag-bg);
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+
+.selkit__tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--selkit-muted);
+  cursor: pointer;
+  line-height: 1;
+  border-radius: 3px;
+}
+
+.selkit__tag-remove:hover {
+  color: var(--selkit-fg);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* ── indicators ───────────────────────────────────────── */
+.selkit__indicators {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.selkit__clear {
+  border: 0;
+  background: transparent;
+  color: var(--selkit-muted);
+  cursor: pointer;
+  font-size: 1.1em;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.selkit__clear:hover {
+  color: var(--selkit-fg);
+}
+
+.selkit__arrow {
+  width: 0;
+  height: 0;
+  margin: 0 4px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--selkit-muted);
+  transition: transform 0.15s ease;
+}
+
+.selkit--open .selkit__arrow {
+  transform: rotate(180deg);
+}
+
+/* ── dropdown ─────────────────────────────────────────── */
+.selkit__dropdown {
+  z-index: 50;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--selkit-bg);
+  border: 1px solid var(--selkit-border);
+  border-radius: var(--selkit-radius);
+  box-shadow: var(--selkit-shadow);
+  padding: 4px;
+}
+
+.selkit__dropdown[hidden] {
+  display: none;
+}
+
+.selkit__group {
+  padding: 6px 8px 2px;
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--selkit-muted);
+}
+
+.selkit__option {
+  padding: 7px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.selkit__option--active {
+  background: var(--selkit-active-bg);
+}
+
+.selkit__option--selected {
+  background: var(--selkit-selected-bg);
+  font-weight: 500;
+}
+
+.selkit__option[aria-disabled='true'] {
+  color: var(--selkit-disabled-fg);
+  cursor: not-allowed;
+}
+
+.selkit__empty {
+  padding: 10px;
+  text-align: center;
+  color: var(--selkit-muted);
+}

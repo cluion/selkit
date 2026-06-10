@@ -1,0 +1,27 @@
+/**
+ * @selkit/themes — Bootstrap 5 theme
+ *
+ * 將 Selkit 的 --selkit-* 變數對應到 Bootstrap 5 的 --bs-* 變數
+ * 使元件無縫融入 BS5 專案（深淺色、主題色自動跟隨）
+ * 需在已載入 Bootstrap 5 的頁面使用
+ */
+
+.selkit {
+  --selkit-border: var(--bs-border-color, #dee2e6);
+  --selkit-border-focus: var(--bs-primary, #0d6efd);
+  --selkit-radius: var(--bs-border-radius, 0.375rem);
+  --selkit-bg: var(--bs-body-bg, #fff);
+  --selkit-fg: var(--bs-body-color, #212529);
+  --selkit-muted: var(--bs-secondary-color, #6c757d);
+  --selkit-active-bg: var(--bs-tertiary-bg, #f8f9fa);
+  --selkit-selected-bg: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.1);
+  --selkit-tag-bg: var(--bs-tertiary-bg, #e9ecef);
+  --selkit-disabled-fg: var(--bs-secondary-color, #adb5bd);
+  --selkit-shadow: var(--bs-box-shadow, 0 0.5rem 1rem rgba(0, 0, 0, 0.15));
+  --selkit-control-min-h: calc(1.5em + 0.75rem + 2px);
+}
+
+.selkit--open .selkit__control,
+.selkit__control:focus-within {
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb, 13, 110, 253), 0.25);
+}

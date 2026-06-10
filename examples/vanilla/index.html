@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Selkit — Vanilla Demo</title>
+
+    <!-- 預設 base theme -->
+    <link rel="stylesheet" href="../../packages/themes/base.css" />
+    <!-- BS5 theme（搭配下方 .bs5-scope 區塊；未載入 Bootstrap 時走 fallback 值） -->
+    <link rel="stylesheet" href="../../packages/themes/bs5.css" />
+
+    <!-- 讓瀏覽器能解析裸 import（指向各套件已 build 的 dist） -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@selkit/core": "../../packages/core/dist/index.js",
+          "@selkit/dom": "../../packages/dom/dist/index.js"
+        }
+      }
+    </script>
+
+    <style>
+      body {
+        font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif;
+        max-width: 560px;
+        margin: 40px auto;
+        padding: 0 16px;
+        color: #1e293b;
+      }
+      h1 { font-size: 1.4rem; }
+      section { margin: 28px 0; }
+      label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
+      .hint { color: #64748b; font-size: 0.8rem; margin-top: 6px; }
+      .bs5-scope { padding: 16px; border: 1px dashed #cbd5e1; border-radius: 8px; }
+      pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 0.8rem; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>Selkit — Vanilla Demo</h1>
+    <p class="hint">純原生 JS，無 jQuery、無框架。大腦是 <code>@selkit/core</code>，渲染是 <code>@selkit/dom</code>。</p>
+
+    <section>
+      <label for="single">單選 + 搜尋（base theme）</label>
+      <div id="single"></div>
+      <div class="hint">試試輸入過濾、↑↓ 鍵、Enter 選取、Esc 關閉。</div>
+    </section>
+
+    <section>
+      <label for="multi">多選（base theme）</label>
+      <div id="multi"></div>
+      <div class="hint">可連續選取、tag 可移除、空輸入時 Backspace 刪除最後一個。</div>
+    </section>
+
+    <section>
+      <label for="grouped">分組 optgroup（base theme）</label>
+      <div id="grouped"></div>
+    </section>
+
+    <section class="bs5-scope">
+      <label for="bs5">Bootstrap 5 theme</label>
+      <div id="bs5"></div>
+      <div class="hint">同一份元件，套上 <code>bs5.css</code> 即融入 BS5 外觀（此處用 fallback 變數）。</div>
+    </section>
+
+    <section>
+      <label>最後一次變更 (change event)</label>
+      <pre id="log">（尚未變更）</pre>
+    </section>
+
+    <script type="module">
+      import { createSelkitDom } from '@selkit/dom'
+
+      const fruits = [
+        { value: 'apple', label: 'Apple' },
+        { value: 'banana', label: 'Banana' },
+        { value: 'cherry', label: 'Cherry' },
+        { value: 'date', label: 'Date', disabled: true },
+        { value: 'elderberry', label: 'Elderberry' },
+        { value: 'fig', label: 'Fig' },
+        { value: 'grape', label: 'Grape' },
+      ]
+
+      const grouped = [
+        {
+          label: 'Fruit',
+          options: [
+            { value: 'apple', label: 'Apple' },
+            { value: 'banana', label: 'Banana' },
+          ],
+        },
+        {
+          label: 'Vegetable',
+          options: [
+            { value: 'carrot', label: 'Carrot' },
+            { value: 'potato', label: 'Potato' },
+          ],
+        },
+      ]
+
+      const log = document.getElementById('log')
+      const show = (e) => {
+        log.textContent = JSON.stringify(e.value)
+      }
+
+      const single = createSelkitDom(document.getElementById('single'), {
+        options: fruits,
+        placeholder: 'Pick a fruit…',
+      })
+      single.controller.on('change', show)
+
+      createSelkitDom(document.getElementById('multi'), {
+        options: fruits,
+        multiple: true,
+        placeholder: 'Pick fruits…',
+      }).controller.on('change', show)
+
+      createSelkitDom(document.getElementById('grouped'), {
+        options: grouped,
+        placeholder: 'Pick one…',
+      }).controller.on('change', show)
+
+      // BS5：需要 .selkit 落在帶 bs5.css 變數的環境；bs5.css 已全域套用變數
+      createSelkitDom(document.getElementById('bs5'), {
+        options: fruits,
+        placeholder: 'Bootstrap 5 style…',
+      }).controller.on('change', show)
+    </script>
+  </body>
+</html>
