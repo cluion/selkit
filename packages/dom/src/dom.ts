@@ -4,24 +4,112 @@
  * 以 @selkit/core 為大腦的原生 JS 渲染層：建構 DOM、綁定事件
  * 套用 a11y 屬性、訂閱 state 重繪、開啟時用預設定位器定位
  * 不實作任何「行為」——所有邏輯都委派給 core controller
+ *
+ * 表單整合：host 是 <select> 時走增強模式（讀 option 並同步值回原生 select）
+ * 否則給了 config.name 就自動維護 hidden input 讓傳統表單 submit 帶值
  */
 import { createSelkit } from '@selkit/core'
 import type {
   SelkitConfig,
   SelkitController,
+  SelkitItem,
+  SelkitOption,
   SelkitState,
+  SelkitValue,
 } from '@selkit/core'
 import { attachPositioner, type Positioner } from './positioner'
 
 export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
-  /** class 前綴 預設 "selkit"  */
+  /** class 前綴 預設 "selkit" */
   classPrefix?: string
+  /** 表單欄位名 設定後自動維護 hidden input 讓傳統表單 submit 帶值 */
+  name?: string
 }
 
 export interface SelkitDomInstance<T = unknown> {
   readonly controller: SelkitController<T>
   readonly element: HTMLElement
   destroy(): void
+}
+
+/** 從原生 <select> 讀出選項、初始值與屬性 供增強模式使用 */
+function parseSelectElement(select: HTMLSelectElement): {
+  options: SelkitItem[]
+  value: SelkitValue
+  multiple: boolean
+  disabled: boolean
+  placeholder: string | undefined
+  name: string | undefined
+} {
+  const options: SelkitItem[] = []
+  const selectedValues: Array<string | number> = []
+  let placeholder = select.dataset.placeholder
+
+  const readOption = (o: HTMLOptionElement): SelkitOption | null => {
+    // 空 value option 視為 placeholder 佔位 不納入選項
+    if (o.value === '') {
+      if (!placeholder) placeholder = o.textContent?.trim() || undefined
+      return null
+    }
+    if (o.selected) selectedValues.push(o.value)
+    return {
+      value: o.value,
+      label: (o.label || o.textContent || o.value).trim(),
+      ...(o.disabled ? { disabled: true } : {}),
+    }
+  }
+
+  for (const child of Array.from(select.children)) {
+    if (child instanceof HTMLOptGroupElement) {
+      const opts: SelkitOption[] = []
+      for (const o of Array.from(child.children)) {
+        if (o instanceof HTMLOptionElement) {
+          const parsed = readOption(o)
+          if (parsed) opts.push(parsed)
+        }
+      }
+      if (opts.length) {
+        options.push({
+          label: child.label,
+          ...(child.disabled ? { disabled: true } : {}),
+          options: opts,
+        })
+      }
+    } else if (child instanceof HTMLOptionElement) {
+      const parsed = readOption(child)
+      if (parsed) options.push(parsed)
+    }
+  }
+
+  const value: SelkitValue = select.multiple
+    ? selectedValues
+    : (selectedValues[0] ?? null)
+
+  return {
+    options,
+    value,
+    multiple: select.multiple,
+    disabled: select.disabled,
+    placeholder,
+    name: select.name || undefined,
+  }
+}
+
+/** 把原生 <select> 解析出的設定合併進使用者 config 使用者明確設定優先 */
+function mergeSelectConfig<T>(
+  config: SelkitDomConfig<T>,
+  select: HTMLSelectElement,
+): SelkitDomConfig<T> {
+  const parsed = parseSelectElement(select)
+  return {
+    ...config,
+    options: config.options ?? (parsed.options as SelkitItem<T>[]),
+    multiple: config.multiple ?? parsed.multiple,
+    value: config.value ?? parsed.value,
+    disabled: config.disabled ?? parsed.disabled,
+    placeholder: config.placeholder ?? parsed.placeholder,
+    name: config.name ?? parsed.name,
+  }
 }
 
 export class SelkitDom<T> implements SelkitDomInstance<T> {
@@ -32,12 +120,16 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #multiple: boolean
   readonly #clearable: boolean
   readonly #placeholder: string
+  readonly #name: string | undefined
+  readonly #sourceSelect: HTMLSelectElement | null
 
   readonly #control: HTMLElement
   readonly #field: HTMLElement
   readonly #input: HTMLInputElement
   readonly #indicators: HTMLElement
   readonly #dropdown: HTMLElement
+  #hiddenContainer: HTMLDivElement | null = null
+  #selectPrevDisplay = ''
 
   #positioner: Positioner | null = null
   readonly #unsubscribe: () => void
@@ -52,11 +144,17 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     if (!host) {
       throw new Error(`[selkit] 找不到掛載目標 ${String(target)}`)
     }
-    this.#prefix = config.classPrefix ?? 'selkit'
-    this.#multiple = config.multiple ?? false
-    this.#clearable = config.clearable ?? !this.#multiple
-    this.#placeholder = config.placeholder ?? ''
-    this.controller = createSelkit<T>(config)
+
+    const sourceSelect = host instanceof HTMLSelectElement ? host : null
+    const cfg = sourceSelect ? mergeSelectConfig(config, sourceSelect) : config
+
+    this.#sourceSelect = sourceSelect
+    this.#prefix = cfg.classPrefix ?? 'selkit'
+    this.#multiple = cfg.multiple ?? false
+    this.#clearable = cfg.clearable ?? !this.#multiple
+    this.#placeholder = cfg.placeholder ?? ''
+    this.#name = cfg.name
+    this.controller = createSelkit<T>(cfg)
 
     this.element = document.createElement('div')
     this.element.className = this.#prefix
@@ -85,7 +183,22 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#field.append(this.#input)
     this.#control.append(this.#field, this.#indicators)
     this.element.append(this.#control, this.#dropdown)
-    host.append(this.element)
+
+    if (sourceSelect) {
+      // 增強模式：把元件插在原生 select 後面並隱藏 select 表單提交仍走原生 select
+      sourceSelect.after(this.element)
+      this.#selectPrevDisplay = sourceSelect.style.display
+      sourceSelect.style.display = 'none'
+      sourceSelect.setAttribute('aria-hidden', 'true')
+      sourceSelect.tabIndex = -1
+    } else {
+      host.append(this.element)
+      if (this.#name) {
+        this.#hiddenContainer = document.createElement('div')
+        this.#hiddenContainer.style.display = 'none'
+        this.element.append(this.#hiddenContainer)
+      }
+    }
 
     this.#bindEvents()
 
@@ -113,6 +226,11 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     document.removeEventListener('pointerdown', this.#onDocPointer)
     this.controller.destroy()
     this.element.remove()
+    if (this.#sourceSelect) {
+      this.#sourceSelect.style.display = this.#selectPrevDisplay
+      this.#sourceSelect.removeAttribute('aria-hidden')
+      this.#sourceSelect.tabIndex = 0
+    }
   }
 
   // ── class 命名 (BEM) ─────────────────────────────────────
@@ -221,6 +339,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#renderOptions(s)
     this.#syncA11y(s)
     this.#syncOpen(s)
+    this.#syncForm()
     this.element.classList.toggle(this.#cls('', 'open'), s.isOpen)
     this.element.classList.toggle(this.#cls('', 'disabled'), s.disabled)
   }
@@ -359,6 +478,46 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       this.#dropdown.hidden = true
       this.#positioner?.destroy()
       this.#positioner = null
+    }
+  }
+
+  // ── 表單同步 ──────────────────────────────────────────────
+  #syncForm(): void {
+    if (this.#sourceSelect) this.#syncToSelect(this.#sourceSelect)
+    else if (this.#hiddenContainer) this.#syncHiddenInputs(this.#hiddenContainer)
+  }
+
+  #syncToSelect(select: HTMLSelectElement): void {
+    const selected = this.controller.getState().selected
+    const selectedSet = new Set(selected.map((o) => String(o.value)))
+    // tagging 新增的選項補進原生 select 才能被提交
+    for (const opt of selected) {
+      const value = String(opt.value)
+      if (!Array.from(select.options).some((o) => o.value === value)) {
+        const el = document.createElement('option')
+        el.value = value
+        el.textContent = opt.label
+        select.append(el)
+      }
+    }
+    for (const o of Array.from(select.options)) {
+      o.selected = selectedSet.has(o.value)
+    }
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+  }
+
+  #syncHiddenInputs(container: HTMLDivElement): void {
+    container.replaceChildren()
+    const name = this.#name as string
+    const inputName = this.#multiple ? `${name}[]` : name
+    const selected = this.controller.getState().selected
+    const values = this.#multiple ? selected : selected.slice(0, 1)
+    for (const opt of values) {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = inputName
+      input.value = String(opt.value)
+      container.append(input)
     }
   }
 }
