@@ -3,10 +3,18 @@
  */
 import type { SelkitGroup, SelkitItem, SelkitOption } from './types'
 
-/** 預設過濾：大小寫不敏感的 label 子字串比對  */
+/** 去除變音符號並轉小寫 讓 cafe 能搜到 café */
+export function normalizeText(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+}
+
+/** 預設過濾：大小寫與變音符號皆不敏感的 label 子字串比對  */
 export function defaultFilter<T>(option: SelkitOption<T>, query: string): boolean {
   if (query === '') return true
-  return option.label.toLowerCase().includes(query.toLowerCase())
+  return normalizeText(option.label).includes(normalizeText(query))
 }
 
 /** 型別守衛：判斷 item 是否為分組  */

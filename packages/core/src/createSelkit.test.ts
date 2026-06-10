@@ -403,3 +403,22 @@ describe('tagging', () => {
     expect(s.getState().selected).toEqual([])
   })
 })
+
+describe('diacritics 不敏感搜尋', () => {
+  it('cafe 能搜到 café', () => {
+    const s = createSelkit({
+      options: [
+        { value: 1, label: 'Café' },
+        { value: 2, label: 'Tea' },
+      ],
+    })
+    s.setQuery('cafe')
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual([1])
+  })
+
+  it('café 也能搜到 Café', () => {
+    const s = createSelkit({ options: [{ value: 1, label: 'Café' }] })
+    s.setQuery('café')
+    expect(s.getState().visibleOptions).toHaveLength(1)
+  })
+})
