@@ -1,0 +1,12 @@
+# 內部規劃文件，不納入版本控制
+plan/
+
+node_modules/
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+*.log
+.DS_Store
+.idea/
+.vscode/
