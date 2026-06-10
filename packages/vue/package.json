@@ -1,0 +1,39 @@
+{
+  "name": "@selkit/vue",
+  "version": "0.0.0",
+  "description": "Vue 3 adapter for Selkit — reactive renderer over @selkit/core.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean --external vue",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "vue": "^3.4.0"
+  },
+  "dependencies": {
+    "@selkit/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@vue/test-utils": "^2.4.0",
+    "jsdom": "^24.1.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0",
+    "vue": "^3.4.0"
+  }
+}
