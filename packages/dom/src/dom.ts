@@ -75,6 +75,7 @@ class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#dropdown.className = this.#cls('dropdown')
     this.#dropdown.hidden = true
 
+    this.#field.append(this.#input)
     this.#control.append(this.#field, this.#indicators)
     this.element.append(this.#control, this.#dropdown)
     host.append(this.element)
@@ -218,8 +219,12 @@ class SelkitDom<T> implements SelkitDomInstance<T> {
   }
 
   #renderField(s: Readonly<SelkitState<T>>): void {
-    this.#field.replaceChildren()
+    // 移除 input 以外的舊節點 保留 input 本身以維持輸入焦點
+    for (const child of Array.from(this.#field.children)) {
+      if (child !== this.#input) child.remove()
+    }
 
+    const frag = document.createDocumentFragment()
     if (this.#multiple) {
       s.selected.forEach((opt, i) => {
         const tag = document.createElement('span')
@@ -237,7 +242,7 @@ class SelkitDom<T> implements SelkitDomInstance<T> {
         remove.textContent = '×'
 
         tag.append(label, remove)
-        this.#field.append(tag)
+        frag.append(tag)
       })
     } else {
       const sel = s.selected[0]
@@ -245,12 +250,12 @@ class SelkitDom<T> implements SelkitDomInstance<T> {
         const single = document.createElement('span')
         single.className = this.#cls('single-value')
         single.textContent = sel.label
-        this.#field.append(single)
+        frag.append(single)
       }
     }
 
+    this.#field.insertBefore(frag, this.#input)
     this.#input.placeholder = s.selected.length === 0 ? this.#placeholder : ''
-    this.#field.append(this.#input)
   }
 
   #renderIndicators(s: Readonly<SelkitState<T>>): void {

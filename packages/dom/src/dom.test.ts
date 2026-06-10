@@ -115,6 +115,15 @@ describe('搜尋', () => {
     input.dispatchEvent(new Event('input', { bubbles: true }))
     expect($(inst.element, '.selkit__empty')).toBeTruthy()
   })
+
+  it('搜尋重繪後 input 仍保持焦點', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS })
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    input.focus()
+    input.value = 'a'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(document.activeElement).toBe(input)
+  })
 })
 
 describe('鍵盤', () => {
