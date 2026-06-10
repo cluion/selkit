@@ -36,6 +36,11 @@ export interface SelkitSelectProps<T = unknown> {
   clearable?: boolean
   disabled?: boolean
   classPrefix?: string
+  loadOptions?: (query: string) => Promise<SelkitItem<T>[]>
+  debounce?: number
+  taggable?: boolean
+  createTag?: (query: string) => SelkitOption<T>
+  maxSelections?: number
   renderOption?: (
     option: SelkitOption<T>,
     meta: { index: number; active: boolean; selected: boolean },
@@ -53,6 +58,11 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     clearable,
     disabled = false,
     classPrefix = 'selkit',
+    loadOptions,
+    debounce,
+    taggable = false,
+    createTag,
+    maxSelections,
     renderOption,
   } = props
 
@@ -68,7 +78,12 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     placeholder,
     searchable,
     disabled,
+    taggable,
     ...(clearable !== undefined ? { clearable } : {}),
+    ...(loadOptions ? { loadOptions } : {}),
+    ...(debounce !== undefined ? { debounce } : {}),
+    ...(createTag ? { createTag } : {}),
+    ...(maxSelections !== undefined ? { maxSelections } : {}),
   })
 
   const [query, setQuery] = useState('')
@@ -85,6 +100,15 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     const off = controller.on('change', (e) => {
       if (syncingRef.current) return
       onChangeRef.current?.(e.value, e)
+    })
+    return off
+  }, [controller])
+
+  // tagging 建立後清空搜尋字
+  useEffect(() => {
+    const off = controller.on('create', () => {
+      setQuery('')
+      queryRef.current = ''
     })
     return off
   }, [controller])

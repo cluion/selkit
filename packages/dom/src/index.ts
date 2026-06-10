@@ -1,7 +1,12 @@
 /**
  * @selkit/dom — 公開進入點
  */
-export { createSelkitDom } from './dom'
+export {
+  createSelkitDom,
+  createSelkitDom as sk,
+  SelkitDom,
+  SelkitDom as Selkit,
+} from './dom'
 export type { SelkitDomConfig, SelkitDomInstance } from './dom'
 export {
   attachPositioner,

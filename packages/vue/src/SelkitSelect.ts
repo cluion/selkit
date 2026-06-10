@@ -14,7 +14,7 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import type { SelkitItem, SelkitValue } from '@selkit/core'
+import type { SelkitItem, SelkitOption, SelkitValue } from '@selkit/core'
 import { useSelkit } from './useSelkit'
 
 function sameValue(a: SelkitValue, b: SelkitValue): boolean {
@@ -38,6 +38,17 @@ export const SelkitSelect = defineComponent({
     clearable: { type: Boolean, default: undefined },
     disabled: { type: Boolean, default: false },
     classPrefix: { type: String, default: 'selkit' },
+    loadOptions: {
+      type: Function as PropType<(query: string) => Promise<SelkitItem[]>>,
+      default: undefined,
+    },
+    debounce: { type: Number, default: undefined },
+    taggable: { type: Boolean, default: false },
+    createTag: {
+      type: Function as PropType<(query: string) => SelkitOption>,
+      default: undefined,
+    },
+    maxSelections: { type: Number, default: undefined },
   },
   emits: ['update:modelValue', 'change'],
   setup(props, { emit, slots, expose }) {
@@ -54,7 +65,14 @@ export const SelkitSelect = defineComponent({
       placeholder: props.placeholder,
       searchable: props.searchable,
       disabled: props.disabled,
+      taggable: props.taggable,
       ...(props.clearable !== undefined ? { clearable: props.clearable } : {}),
+      ...(props.loadOptions ? { loadOptions: props.loadOptions } : {}),
+      ...(props.debounce !== undefined ? { debounce: props.debounce } : {}),
+      ...(props.createTag ? { createTag: props.createTag } : {}),
+      ...(props.maxSelections !== undefined
+        ? { maxSelections: props.maxSelections }
+        : {}),
     })
 
     const query = ref('')
@@ -71,6 +89,10 @@ export const SelkitSelect = defineComponent({
       if (syncing) return
       emit('update:modelValue', e.value)
       emit('change', e)
+    })
+
+    controller.on('create', () => {
+      query.value = ''
     })
 
     controller.on('close', () => {

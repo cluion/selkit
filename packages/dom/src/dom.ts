@@ -24,7 +24,7 @@ export interface SelkitDomInstance<T = unknown> {
   destroy(): void
 }
 
-class SelkitDom<T> implements SelkitDomInstance<T> {
+export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly controller: SelkitController<T>
   readonly element: HTMLElement
 
