@@ -2,7 +2,7 @@
  * @selkit/core — createSelkit controller 實作
  *
  * 純狀態機 零 DOM、零框架依賴 對應 plan/02-core-api.md 的契約
- * 同步核心已實作；非同步 (loadOptions/debounce) 與 tagging 標註於 TODO
+ * 涵蓋同步核心、非同步 loadOptions（含 debounce 與過期回應防護）與 tagging
  */
 import type {
   FilterFn,
@@ -32,9 +32,20 @@ class Selkit<T> implements SelkitController<T> {
   readonly #filter: FilterFn<T>
   readonly #maxSelections: number | undefined
 
+  readonly #loadOptions:
+    | ((query: string) => Promise<SelkitItem<T>[]>)
+    | undefined
+  readonly #debounce: number
+  readonly #filterRemote: boolean
+  readonly #taggable: boolean
+  readonly #createTag: ((query: string) => SelkitOption<T>) | undefined
+
   #rows: NormRow<T>[]
   #flat: SelkitOption<T>[]
   #state: SelkitState<T>
+
+  #debounceTimer: ReturnType<typeof setTimeout> | null = null
+  #loadSeq = 0
 
   readonly #listeners = new Set<SelkitListener<T>>()
   readonly #handlers = new Map<keyof SelkitEvents<T>, Set<Handler>>()
@@ -46,6 +57,12 @@ class Selkit<T> implements SelkitController<T> {
     this.#closeOnSelect = config.closeOnSelect ?? !this.#multiple
     this.#filter = config.filter ?? (defaultFilter as FilterFn<T>)
     this.#maxSelections = config.maxSelections
+
+    this.#loadOptions = config.loadOptions
+    this.#debounce = config.debounce ?? 250
+    this.#filterRemote = config.filterRemote ?? false
+    this.#taggable = config.taggable ?? false
+    this.#createTag = config.createTag
 
     const { rows, flat } = normalize(config.options ?? [])
     this.#rows = rows
@@ -107,6 +124,13 @@ class Selkit<T> implements SelkitController<T> {
 
   // ── 搜尋 ─────────────────────────────────────────────────
   setQuery(query: string): void {
+    if (this.#loadOptions) {
+      // 非同步路徑 先更新 query 與 search 事件 再 debounce 載入
+      this.#patch({ query })
+      this.#fire('search', { query })
+      this.#scheduleLoad(query)
+      return
+    }
     const visibleOptions = this.#computeVisible(query)
     const activeIndex = this.#state.isOpen ? this.#firstEnabled(visibleOptions) : -1
     this.#patch({
@@ -162,7 +186,12 @@ class Selkit<T> implements SelkitController<T> {
   selectActive(): void {
     const { activeIndex, visibleOptions } = this.#state
     const opt = activeIndex >= 0 ? visibleOptions[activeIndex] : undefined
-    if (opt) this.select(opt.value)
+    if (opt) {
+      this.select(opt.value)
+    } else if (this.#taggable) {
+      // 無相符選項時 Enter 直接建立 tag 三個 adapter 不需改即支援
+      this.createTag()
+    }
   }
 
   select(value: string | number): void {
@@ -201,6 +230,26 @@ class Selkit<T> implements SelkitController<T> {
     if (this.#state.selected.length === 0) return
     this.#patch({ selected: [] })
     this.#fireChange()
+  }
+
+  createTag(): void {
+    if (!this.#taggable || !this.#createTag) return
+    const query = this.#state.query.trim()
+    if (query === '') return
+    // 已有同名選項則改為選取既有 不重複建立
+    const existing = this.#flat.find(
+      (o) => o.label.toLowerCase() === query.toLowerCase(),
+    )
+    if (existing) {
+      if (!existing.disabled) this.select(existing.value)
+      return
+    }
+    const option = this.#createTag(query)
+    this.#flat = [...this.#flat, option]
+    this.#rows = [...this.#rows, { kind: 'option', option, groupLabel: null }]
+    this.#fire('create', { option })
+    this.select(option.value)
+    this.#patch({ query: '', visibleOptions: this.#computeVisible('') })
   }
 
   // ── 動態更新 ──────────────────────────────────────────────
@@ -296,9 +345,47 @@ class Selkit<T> implements SelkitController<T> {
   }
 
   destroy(): void {
+    if (this.#debounceTimer !== null) clearTimeout(this.#debounceTimer)
     this.#destroyed = true
     this.#listeners.clear()
     this.#handlers.clear()
+  }
+
+  // ── 非同步載入 ────────────────────────────────────────────
+  #scheduleLoad(query: string): void {
+    if (this.#debounceTimer !== null) clearTimeout(this.#debounceTimer)
+    this.#debounceTimer = setTimeout(() => {
+      this.#debounceTimer = null
+      void this.#runLoad(query)
+    }, this.#debounce)
+  }
+
+  async #runLoad(query: string): Promise<void> {
+    const seq = ++this.#loadSeq
+    this.#patch({ loading: true, noResults: false })
+    this.#fire('load:start', { query })
+    try {
+      const result = await this.#loadOptions!(query)
+      // 過期回應或已銷毀則忽略 避免蓋掉較新的結果
+      if (seq !== this.#loadSeq || this.#destroyed) return
+      const { rows, flat } = normalize(result)
+      this.#rows = rows
+      this.#flat = flat
+      const visibleOptions = this.#filterRemote
+        ? flat.filter((o) => this.#filter(o, query))
+        : flat.slice()
+      this.#patch({
+        loading: false,
+        visibleOptions,
+        noResults: visibleOptions.length === 0,
+        activeIndex: this.#state.isOpen ? this.#firstEnabled(visibleOptions) : -1,
+      })
+      this.#fire('load:end', { options: result })
+    } catch (error) {
+      if (seq !== this.#loadSeq || this.#destroyed) return
+      this.#patch({ loading: false })
+      this.#fire('load:error', { error })
+    }
   }
 
   // ── 內部輔助 ──────────────────────────────────────────────

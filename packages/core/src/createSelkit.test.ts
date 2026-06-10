@@ -277,3 +277,129 @@ describe('getGroupedView', () => {
     ])
   })
 })
+
+describe('非同步 loadOptions', () => {
+  const remote: SelkitItem[] = [
+    { value: 'x', label: 'Xenon' },
+    { value: 'y', label: 'Yttrium' },
+  ]
+
+  it('debounce 後才呼叫 loadOptions 並更新可見選項', async () => {
+    vi.useFakeTimers()
+    const loadOptions = vi.fn(async () => remote)
+    const s = createSelkit({ loadOptions, debounce: 100 })
+    s.open()
+    s.setQuery('xy')
+    expect(s.getState().query).toBe('xy')
+    expect(loadOptions).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(loadOptions).toHaveBeenCalledWith('xy')
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['x', 'y'])
+    expect(s.getState().loading).toBe(false)
+    vi.useRealTimers()
+  })
+
+  it('載入時 loading 為 true 並觸發 load:start / load:end', async () => {
+    vi.useFakeTimers()
+    const loadOptions = vi.fn(async () => remote)
+    const s = createSelkit({ loadOptions, debounce: 0 })
+    const start = vi.fn()
+    const end = vi.fn()
+    s.on('load:start', start)
+    s.on('load:end', end)
+    s.setQuery('x')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(start).toHaveBeenCalledWith({ query: 'x' })
+    expect(end).toHaveBeenCalledWith({ options: remote })
+    vi.useRealTimers()
+  })
+
+  it('連續查詢只保留最後一次結果', async () => {
+    vi.useFakeTimers()
+    const loadOptions = vi.fn(async (q: string) =>
+      q === 'fast'
+        ? [{ value: 'new', label: 'New' }]
+        : [{ value: 'old', label: 'Old' }],
+    )
+    const s = createSelkit({ loadOptions, debounce: 50 })
+    s.setQuery('slow')
+    s.setQuery('fast')
+    await vi.advanceTimersByTimeAsync(50)
+    expect(loadOptions).toHaveBeenCalledTimes(1)
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['new'])
+    vi.useRealTimers()
+  })
+
+  it('filterRemote 為 true 時對遠端結果再套本地過濾', async () => {
+    vi.useFakeTimers()
+    const loadOptions = vi.fn(async () => remote)
+    const s = createSelkit({ loadOptions, debounce: 0, filterRemote: true })
+    s.setQuery('xen')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['x'])
+    vi.useRealTimers()
+  })
+
+  it('載入失敗觸發 load:error 並關閉 loading', async () => {
+    vi.useFakeTimers()
+    const err = new Error('boom')
+    const loadOptions = vi.fn(async () => {
+      throw err
+    })
+    const s = createSelkit({ loadOptions, debounce: 0 })
+    const onError = vi.fn()
+    s.on('load:error', onError)
+    s.setQuery('x')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(onError).toHaveBeenCalledWith({ error: err })
+    expect(s.getState().loading).toBe(false)
+    vi.useRealTimers()
+  })
+})
+
+describe('tagging', () => {
+  it('createTag 建立並選取新選項 觸發 create 事件', () => {
+    const onCreate = vi.fn()
+    const s = createSelkit({
+      options: OPTIONS,
+      taggable: true,
+      createTag: (q) => ({ value: q.toLowerCase(), label: q }),
+    })
+    s.on('create', onCreate)
+    s.setQuery('Mango')
+    s.createTag()
+    expect(onCreate).toHaveBeenCalledWith({
+      option: { value: 'mango', label: 'Mango' },
+    })
+    expect(s.getState().selected.map((o) => o.value)).toContain('mango')
+  })
+
+  it('selectActive 在無相符選項時自動建立 tag', () => {
+    const s = createSelkit({
+      options: OPTIONS,
+      multiple: true,
+      taggable: true,
+      createTag: (q) => ({ value: q, label: q }),
+    })
+    s.open()
+    s.setQuery('Zzz')
+    s.selectActive()
+    expect(s.getState().selected.map((o) => o.value)).toContain('Zzz')
+  })
+
+  it('已有同名選項則改選既有 不重複建立', () => {
+    const create = vi.fn((q: string) => ({ value: q, label: q }))
+    const s = createSelkit({ options: OPTIONS, taggable: true, createTag: create })
+    s.setQuery('apple')
+    s.createTag()
+    expect(create).not.toHaveBeenCalled()
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a'])
+  })
+
+  it('非 taggable 時 createTag 無效', () => {
+    const s = createSelkit({ options: OPTIONS })
+    s.setQuery('Mango')
+    s.createTag()
+    expect(s.getState().selected).toEqual([])
+  })
+})

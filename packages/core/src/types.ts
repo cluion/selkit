@@ -200,6 +200,8 @@ export interface SelkitController<T = unknown> {
   deselect(value: string | number): void
   toggleSelect(value: string | number): void
   clear(): void
+  /** taggable 模式 用目前查詢字串建立並選取新選項 */
+  createTag(): void
 
   // 動態更新
   setOptions(options: SelkitItem<T>[]): void
