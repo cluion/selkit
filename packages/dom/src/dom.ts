@@ -44,7 +44,14 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #offClose: () => void
   readonly #onDocPointer: (e: Event) => void
 
-  constructor(host: HTMLElement, config: SelkitDomConfig<T>) {
+  constructor(target: HTMLElement | string, config: SelkitDomConfig<T>) {
+    const host =
+      typeof target === 'string'
+        ? document.querySelector<HTMLElement>(target)
+        : target
+    if (!host) {
+      throw new Error(`[selkit] 找不到掛載目標 ${String(target)}`)
+    }
     this.#prefix = config.classPrefix ?? 'selkit'
     this.#multiple = config.multiple ?? false
     this.#clearable = config.clearable ?? !this.#multiple
@@ -356,9 +363,9 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   }
 }
 
-/** 在 host 元素內建立並掛載一個 Selkit 下拉  */
+/** 在指定元素或 selector 對應的元素內建立並掛載一個 Selkit 下拉 */
 export function createSelkitDom<T = unknown>(
-  host: HTMLElement,
+  host: HTMLElement | string,
   config: SelkitDomConfig<T> = {},
 ): SelkitDomInstance<T> {
   return new SelkitDom<T>(host, config)
