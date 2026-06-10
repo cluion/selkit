@@ -1,8 +1,8 @@
 /**
  * @selkit/core — createSelkit controller 實作
  *
- * 純狀態機，零 DOM、零框架依賴。對應 plan/02-core-api.md 的契約。
- * 同步核心已實作；非同步 (loadOptions/debounce) 與 tagging 標註於 TODO。
+ * 純狀態機 零 DOM、零框架依賴 對應 plan/02-core-api.md 的契約
+ * 同步核心已實作；非同步 (loadOptions/debounce) 與 tagging 標註於 TODO
  */
 import type {
   FilterFn,
@@ -137,7 +137,7 @@ class Selkit<T> implements SelkitController<T> {
     let next = cursor
     for (;;) {
       next += dir
-      if (next < 0 || next >= v.length) return // 邊界：不 wrap，維持原位
+      if (next < 0 || next >= v.length) return // 邊界：不 wrap 維持原位
       if (!v[next]?.disabled) break
     }
     this.#patch({ activeIndex: next })
@@ -378,7 +378,7 @@ class Selkit<T> implements SelkitController<T> {
   }
 }
 
-/** 建立一個 Selkit controller 實例。 */
+/** 建立一個 Selkit controller 實例  */
 export function createSelkit<T = unknown>(
   config: SelkitConfig<T> = {},
 ): SelkitController<T> {

@@ -1,15 +1,15 @@
 /**
  * @selkit/core — 對外型別契約
  *
- * 此檔對應 plan/02-core-api.md 的設計定案（2026-06-10）。
- * core 不碰 DOM、不碰框架，僅進 state、出 state 與事件。
+ * 此檔對應 plan/02-core-api.md 的設計定案（2026-06-10）
+ * core 不碰 DOM、不碰框架 僅進 state、出 state 與事件
  */
 
 // ─────────────────────────────────────────────────────────────
 // 1. 資料結構
 // ─────────────────────────────────────────────────────────────
 
-/** 單一選項。data 泛型讓使用者攜帶自訂資料且型別安全。 */
+/** 單一選項 data 泛型讓使用者攜帶自訂資料且型別安全  */
 export interface SelkitOption<T = unknown> {
   value: string | number
   label: string
@@ -17,20 +17,20 @@ export interface SelkitOption<T = unknown> {
   data?: T
 }
 
-/** 選項分組（optgroup），僅允許一層。 */
+/** 選項分組（optgroup） 僅允許一層  */
 export interface SelkitGroup<T = unknown> {
   label: string
   disabled?: boolean
   options: SelkitOption<T>[]
 }
 
-/** 傳入的選項可以是扁平選項或分組。 */
+/** 傳入的選項可以是扁平選項或分組  */
 export type SelkitItem<T = unknown> = SelkitOption<T> | SelkitGroup<T>
 
-/** 對外的值：單選為單值或 null，多選為陣列。 */
+/** 對外的值：單選為單值或 null 多選為陣列  */
 export type SelkitValue = string | number | null | Array<string | number>
 
-/** 自訂過濾函式。預設為大小寫不敏感的 label 子字串比對。 */
+/** 自訂過濾函式 預設為大小寫不敏感的 label 子字串比對  */
 export type FilterFn<T = unknown> = (
   option: SelkitOption<T>,
   query: string,
@@ -41,40 +41,40 @@ export type FilterFn<T = unknown> = (
 // ─────────────────────────────────────────────────────────────
 
 export interface SelkitConfig<T = unknown> {
-  /** 初始選項（扁平或分組）。 */
+  /** 初始選項（扁平或分組）  */
   options?: SelkitItem<T>[]
-  /** 初始值。 */
+  /** 初始值  */
   value?: SelkitValue
 
-  /** 是否多選。預設 false。 */
+  /** 是否多選 預設 false  */
   multiple?: boolean
-  /** 是否可搜尋。預設 true。 */
+  /** 是否可搜尋 預設 true  */
   searchable?: boolean
-  /** 是否顯示清除鈕。單選預設 true。 */
+  /** 是否顯示清除鈕 單選預設 true  */
   clearable?: boolean
-  /** 是否停用。預設 false。 */
+  /** 是否停用 預設 false  */
   disabled?: boolean
   placeholder?: string
 
-  /** 選取後是否自動關閉。單選預設 true，多選預設 false。 */
+  /** 選取後是否自動關閉 單選預設 true 多選預設 false  */
   closeOnSelect?: boolean
 
-  /** 自訂過濾。預設大小寫不敏感的 label 子字串比對。 */
+  /** 自訂過濾 預設大小寫不敏感的 label 子字串比對  */
   filter?: FilterFn<T>
 
-  /** 非同步載入（AJAX）。提供時，搜尋會觸發此函式。 */
+  /** 非同步載入（AJAX） 提供時 搜尋會觸發此函式  */
   loadOptions?: (query: string) => Promise<SelkitItem<T>[]>
-  /** loadOptions 的 debounce 毫秒，預設 250。 */
+  /** loadOptions 的 debounce 毫秒 預設 250  */
   debounce?: number
-  /** 是否對遠端回傳結果再套本地 filter。預設 false（遠端已過濾）。 */
+  /** 是否對遠端回傳結果再套本地 filter 預設 false（遠端已過濾）  */
   filterRemote?: boolean
 
-  /** tagging：允許動態新增不存在的選項。 */
+  /** tagging：允許動態新增不存在的選項  */
   taggable?: boolean
-  /** 由查詢字串建立新選項。 */
+  /** 由查詢字串建立新選項  */
   createTag?: (query: string) => SelkitOption<T>
 
-  /** 多選上限，超過則無法再選。 */
+  /** 多選上限 超過則無法再選  */
   maxSelections?: number
 }
 
@@ -83,21 +83,21 @@ export interface SelkitConfig<T = unknown> {
 // ─────────────────────────────────────────────────────────────
 
 export interface SelkitState<T = unknown> {
-  /** 下拉是否開啟。 */
+  /** 下拉是否開啟  */
   isOpen: boolean
-  /** 目前搜尋字串。 */
+  /** 目前搜尋字串  */
   query: string
-  /** highlight 在 visibleOptions 的索引，-1 表無。 */
+  /** highlight 在 visibleOptions 的索引 -1 表無  */
   activeIndex: number
-  /** 已選項目（單選長度 0~1，多選 0~n）。 */
+  /** 已選項目（單選長度 0~1 多選 0~n）  */
   selected: SelkitOption<T>[]
-  /** 過濾後、扁平化的可見選項。 */
+  /** 過濾後、扁平化的可見選項  */
   visibleOptions: SelkitOption<T>[]
-  /** 非同步載入中。 */
+  /** 非同步載入中  */
   loading: boolean
-  /** 非載入中且 visibleOptions 為空。 */
+  /** 非載入中且 visibleOptions 為空  */
   noResults: boolean
-  /** 是否停用。 */
+  /** 是否停用  */
   disabled: boolean
 }
 
@@ -108,7 +108,7 @@ export interface SelkitState<T = unknown> {
 export interface SelkitEvents<T = unknown> {
   open: void
   close: void
-  /** 已選變更（select/deselect/clear/tag 都觸發）。 */
+  /** 已選變更（select/deselect/clear/tag 都觸發）  */
   change: { selected: SelkitOption<T>[]; value: SelkitValue }
   search: { query: string }
   highlight: { index: number; option: SelkitOption<T> | null }
@@ -147,7 +147,7 @@ export interface SelkitOptionA11y {
 export interface SelkitA11y {
   trigger: SelkitTriggerA11y
   listbox: SelkitListboxA11y
-  /** 依 visibleOptions 索引取得單一 option 的屬性。 */
+  /** 依 visibleOptions 索引取得單一 option 的屬性  */
   option(index: number): SelkitOptionA11y
 }
 
@@ -160,7 +160,7 @@ export type SelkitViewRow<T = unknown> =
   | { type: 'option'; index: number; option: SelkitOption<T> }
 
 export interface SelkitGroupedView<T = unknown> {
-  /** 標頭與選項交錯序列；option 的 index 對齊 visibleOptions。 */
+  /** 標頭與選項交錯序列；option 的 index 對齊 visibleOptions  */
   rows: SelkitViewRow<T>[]
 }
 
@@ -175,9 +175,9 @@ export type SelkitListener<T = unknown> = (
 export type Unsubscribe = () => void
 
 export interface SelkitController<T = unknown> {
-  /** 取得目前狀態快照（唯讀）。 */
+  /** 取得目前狀態快照（唯讀）  */
   getState(): Readonly<SelkitState<T>>
-  /** 訂閱狀態變化，回傳 unsubscribe。 */
+  /** 訂閱狀態變化 回傳 unsubscribe  */
   subscribe(listener: SelkitListener<T>): Unsubscribe
 
   // 開關
