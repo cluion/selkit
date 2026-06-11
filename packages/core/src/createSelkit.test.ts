@@ -602,3 +602,53 @@ describe('isSearchable / minResultsForSearch', () => {
     expect(s.isSearchable()).toBe(false)
   })
 })
+
+describe('hideSelected 隱藏已選', () => {
+  it('多選且開啟時已選項從可見清單移除', () => {
+    const s = createSelkit({
+      options: OPTIONS,
+      multiple: true,
+      hideSelected: true,
+    })
+    s.select('a')
+    expect(s.getState().visibleOptions.map((o) => o.value)).not.toContain('a')
+  })
+
+  it('deselect 後該項回到可見清單', () => {
+    const s = createSelkit({
+      options: OPTIONS,
+      multiple: true,
+      hideSelected: true,
+    })
+    s.select('a')
+    s.deselect('a')
+    expect(s.getState().visibleOptions.map((o) => o.value)).toContain('a')
+  })
+
+  it('預設不隱藏 已選項仍在清單', () => {
+    const s = createSelkit({ options: OPTIONS, multiple: true })
+    s.select('a')
+    expect(s.getState().visibleOptions.map((o) => o.value)).toContain('a')
+  })
+
+  it('初始值即隱藏', () => {
+    const s = createSelkit({
+      options: OPTIONS,
+      multiple: true,
+      hideSelected: true,
+      value: ['a'],
+    })
+    expect(s.getState().visibleOptions.map((o) => o.value)).not.toContain('a')
+  })
+
+  it('搭配搜尋時仍隱藏已選', () => {
+    const s = createSelkit({
+      options: OPTIONS,
+      multiple: true,
+      hideSelected: true,
+    })
+    s.select('b')
+    s.setQuery('a')
+    expect(s.getState().visibleOptions.map((o) => o.value)).not.toContain('b')
+  })
+})

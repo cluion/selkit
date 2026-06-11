@@ -58,6 +58,8 @@ export interface SelkitConfig<T = unknown> {
   searchable?: boolean
   /** 選項數達此值才顯示搜尋框 預設 0（一律顯示）  */
   minResultsForSearch?: number
+  /** 已選項目是否從下拉清單隱藏 多選常用 預設 false  */
+  hideSelected?: boolean
   /** 是否顯示清除鈕 單選預設 true  */
   clearable?: boolean
   /** 是否停用 預設 false  */

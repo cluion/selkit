@@ -40,6 +40,7 @@ class Selkit<T> implements SelkitController<T> {
   readonly #minInputLength: number
   readonly #searchable: boolean
   readonly #minResultsForSearch: number
+  readonly #hideSelected: boolean
   readonly #maxSelections: number | undefined
 
   readonly #loadOptions:
@@ -74,6 +75,7 @@ class Selkit<T> implements SelkitController<T> {
     this.#minInputLength = config.minInputLength ?? 0
     this.#searchable = config.searchable ?? true
     this.#minResultsForSearch = config.minResultsForSearch ?? 0
+    this.#hideSelected = config.hideSelected ?? false
     this.#maxSelections = config.maxSelections
 
     this.#loadOptions = config.loadOptions
@@ -86,12 +88,13 @@ class Selkit<T> implements SelkitController<T> {
     this.#rows = rows
     this.#flat = flat
 
-    const initialVisible = this.#computeVisible('')
+    const selected = this.#resolveInitial(config.value)
+    const initialVisible = this.#computeVisible('', selected)
     this.#state = {
       isOpen: false,
       query: '',
       activeIndex: -1,
-      selected: this.#resolveInitial(config.value),
+      selected,
       visibleOptions: initialVisible,
       loading: false,
       noResults: !this.#belowMin('') && initialVisible.length === 0,
@@ -250,9 +253,9 @@ class Selkit<T> implements SelkitController<T> {
       ) {
         return
       }
-      this.#patch({ selected: [...this.#state.selected, opt] })
+      this.#applySelection([...this.#state.selected, opt])
     } else {
-      this.#patch({ selected: [opt] })
+      this.#applySelection([opt])
     }
     this.#fireChange()
     if (this.#closeOnSelect) this.close()
@@ -260,9 +263,7 @@ class Selkit<T> implements SelkitController<T> {
 
   deselect(value: string | number): void {
     if (!this.#isSelected(value)) return
-    this.#patch({
-      selected: this.#state.selected.filter((o) => o.value !== value),
-    })
+    this.#applySelection(this.#state.selected.filter((o) => o.value !== value))
     this.#fireChange()
   }
 
@@ -272,7 +273,7 @@ class Selkit<T> implements SelkitController<T> {
 
   clear(): void {
     if (this.#state.selected.length === 0) return
-    this.#patch({ selected: [] })
+    this.#applySelection([])
     this.#fireChange()
   }
 
@@ -424,9 +425,12 @@ class Selkit<T> implements SelkitController<T> {
       const rows = append ? [...this.#rows, ...next.rows] : next.rows
       this.#rows = rows
       this.#flat = flat
-      const visibleOptions = this.#filterRemote
+      const base = this.#filterRemote
         ? flat.filter((o) => this.#filter(o, query))
         : flat.slice()
+      const visibleOptions = this.#hideSelected
+        ? base.filter((o) => !this.#isSelected(o.value))
+        : base
       this.#patch({
         loading: false,
         loadingMore: false,
@@ -465,10 +469,33 @@ class Selkit<T> implements SelkitController<T> {
     return query.length < this.#minInputLength
   }
 
-  #computeVisible(query: string): SelkitOption<T>[] {
+  #computeVisible(
+    query: string,
+    selected: SelkitOption<T>[] = this.#state.selected,
+  ): SelkitOption<T>[] {
     if (this.#belowMin(query)) return []
-    if (query === '') return this.#flat.slice()
-    return this.#flat.filter((o) => this.#filter(o, query))
+    let pool = this.#flat
+    if (this.#hideSelected && selected.length > 0) {
+      const chosen = new Set(selected.map((o) => o.value))
+      pool = pool.filter((o) => !chosen.has(o.value))
+    }
+    if (query === '') return pool.slice()
+    return pool.filter((o) => this.#filter(o, query))
+  }
+
+  /** 套用新的已選清單 hideSelected 時連帶重算可見選項與 highlight */
+  #applySelection(selected: SelkitOption<T>[]): void {
+    if (!this.#hideSelected) {
+      this.#patch({ selected })
+      return
+    }
+    const visibleOptions = this.#computeVisible(this.#state.query, selected)
+    this.#patch({
+      selected,
+      visibleOptions,
+      noResults: !this.#belowMin(this.#state.query) && visibleOptions.length === 0,
+      activeIndex: this.#state.isOpen ? this.#firstEnabled(visibleOptions) : -1,
+    })
   }
 
   #findOption(value: string | number): SelkitOption<T> | undefined {
