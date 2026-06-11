@@ -122,3 +122,18 @@ describe('虛擬捲動', () => {
     expect(count).toBeLessThan(100)
   })
 })
+
+describe('dropdownParent 浮層 portal', () => {
+  it('下拉 teleport 到指定容器外於元件', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS, dropdownParent: document.body },
+      attachTo: document.body,
+    })
+    await w.find('.selkit__control').trigger('pointerdown')
+    const dd = document.querySelector('.selkit__dropdown') as HTMLElement
+    expect(dd).toBeTruthy()
+    expect(w.element.contains(dd)).toBe(false)
+    expect(dd.classList.contains('selkit')).toBe(true)
+    w.unmount()
+  })
+})

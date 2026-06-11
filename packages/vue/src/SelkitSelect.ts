@@ -10,6 +10,7 @@ import {
   onMounted,
   onUnmounted,
   ref,
+  Teleport,
   watch,
   type PropType,
   type VNode,
@@ -53,6 +54,10 @@ export const SelkitSelect = defineComponent({
     hideSelected: { type: Boolean, default: false },
     virtualScroll: { type: Boolean, default: false },
     itemHeight: { type: Number, default: 36 },
+    dropdownParent: {
+      type: [String, Object] as PropType<string | HTMLElement>,
+      default: undefined,
+    },
     clearable: { type: Boolean, default: undefined },
     disabled: { type: Boolean, default: false },
     classPrefix: { type: String, default: 'selkit' },
@@ -112,6 +117,33 @@ export const SelkitSelect = defineComponent({
     const dropdownRef = ref<HTMLElement | null>(null)
     const scrollTop = ref(0)
     let dragFrom = -1
+
+    // portal 模式下用 fixed 座標定位 量測 root rect 並隨 scroll/resize 更新
+    const dropdownPos = ref({ top: 0, left: 0, width: 0 })
+    const updatePos = (): void => {
+      const el = rootRef.value
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      dropdownPos.value = { top: r.bottom + 4, left: r.left, width: r.width }
+    }
+    watch(
+      () => state.value.isOpen,
+      (open) => {
+        if (!props.dropdownParent) return
+        if (open) {
+          updatePos()
+          window.addEventListener('scroll', updatePos, true)
+          window.addEventListener('resize', updatePos)
+        } else {
+          window.removeEventListener('scroll', updatePos, true)
+          window.removeEventListener('resize', updatePos)
+        }
+      },
+    )
+    onUnmounted(() => {
+      window.removeEventListener('scroll', updatePos, true)
+      window.removeEventListener('resize', updatePos)
+    })
     let syncing = false
 
     const currentValue = (): SelkitValue => {
@@ -159,9 +191,11 @@ export const SelkitSelect = defineComponent({
     )
 
     const onDocPointer = (e: Event): void => {
-      if (rootRef.value && !rootRef.value.contains(e.target as Node)) {
-        controller.close()
-      }
+      const target = e.target as Node
+      // portal 模式下拉在元件之外 需一併視為內部點擊
+      const inside =
+        rootRef.value?.contains(target) || dropdownRef.value?.contains(target)
+      if (!inside) controller.close()
     }
     onMounted(() => document.addEventListener('pointerdown', onDocPointer))
     onUnmounted(() => document.removeEventListener('pointerdown', onDocPointer))
@@ -383,6 +417,49 @@ export const SelkitSelect = defineComponent({
       if (s.isOpen) rootClasses.push(cls('', 'open'))
       if (s.disabled) rootClasses.push(cls('', 'disabled'))
 
+      const portaled = props.dropdownParent != null
+      const dropdownVNode = h(
+        'div',
+        {
+          ref: dropdownRef,
+          // portal 時補上 prefix class 讓 --selkit-* 變數能在此解析
+          class: portaled ? [cls('dropdown'), prefix] : cls('dropdown'),
+          id: a11y.listbox.id,
+          role: 'listbox',
+          ...(props.multiple ? { 'aria-multiselectable': 'true' } : {}),
+          style: portaled
+            ? {
+                position: 'fixed',
+                top: `${dropdownPos.value.top}px`,
+                left: `${dropdownPos.value.left}px`,
+                width: `${dropdownPos.value.width}px`,
+              }
+            : {
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                left: '0',
+                width: '100%',
+              },
+          onPointerdown: (e: Event) => e.stopPropagation(),
+          onScroll: (e: Event) => {
+            const el = e.currentTarget as HTMLElement
+            scrollTop.value = el.scrollTop
+            if (
+              el.scrollTop + el.clientHeight >=
+              el.scrollHeight - LOAD_MORE_THRESHOLD
+            ) {
+              controller.loadMore()
+            }
+          },
+        },
+        dropdownChildren,
+      )
+      const dropdownSlot = !s.isOpen
+        ? null
+        : portaled
+          ? h(Teleport, { to: props.dropdownParent }, [dropdownVNode])
+          : dropdownVNode
+
       return h('div', { class: rootClasses, ref: rootRef }, [
         h(
           'div',
@@ -437,36 +514,7 @@ export const SelkitSelect = defineComponent({
             h('div', { class: cls('indicators') }, indicators),
           ],
         ),
-        s.isOpen
-          ? h(
-              'div',
-              {
-                ref: dropdownRef,
-                class: cls('dropdown'),
-                id: a11y.listbox.id,
-                role: 'listbox',
-                ...(props.multiple ? { 'aria-multiselectable': 'true' } : {}),
-                style: {
-                  position: 'absolute',
-                  top: 'calc(100% + 4px)',
-                  left: '0',
-                  width: '100%',
-                },
-                onPointerdown: (e: Event) => e.stopPropagation(),
-                onScroll: (e: Event) => {
-                  const el = e.currentTarget as HTMLElement
-                  scrollTop.value = el.scrollTop
-                  if (
-                    el.scrollTop + el.clientHeight >=
-                    el.scrollHeight - LOAD_MORE_THRESHOLD
-                  ) {
-                    controller.loadMore()
-                  }
-                },
-              },
-              dropdownChildren,
-            )
-          : null,
+        dropdownSlot,
       ])
     }
   },

@@ -29,6 +29,19 @@ describe('SelkitSelect — 渲染', () => {
   })
 })
 
+describe('dropdownParent 浮層 portal', () => {
+  it('下拉用 createPortal 送到指定容器外於元件', () => {
+    const { container } = render(
+      <SelkitSelect options={OPTIONS} dropdownParent={document.body} />,
+    )
+    fireEvent.pointerDown(control(container as HTMLElement))
+    const dd = document.querySelector('.selkit__dropdown') as HTMLElement
+    expect(dd).toBeTruthy()
+    expect(container.contains(dd)).toBe(false)
+    expect(dd.classList.contains('selkit')).toBe(true)
+  })
+})
+
 describe('開關與選取', () => {
   it('點 control 開啟並渲染選項', () => {
     const { container } = render(<SelkitSelect options={OPTIONS} />)

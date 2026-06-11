@@ -4,7 +4,8 @@
  * 用 React 渲染 行為全部委派給 @selkit/core controller
  * 支援受控 value + onChange 多選 搜尋 分組 與 renderOption 自訂選項
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type {
   ChangeEvent,
   KeyboardEvent as ReactKeyboardEvent,
@@ -51,6 +52,7 @@ export interface SelkitSelectProps<T = unknown> {
   hideSelected?: boolean
   virtualScroll?: boolean
   itemHeight?: number
+  dropdownParent?: string | HTMLElement
   clearable?: boolean
   disabled?: boolean
   classPrefix?: string
@@ -82,6 +84,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     hideSelected = false,
     virtualScroll = false,
     itemHeight = 36,
+    dropdownParent,
     clearable,
     disabled = false,
     classPrefix = 'selkit',
@@ -125,6 +128,13 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   const dropdownRef = useRef<HTMLDivElement | null>(null)
   const dragFromRef = useRef(-1)
   const [scrollTop, setScrollTop] = useState(0)
+  const [portalPos, setPortalPos] = useState({ top: 0, left: 0, width: 0 })
+  const portalTarget = useMemo<HTMLElement | null>(() => {
+    if (!dropdownParent) return null
+    return typeof dropdownParent === 'string'
+      ? document.querySelector<HTMLElement>(dropdownParent)
+      : dropdownParent
+  }, [dropdownParent])
   const syncingRef = useRef(false)
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
@@ -183,13 +193,33 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
 
   useEffect(() => {
     const handler = (e: Event): void => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        controller.close()
-      }
+      const target = e.target as Node
+      // portal 模式下拉在元件之外 需一併視為內部點擊
+      const inside =
+        rootRef.current?.contains(target) || dropdownRef.current?.contains(target)
+      if (!inside) controller.close()
     }
     document.addEventListener('pointerdown', handler)
     return () => document.removeEventListener('pointerdown', handler)
   }, [controller])
+
+  // portal 模式下用 fixed 座標定位 量測 root rect 並隨 scroll/resize 更新
+  useEffect(() => {
+    if (!portalTarget || !state.isOpen) return
+    const update = (): void => {
+      const el = rootRef.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      setPortalPos({ top: r.bottom + 4, left: r.left, width: r.width })
+    }
+    update()
+    window.addEventListener('scroll', update, true)
+    window.addEventListener('resize', update)
+    return () => {
+      window.removeEventListener('scroll', update, true)
+      window.removeEventListener('resize', update)
+    }
+  }, [portalTarget, state.isOpen])
 
   const onControlPointerDown = (e: ReactPointerEvent<HTMLDivElement>): void => {
     const target = e.target as HTMLElement
@@ -349,6 +379,50 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     )
   }
 
+  // portal 模式把下拉用 createPortal 送到 dropdownParent 並補 prefix class 讓 CSS 變數解析
+  const renderDropdown = (): ReactNode => {
+    const el = (
+      <div
+        ref={dropdownRef}
+        className={
+          portalTarget ? `${cls('dropdown')} ${classPrefix}` : cls('dropdown')
+        }
+        id={a11y.listbox.id}
+        role="listbox"
+        aria-multiselectable={multiple || undefined}
+        style={
+          portalTarget
+            ? {
+                position: 'fixed',
+                top: portalPos.top,
+                left: portalPos.left,
+                width: portalPos.width,
+              }
+            : {
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                left: 0,
+                width: '100%',
+              }
+        }
+        onPointerDown={(e) => e.stopPropagation()}
+        onScroll={(e) => {
+          const node = e.currentTarget
+          setScrollTop(node.scrollTop)
+          if (
+            node.scrollTop + node.clientHeight >=
+            node.scrollHeight - LOAD_MORE_THRESHOLD
+          ) {
+            controller.loadMore()
+          }
+        }}
+      >
+        {dropdownContent}
+      </div>
+    )
+    return portalTarget ? createPortal(el, portalTarget) : el
+  }
+
   return (
     <div className={rootClass.join(' ')} ref={rootRef}>
       <div
@@ -433,34 +507,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
           <span className={cls('arrow')} aria-hidden="true" />
         </div>
       </div>
-      {s.isOpen ? (
-        <div
-          ref={dropdownRef}
-          className={cls('dropdown')}
-          id={a11y.listbox.id}
-          role="listbox"
-          aria-multiselectable={multiple || undefined}
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 4px)',
-            left: 0,
-            width: '100%',
-          }}
-          onPointerDown={(e) => e.stopPropagation()}
-          onScroll={(e) => {
-            const el = e.currentTarget
-            setScrollTop(el.scrollTop)
-            if (
-              el.scrollTop + el.clientHeight >=
-              el.scrollHeight - LOAD_MORE_THRESHOLD
-            ) {
-              controller.loadMore()
-            }
-          }}
-        >
-          {dropdownContent}
-        </div>
-      ) : null}
+      {s.isOpen ? renderDropdown() : null}
     </div>
   )
 }
