@@ -70,6 +70,46 @@
     </section>
 
     <section>
+      <label for="fuzzy">fuzzy 模糊搜尋</label>
+      <div id="fuzzy"></div>
+      <div class="hint">輸入 <code>blbr</code> 也能搜到 Blueberry（子序列比對）。</div>
+    </section>
+
+    <section>
+      <label for="thresholds">minInputLength（至少 2 字才過濾）</label>
+      <div id="thresholds"></div>
+    </section>
+
+    <section>
+      <label for="few">minResultsForSearch（選項太少時隱藏搜尋框）</label>
+      <div id="few"></div>
+    </section>
+
+    <section>
+      <label for="hide-reorder">hideSelected + tag 拖曳排序</label>
+      <div id="hide-reorder"></div>
+      <div class="hint">已選項從清單隱藏；拖曳 tag 可重新排序。</div>
+    </section>
+
+    <section>
+      <label for="infinite">無限捲動 infinite scroll</label>
+      <div id="infinite"></div>
+      <div class="hint">捲到下拉底部自動載入下一頁（共 5 頁）。</div>
+    </section>
+
+    <section>
+      <label for="virtual">虛擬捲動 virtual scroll</label>
+      <div id="virtual"></div>
+      <div class="hint">1000 筆選項，只渲染可視切片。</div>
+    </section>
+
+    <section dir="rtl">
+      <label for="rtl">RTL（dir="rtl"）</label>
+      <div id="rtl"></div>
+      <div class="hint">整個區塊設 dir="rtl"，tag 與箭頭自動翻轉。</div>
+    </section>
+
+    <section>
       <label>最後一次變更 (change event)</label>
       <pre id="log">（尚未變更）</pre>
     </section>
@@ -130,6 +170,77 @@
       createSelkitDom(document.getElementById('bs5'), {
         options: fruits,
         placeholder: 'Bootstrap 5 style…',
+      }).controller.on('change', show)
+
+      const many = (n) =>
+        Array.from({ length: n }, (_, i) => ({
+          value: i,
+          label: `Option ${i + 1}`,
+        }))
+
+      // 6. fuzzy 子序列比對
+      createSelkitDom(document.getElementById('fuzzy'), {
+        options: [
+          { value: 'blueberry', label: 'Blueberry' },
+          { value: 'blackberry', label: 'Blackberry' },
+          { value: 'strawberry', label: 'Strawberry' },
+          { value: 'raspberry', label: 'Raspberry' },
+        ],
+        fuzzy: true,
+        placeholder: 'Try "blbr"…',
+      }).controller.on('change', show)
+
+      // 7. minInputLength：至少 2 字才過濾
+      createSelkitDom(document.getElementById('thresholds'), {
+        options: many(30),
+        minInputLength: 2,
+        placeholder: 'Type 2+ chars…',
+      }).controller.on('change', show)
+
+      // 8. minResultsForSearch：選項少於 10 個時隱藏搜尋框
+      createSelkitDom(document.getElementById('few'), {
+        options: fruits,
+        minResultsForSearch: 10,
+        placeholder: 'No search box…',
+      }).controller.on('change', show)
+
+      // 9. hideSelected + tag 拖曳排序
+      createSelkitDom(document.getElementById('hide-reorder'), {
+        options: fruits,
+        multiple: true,
+        hideSelected: true,
+        placeholder: 'Pick & drag tags…',
+      }).controller.on('change', show)
+
+      // 10. 無限捲動：loadOptions 收 page 回傳 { items, hasMore }
+      const infinite = createSelkitDom(document.getElementById('infinite'), {
+        loadOptions: async (query, page) => {
+          const size = 20
+          const start = (page - 1) * size
+          const items = Array.from({ length: size }, (_, i) => {
+            const n = start + i + 1
+            return { value: n, label: `${query || 'Item'} #${n}` }
+          })
+          return { items, hasMore: page < 5 }
+        },
+        placeholder: 'Scroll to load more…',
+      })
+      infinite.controller.on('change', show)
+      infinite.controller.setQuery('') // 先載入第一頁
+
+      // 11. 虛擬捲動：1000 筆只渲染可視切片
+      createSelkitDom(document.getElementById('virtual'), {
+        options: many(1000),
+        virtualScroll: true,
+        itemHeight: 36,
+        placeholder: '1000 options…',
+      }).controller.on('change', show)
+
+      // 12. RTL：容器 dir="rtl" 即自動適配
+      createSelkitDom(document.getElementById('rtl'), {
+        options: fruits,
+        multiple: true,
+        placeholder: 'اختر…',
       }).controller.on('change', show)
     </script>
   </body>
