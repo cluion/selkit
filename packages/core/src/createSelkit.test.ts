@@ -293,7 +293,7 @@ describe('非同步 loadOptions', () => {
     expect(s.getState().query).toBe('xy')
     expect(loadOptions).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(100)
-    expect(loadOptions).toHaveBeenCalledWith('xy')
+    expect(loadOptions).toHaveBeenCalledWith('xy', 1)
     expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['x', 'y'])
     expect(s.getState().loading).toBe(false)
     vi.useRealTimers()
@@ -354,6 +354,88 @@ describe('非同步 loadOptions', () => {
     expect(onError).toHaveBeenCalledWith({ error: err })
     expect(s.getState().loading).toBe(false)
     vi.useRealTimers()
+  })
+})
+
+describe('遠端分頁 / 無限捲動', () => {
+  const page1: SelkitItem[] = [
+    { value: 1, label: 'One' },
+    { value: 2, label: 'Two' },
+  ]
+  const page2: SelkitItem[] = [{ value: 3, label: 'Three' }]
+
+  it('回傳 { items, hasMore } 時記錄 hasMore 與 page', async () => {
+    const loadOptions = vi.fn(async () => ({ items: page1, hasMore: true }))
+    const s = createSelkit({ loadOptions, debounce: 0 })
+    s.setQuery('o')
+    await vi.waitFor(() => expect(s.getState().visibleOptions).toHaveLength(2))
+    expect(s.getState().hasMore).toBe(true)
+    expect(s.getState().page).toBe(1)
+  })
+
+  it('loadMore 追加下一頁且 page 遞增', async () => {
+    const loadOptions = vi.fn(async (_q: string, p: number) =>
+      p === 1 ? { items: page1, hasMore: true } : { items: page2, hasMore: false },
+    )
+    const s = createSelkit({ loadOptions, debounce: 0 })
+    s.setQuery('o')
+    await vi.waitFor(() => expect(s.getState().visibleOptions).toHaveLength(2))
+    s.loadMore()
+    await vi.waitFor(() => expect(s.getState().visibleOptions).toHaveLength(3))
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual([1, 2, 3])
+    expect(s.getState().page).toBe(2)
+    expect(s.getState().hasMore).toBe(false)
+  })
+
+  it('hasMore 為 false 時 loadMore 不觸發載入', async () => {
+    const loadOptions = vi.fn(async () => ({ items: page1, hasMore: false }))
+    const s = createSelkit({ loadOptions, debounce: 0 })
+    s.setQuery('o')
+    await vi.waitFor(() => expect(s.getState().visibleOptions).toHaveLength(2))
+    loadOptions.mockClear()
+    s.loadMore()
+    await new Promise((r) => setTimeout(r, 10))
+    expect(loadOptions).not.toHaveBeenCalled()
+  })
+
+  it('回傳純陣列時 hasMore 為 false 相容舊用法', async () => {
+    const loadOptions = vi.fn(async () => page1)
+    const s = createSelkit({ loadOptions, debounce: 0 })
+    s.setQuery('o')
+    await vi.waitFor(() => expect(s.getState().visibleOptions).toHaveLength(2))
+    expect(s.getState().hasMore).toBe(false)
+  })
+
+  it('新搜尋重置分頁並取代而非追加', async () => {
+    const loadOptions = vi.fn(async (_q: string, p: number) =>
+      p === 1 ? { items: page1, hasMore: true } : { items: page2, hasMore: false },
+    )
+    const s = createSelkit({ loadOptions, debounce: 0 })
+    s.setQuery('o')
+    await vi.waitFor(() => expect(s.getState().visibleOptions).toHaveLength(2))
+    s.loadMore()
+    await vi.waitFor(() => expect(s.getState().visibleOptions).toHaveLength(3))
+    s.setQuery('x')
+    await vi.waitFor(() => expect(s.getState().page).toBe(1))
+    expect(s.getState().visibleOptions).toHaveLength(2)
+  })
+
+  it('載入下一頁期間 loadingMore 為 true', async () => {
+    let resolveSecond!: (v: { items: SelkitItem[]; hasMore: boolean }) => void
+    const loadOptions = vi.fn((_q: string, p: number) =>
+      p === 1
+        ? Promise.resolve({ items: page1, hasMore: true })
+        : new Promise<{ items: SelkitItem[]; hasMore: boolean }>(
+            (r) => (resolveSecond = r),
+          ),
+    )
+    const s = createSelkit({ loadOptions, debounce: 0 })
+    s.setQuery('o')
+    await vi.waitFor(() => expect(s.getState().visibleOptions).toHaveLength(2))
+    s.loadMore()
+    await vi.waitFor(() => expect(s.getState().loadingMore).toBe(true))
+    resolveSecond({ items: page2, hasMore: false })
+    await vi.waitFor(() => expect(s.getState().loadingMore).toBe(false))
   })
 })
 

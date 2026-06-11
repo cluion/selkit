@@ -13,13 +13,20 @@ import type {
   SelkitGroupedView,
   SelkitItem,
   SelkitListener,
+  SelkitLoadResult,
   SelkitOption,
   SelkitState,
   SelkitValue,
   SelkitViewRow,
   Unsubscribe,
 } from './types'
-import { defaultFilter, fuzzyFilter, normalize, type NormRow } from './utils'
+import {
+  defaultFilter,
+  fuzzyFilter,
+  normalize,
+  normalizeLoadResult,
+  type NormRow,
+} from './utils'
 
 let instanceCounter = 0
 
@@ -36,7 +43,10 @@ class Selkit<T> implements SelkitController<T> {
   readonly #maxSelections: number | undefined
 
   readonly #loadOptions:
-    | ((query: string) => Promise<SelkitItem<T>[]>)
+    | ((
+        query: string,
+        page: number,
+      ) => Promise<SelkitItem<T>[] | SelkitLoadResult<T>>)
     | undefined
   readonly #debounce: number
   readonly #filterRemote: boolean
@@ -86,6 +96,9 @@ class Selkit<T> implements SelkitController<T> {
       loading: false,
       noResults: !this.#belowMin('') && initialVisible.length === 0,
       disabled: config.disabled ?? false,
+      page: 0,
+      hasMore: false,
+      loadingMore: false,
     }
   }
 
@@ -165,6 +178,13 @@ class Selkit<T> implements SelkitController<T> {
     })
     this.#fire('search', { query })
     if (this.#state.isOpen) this.#fireHighlight(activeIndex)
+  }
+
+  loadMore(): void {
+    if (!this.#loadOptions || this.#destroyed) return
+    if (!this.#state.hasMore) return
+    if (this.#state.loading || this.#state.loadingMore) return
+    void this.#runLoad(this.#state.query, this.#state.page + 1, true)
   }
 
   // ── highlight 移動（不 wrap、跳過 disabled）────────────────
@@ -383,19 +403,25 @@ class Selkit<T> implements SelkitController<T> {
     if (this.#debounceTimer !== null) clearTimeout(this.#debounceTimer)
     this.#debounceTimer = setTimeout(() => {
       this.#debounceTimer = null
-      void this.#runLoad(query)
+      void this.#runLoad(query, 1, false)
     }, this.#debounce)
   }
 
-  async #runLoad(query: string): Promise<void> {
+  async #runLoad(query: string, page: number, append: boolean): Promise<void> {
     const seq = ++this.#loadSeq
-    this.#patch({ loading: true, noResults: false })
+    this.#patch(
+      append ? { loadingMore: true } : { loading: true, noResults: false },
+    )
     this.#fire('load:start', { query })
     try {
-      const result = await this.#loadOptions!(query)
+      const raw = await this.#loadOptions!(query, page)
       // 過期回應或已銷毀則忽略 避免蓋掉較新的結果
       if (seq !== this.#loadSeq || this.#destroyed) return
-      const { rows, flat } = normalize(result)
+      const { items, hasMore } = normalizeLoadResult(raw)
+      const next = normalize(items)
+      // 追加模式接在現有結果後 否則取代
+      const flat = append ? [...this.#flat, ...next.flat] : next.flat
+      const rows = append ? [...this.#rows, ...next.rows] : next.rows
       this.#rows = rows
       this.#flat = flat
       const visibleOptions = this.#filterRemote
@@ -403,14 +429,22 @@ class Selkit<T> implements SelkitController<T> {
         : flat.slice()
       this.#patch({
         loading: false,
+        loadingMore: false,
+        page,
+        hasMore,
         visibleOptions,
         noResults: visibleOptions.length === 0,
-        activeIndex: this.#state.isOpen ? this.#firstEnabled(visibleOptions) : -1,
+        // 追加時保留目前 highlight 不打斷捲動 否則重設
+        activeIndex: append
+          ? this.#state.activeIndex
+          : this.#state.isOpen
+            ? this.#firstEnabled(visibleOptions)
+            : -1,
       })
-      this.#fire('load:end', { options: result })
+      this.#fire('load:end', { options: items })
     } catch (error) {
       if (seq !== this.#loadSeq || this.#destroyed) return
-      this.#patch({ loading: false })
+      this.#patch({ loading: false, loadingMore: false })
       this.#fire('load:error', { error })
     }
   }

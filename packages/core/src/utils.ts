@@ -1,7 +1,20 @@
 /**
  * @selkit/core — 內部工具：選項正規化與預設過濾
  */
-import type { SelkitGroup, SelkitItem, SelkitOption } from './types'
+import type {
+  SelkitGroup,
+  SelkitItem,
+  SelkitLoadResult,
+  SelkitOption,
+} from './types'
+
+/** 將 loadOptions 回傳統一為 { items, hasMore } 純陣列視為單頁且無更多  */
+export function normalizeLoadResult<T>(
+  raw: SelkitItem<T>[] | SelkitLoadResult<T>,
+): { items: SelkitItem<T>[]; hasMore: boolean } {
+  if (Array.isArray(raw)) return { items: raw, hasMore: false }
+  return { items: raw.items, hasMore: raw.hasMore }
+}
 
 /** 去除變音符號並轉小寫 讓 cafe 能搜到 café */
 export function normalizeText(s: string): string {

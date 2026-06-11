@@ -36,6 +36,12 @@ export type FilterFn<T = unknown> = (
   query: string,
 ) => boolean
 
+/** loadOptions 的分頁回傳 hasMore 指示是否還有下一頁  */
+export interface SelkitLoadResult<T = unknown> {
+  items: SelkitItem<T>[]
+  hasMore: boolean
+}
+
 // ─────────────────────────────────────────────────────────────
 // 2. 設定 (Config)
 // ─────────────────────────────────────────────────────────────
@@ -68,8 +74,11 @@ export interface SelkitConfig<T = unknown> {
   /** 最少輸入字數 未達時不過濾也不觸發 loadOptions 預設 0  */
   minInputLength?: number
 
-  /** 非同步載入（AJAX） 提供時 搜尋會觸發此函式  */
-  loadOptions?: (query: string) => Promise<SelkitItem<T>[]>
+  /** 非同步載入（AJAX） 提供時 搜尋會觸發此函式 page 從 1 起 回傳陣列或 { items, hasMore } 以支援分頁/無限捲動  */
+  loadOptions?: (
+    query: string,
+    page: number,
+  ) => Promise<SelkitItem<T>[] | SelkitLoadResult<T>>
   /** loadOptions 的 debounce 毫秒 預設 250  */
   debounce?: number
   /** 是否對遠端回傳結果再套本地 filter 預設 false（遠端已過濾）  */
@@ -105,6 +114,12 @@ export interface SelkitState<T = unknown> {
   noResults: boolean
   /** 是否停用  */
   disabled: boolean
+  /** 非同步分頁 目前已載入頁碼 從 1 起 0 表尚未載入  */
+  page: number
+  /** 是否還有下一頁可載入  */
+  hasMore: boolean
+  /** 載入下一頁中 與首次 loading 區別  */
+  loadingMore: boolean
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -195,6 +210,8 @@ export interface SelkitController<T = unknown> {
 
   // 搜尋
   setQuery(query: string): void
+  /** 載入下一頁並追加 用於無限捲動 hasMore 為 false 或載入中時無動作  */
+  loadMore(): void
 
   // highlight 移動（含邊界處理、跳過 disabled、不 wrap）
   setActiveIndex(index: number): void
