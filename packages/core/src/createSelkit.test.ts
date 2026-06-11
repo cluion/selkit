@@ -457,3 +457,37 @@ describe('fuzzy 模糊搜尋', () => {
     expect(s.getState().visibleOptions).toHaveLength(1)
   })
 })
+
+describe('minInputLength 最少輸入字數', () => {
+  it('未達字數時不顯示任何選項', () => {
+    const s = createSelkit({ options: OPTIONS, minInputLength: 2 })
+    s.setQuery('a')
+    expect(s.getState().visibleOptions).toHaveLength(0)
+  })
+
+  it('未達字數時 noResults 為 false 區別於真的無相符', () => {
+    const s = createSelkit({ options: OPTIONS, minInputLength: 2 })
+    s.setQuery('a')
+    expect(s.getState().noResults).toBe(false)
+  })
+
+  it('達到字數即正常過濾', () => {
+    const s = createSelkit({ options: OPTIONS, minInputLength: 2 })
+    s.setQuery('an')
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['b'])
+  })
+
+  it('初始未達字數時 visibleOptions 為空且 noResults 為 false', () => {
+    const s = createSelkit({ options: OPTIONS, minInputLength: 2 })
+    expect(s.getState().visibleOptions).toHaveLength(0)
+    expect(s.getState().noResults).toBe(false)
+  })
+
+  it('async 未達字數時不觸發 loadOptions', async () => {
+    const loadOptions = vi.fn(async () => OPTIONS)
+    const s = createSelkit({ minInputLength: 2, loadOptions, debounce: 0 })
+    s.setQuery('a')
+    await new Promise((r) => setTimeout(r, 10))
+    expect(loadOptions).not.toHaveBeenCalled()
+  })
+})

@@ -30,6 +30,7 @@ class Selkit<T> implements SelkitController<T> {
   readonly #multiple: boolean
   readonly #closeOnSelect: boolean
   readonly #filter: FilterFn<T>
+  readonly #minInputLength: number
   readonly #maxSelections: number | undefined
 
   readonly #loadOptions:
@@ -58,6 +59,7 @@ class Selkit<T> implements SelkitController<T> {
     this.#filter =
       config.filter ??
       ((config.fuzzy ? fuzzyFilter : defaultFilter) as FilterFn<T>)
+    this.#minInputLength = config.minInputLength ?? 0
     this.#maxSelections = config.maxSelections
 
     this.#loadOptions = config.loadOptions
@@ -70,14 +72,15 @@ class Selkit<T> implements SelkitController<T> {
     this.#rows = rows
     this.#flat = flat
 
+    const initialVisible = this.#computeVisible('')
     this.#state = {
       isOpen: false,
       query: '',
       activeIndex: -1,
       selected: this.#resolveInitial(config.value),
-      visibleOptions: flat.slice(),
+      visibleOptions: initialVisible,
       loading: false,
-      noResults: flat.length === 0,
+      noResults: !this.#belowMin('') && initialVisible.length === 0,
       disabled: config.disabled ?? false,
     }
   }
@@ -130,6 +133,13 @@ class Selkit<T> implements SelkitController<T> {
       // 非同步路徑 先更新 query 與 search 事件 再 debounce 載入
       this.#patch({ query })
       this.#fire('search', { query })
+      if (this.#belowMin(query)) {
+        // 未達字數 取消待載入並清空 不視為無相符
+        if (this.#debounceTimer !== null) clearTimeout(this.#debounceTimer)
+        this.#debounceTimer = null
+        this.#patch({ visibleOptions: [], noResults: false, loading: false })
+        return
+      }
       this.#scheduleLoad(query)
       return
     }
@@ -138,7 +148,10 @@ class Selkit<T> implements SelkitController<T> {
     this.#patch({
       query,
       visibleOptions,
-      noResults: !this.#state.loading && visibleOptions.length === 0,
+      noResults:
+        !this.#belowMin(query) &&
+        !this.#state.loading &&
+        visibleOptions.length === 0,
       activeIndex,
     })
     this.#fire('search', { query })
@@ -262,7 +275,10 @@ class Selkit<T> implements SelkitController<T> {
     const visibleOptions = this.#computeVisible(this.#state.query)
     this.#patch({
       visibleOptions,
-      noResults: !this.#state.loading && visibleOptions.length === 0,
+      noResults:
+        !this.#belowMin(this.#state.query) &&
+        !this.#state.loading &&
+        visibleOptions.length === 0,
       activeIndex: this.#state.isOpen ? this.#firstEnabled(visibleOptions) : -1,
     })
   }
@@ -402,7 +418,12 @@ class Selkit<T> implements SelkitController<T> {
     return this.#multiple ? result : result.slice(0, 1)
   }
 
+  #belowMin(query: string): boolean {
+    return query.length < this.#minInputLength
+  }
+
   #computeVisible(query: string): SelkitOption<T>[] {
+    if (this.#belowMin(query)) return []
     if (query === '') return this.#flat.slice()
     return this.#flat.filter((o) => this.#filter(o, query))
   }

@@ -63,6 +63,8 @@ export interface SelkitConfig<T = unknown> {
   filter?: FilterFn<T>
   /** 啟用 fuzzy 子序列比對 取代預設子字串比對 自訂 filter 時此項忽略  */
   fuzzy?: boolean
+  /** 最少輸入字數 未達時不過濾也不觸發 loadOptions 預設 0  */
+  minInputLength?: number
 
   /** 非同步載入（AJAX） 提供時 搜尋會觸發此函式  */
   loadOptions?: (query: string) => Promise<SelkitItem<T>[]>
