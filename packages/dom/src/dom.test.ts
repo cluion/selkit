@@ -238,6 +238,63 @@ describe('虛擬捲動 virtualScroll', () => {
   })
 })
 
+describe('dropdownParent 浮層 portal', () => {
+  it('下拉掛到指定容器而非元件內', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      dropdownParent: document.body,
+    })
+    const dd = document.querySelector('.selkit__dropdown') as HTMLElement
+    expect(dd.parentElement).toBe(document.body)
+    expect(inst.element.contains(dd)).toBe(false)
+  })
+
+  it('portal 下拉帶上 prefix class 讓 CSS 變數能解析', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      dropdownParent: document.body,
+    })
+    const dd = document.querySelector('.selkit__dropdown') as HTMLElement
+    expect(dd.classList.contains('selkit')).toBe(true)
+    inst.destroy()
+  })
+
+  it('接受選擇器字串', () => {
+    const portal = document.createElement('div')
+    portal.id = 'portal'
+    document.body.append(portal)
+    createSelkitDom(host, { options: OPTIONS, dropdownParent: '#portal' })
+    expect(portal.querySelector('.selkit__dropdown')).toBeTruthy()
+  })
+
+  it('點 portal 下拉內部不觸發 outside-click 關閉', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      dropdownParent: document.body,
+    })
+    inst.controller.open()
+    const dd = document.querySelector('.selkit__dropdown') as HTMLElement
+    dd.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }))
+    expect(inst.controller.getState().isOpen).toBe(true)
+  })
+
+  it('destroy 後從 portal 容器移除下拉', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      dropdownParent: document.body,
+    })
+    expect(document.querySelector('.selkit__dropdown')).toBeTruthy()
+    inst.destroy()
+    expect(document.querySelector('.selkit__dropdown')).toBeFalsy()
+  })
+
+  it('找不到選擇器時拋錯', () => {
+    expect(() =>
+      createSelkitDom(host, { options: OPTIONS, dropdownParent: '#nope' }),
+    ).toThrow()
+  })
+})
+
 describe('tag 拖曳排序', () => {
   it('拖曳 tag 放到另一個 tag 上呼叫 moveSelected 重排', () => {
     const inst = createSelkitDom(host, {

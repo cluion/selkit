@@ -28,6 +28,17 @@ const DEFAULT_ITEM_HEIGHT = 36
 
 type OptionRow<T> = Extract<SelkitViewRow<T>, { type: 'option' }>
 
+/** 解析 dropdownParent 為元素 接受元素或選擇器字串 找不到則拋錯 */
+function resolveParent(
+  parent: HTMLElement | string | undefined,
+): HTMLElement | null {
+  if (!parent) return null
+  if (typeof parent !== 'string') return parent
+  const el = document.querySelector<HTMLElement>(parent)
+  if (!el) throw new Error(`[selkit] 找不到 dropdownParent ${parent}`)
+  return el
+}
+
 export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
   /** class 前綴 預設 "selkit" */
   classPrefix?: string
@@ -37,6 +48,8 @@ export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
   virtualScroll?: boolean
   /** 虛擬捲動的單列固定高度 px 預設 36 須與實際樣式高度一致 */
   itemHeight?: number
+  /** 把下拉浮層掛到指定容器（元素或選擇器）逃離 overflow/transform 祖先的裁切 常用 document.body */
+  dropdownParent?: HTMLElement | string
 }
 
 export interface SelkitDomInstance<T = unknown> {
@@ -136,6 +149,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #name: string | undefined
   readonly #virtual: boolean
   readonly #itemHeight: number
+  readonly #dropdownParent: HTMLElement | null
   readonly #sourceSelect: HTMLSelectElement | null
 
   readonly #control: HTMLElement
@@ -172,6 +186,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#name = cfg.name
     this.#virtual = cfg.virtualScroll ?? false
     this.#itemHeight = cfg.itemHeight ?? DEFAULT_ITEM_HEIGHT
+    this.#dropdownParent = resolveParent(cfg.dropdownParent)
     this.controller = createSelkit<T>(cfg)
 
     this.element = document.createElement('div')
@@ -200,7 +215,14 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
 
     this.#field.append(this.#input)
     this.#control.append(this.#field, this.#indicators)
-    this.element.append(this.#control, this.#dropdown)
+    if (this.#dropdownParent) {
+      // portal 模式 下拉掛到指定容器 並補上 prefix class 讓 --selkit-* 變數能在此解析
+      this.#dropdown.classList.add(this.#prefix)
+      this.element.append(this.#control)
+      this.#dropdownParent.append(this.#dropdown)
+    } else {
+      this.element.append(this.#control, this.#dropdown)
+    }
 
     if (sourceSelect) {
       // 增強模式：把元件插在原生 select 後面並隱藏 select 表單提交仍走原生 select
@@ -221,7 +243,11 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#bindEvents()
 
     this.#onDocPointer = (e: Event): void => {
-      if (!this.element.contains(e.target as Node)) this.controller.close()
+      const target = e.target as Node
+      // portal 模式下拉在元件之外 需一併視為內部點擊
+      if (!this.element.contains(target) && !this.#dropdown.contains(target)) {
+        this.controller.close()
+      }
     }
     document.addEventListener('pointerdown', this.#onDocPointer)
 
@@ -243,6 +269,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#positioner?.destroy()
     document.removeEventListener('pointerdown', this.#onDocPointer)
     this.controller.destroy()
+    this.#dropdown.remove() // portal 模式下拉不在 element 底下 需另外移除
     this.element.remove()
     if (this.#sourceSelect) {
       this.#sourceSelect.style.display = this.#selectPrevDisplay
