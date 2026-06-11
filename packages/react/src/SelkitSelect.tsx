@@ -46,6 +46,9 @@ export interface SelkitSelectProps<T = unknown> {
   placeholder?: string
   searchable?: boolean
   minResultsForSearch?: number
+  fuzzy?: boolean
+  minInputLength?: number
+  hideSelected?: boolean
   virtualScroll?: boolean
   itemHeight?: number
   clearable?: boolean
@@ -74,6 +77,9 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     placeholder = '',
     searchable = true,
     minResultsForSearch,
+    fuzzy = false,
+    minInputLength,
+    hideSelected = false,
     virtualScroll = false,
     itemHeight = 36,
     clearable,
@@ -100,6 +106,9 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     searchable,
     disabled,
     taggable,
+    fuzzy,
+    hideSelected,
+    ...(minInputLength !== undefined ? { minInputLength } : {}),
     ...(minResultsForSearch !== undefined ? { minResultsForSearch } : {}),
     ...(clearable !== undefined ? { clearable } : {}),
     ...(loadOptions ? { loadOptions } : {}),

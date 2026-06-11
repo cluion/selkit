@@ -48,6 +48,9 @@ export const SelkitSelect = defineComponent({
     placeholder: { type: String, default: '' },
     searchable: { type: Boolean, default: true },
     minResultsForSearch: { type: Number, default: undefined },
+    fuzzy: { type: Boolean, default: false },
+    minInputLength: { type: Number, default: undefined },
+    hideSelected: { type: Boolean, default: false },
     virtualScroll: { type: Boolean, default: false },
     itemHeight: { type: Number, default: 36 },
     clearable: { type: Boolean, default: undefined },
@@ -86,6 +89,11 @@ export const SelkitSelect = defineComponent({
       searchable: props.searchable,
       disabled: props.disabled,
       taggable: props.taggable,
+      fuzzy: props.fuzzy,
+      hideSelected: props.hideSelected,
+      ...(props.minInputLength !== undefined
+        ? { minInputLength: props.minInputLength }
+        : {}),
       ...(props.minResultsForSearch !== undefined
         ? { minResultsForSearch: props.minResultsForSearch }
         : {}),
