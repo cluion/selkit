@@ -4,6 +4,7 @@ plan/
 node_modules/
 dist/
 .turbo/
+**/.vitepress/cache/
 coverage/
 *.tsbuildinfo
 *.log
