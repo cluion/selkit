@@ -71,6 +71,8 @@ export default defineConfig({
   title: 'Selkit',
   description:
     'The framework-agnostic select toolkit — headless select for JS, Vue & React.',
+  // 本地預覽用根路徑 GitHub Pages project site 由 CI 注入 DOCS_BASE=/selkit/
+  base: process.env.DOCS_BASE || '/',
   cleanUrls: true,
   themeConfig: {
     socialLinks: [{ icon: 'github', link: 'https://github.com/cluion/selkit' }],
