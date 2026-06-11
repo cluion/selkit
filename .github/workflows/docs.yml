@@ -36,10 +36,8 @@ jobs:
         env:
           DOCS_BASE: /selkit/
 
+      # 前置：到 repo Settings → Pages → Source 選 "GitHub Actions"（首次一次性手動設定）
       - uses: actions/configure-pages@v5
-        # 首次執行自動建立 Pages site 免到 Settings 手動開啟
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
