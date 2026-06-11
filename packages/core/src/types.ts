@@ -227,6 +227,8 @@ export interface SelkitController<T = unknown> {
   deselect(value: string | number): void
   toggleSelect(value: string | number): void
   clear(): void
+  /** 重排已選項目 將索引 from 的項目移到 to 用於 tag 拖曳排序 */
+  moveSelected(from: number, to: number): void
   /** taggable 模式 用目前查詢字串建立並選取新選項 */
   createTag(): void
 

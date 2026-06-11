@@ -277,6 +277,18 @@ class Selkit<T> implements SelkitController<T> {
     this.#fireChange()
   }
 
+  moveSelected(from: number, to: number): void {
+    const sel = this.#state.selected
+    if (from < 0 || from >= sel.length || to < 0 || to >= sel.length) return
+    if (from === to) return
+    const next = [...sel]
+    const moved = next.splice(from, 1)[0]
+    if (!moved) return
+    next.splice(to, 0, moved)
+    this.#patch({ selected: next })
+    this.#fireChange()
+  }
+
   createTag(): void {
     if (!this.#taggable || !this.#createTag) return
     const query = this.#state.query.trim()

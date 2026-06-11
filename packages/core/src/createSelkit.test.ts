@@ -652,3 +652,42 @@ describe('hideSelected 隱藏已選', () => {
     expect(s.getState().visibleOptions.map((o) => o.value)).not.toContain('b')
   })
 })
+
+describe('moveSelected 重排已選', () => {
+  const ms = () =>
+    createSelkit({ options: OPTIONS, multiple: true, value: ['a', 'b', 'd'] })
+
+  it('將項目往後移', () => {
+    const s = ms()
+    s.moveSelected(0, 2)
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['b', 'd', 'a'])
+  })
+
+  it('將項目往前移', () => {
+    const s = ms()
+    s.moveSelected(2, 0)
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['d', 'a', 'b'])
+  })
+
+  it('觸發 change 事件帶新順序', () => {
+    const s = ms()
+    const onChange = vi.fn()
+    s.on('change', onChange)
+    s.moveSelected(0, 1)
+    expect(onChange).toHaveBeenCalledWith({
+      selected: s.getState().selected,
+      value: ['b', 'a', 'd'],
+    })
+  })
+
+  it('索引越界或相同時不動作', () => {
+    const s = ms()
+    const onChange = vi.fn()
+    s.on('change', onChange)
+    s.moveSelected(0, 0)
+    s.moveSelected(-1, 2)
+    s.moveSelected(0, 5)
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a', 'b', 'd'])
+    expect(onChange).not.toHaveBeenCalled()
+  })
+})
