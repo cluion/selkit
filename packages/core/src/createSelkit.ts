@@ -31,6 +31,8 @@ class Selkit<T> implements SelkitController<T> {
   readonly #closeOnSelect: boolean
   readonly #filter: FilterFn<T>
   readonly #minInputLength: number
+  readonly #searchable: boolean
+  readonly #minResultsForSearch: number
   readonly #maxSelections: number | undefined
 
   readonly #loadOptions:
@@ -60,6 +62,8 @@ class Selkit<T> implements SelkitController<T> {
       config.filter ??
       ((config.fuzzy ? fuzzyFilter : defaultFilter) as FilterFn<T>)
     this.#minInputLength = config.minInputLength ?? 0
+    this.#searchable = config.searchable ?? true
+    this.#minResultsForSearch = config.minResultsForSearch ?? 0
     this.#maxSelections = config.maxSelections
 
     this.#loadOptions = config.loadOptions
@@ -88,6 +92,11 @@ class Selkit<T> implements SelkitController<T> {
   // ── 狀態存取 ──────────────────────────────────────────────
   getState(): Readonly<SelkitState<T>> {
     return this.#state
+  }
+
+  /** 是否該顯示搜尋框 searchable 為真且選項數達 minResultsForSearch  */
+  isSearchable(): boolean {
+    return this.#searchable && this.#flat.length >= this.#minResultsForSearch
   }
 
   subscribe(listener: SelkitListener<T>): Unsubscribe {

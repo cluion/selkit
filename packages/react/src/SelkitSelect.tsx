@@ -33,6 +33,7 @@ export interface SelkitSelectProps<T = unknown> {
   multiple?: boolean
   placeholder?: string
   searchable?: boolean
+  minResultsForSearch?: number
   clearable?: boolean
   disabled?: boolean
   classPrefix?: string
@@ -55,6 +56,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     multiple = false,
     placeholder = '',
     searchable = true,
+    minResultsForSearch,
     clearable,
     disabled = false,
     classPrefix = 'selkit',
@@ -79,6 +81,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     searchable,
     disabled,
     taggable,
+    ...(minResultsForSearch !== undefined ? { minResultsForSearch } : {}),
     ...(clearable !== undefined ? { clearable } : {}),
     ...(loadOptions ? { loadOptions } : {}),
     ...(debounce !== undefined ? { debounce } : {}),
@@ -287,6 +290,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
             value={query}
             placeholder={s.selected.length === 0 ? placeholder : ''}
             disabled={s.disabled}
+            readOnly={!controller.isSearchable()}
             onChange={onInputChange}
           />
         </div>

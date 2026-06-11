@@ -491,3 +491,32 @@ describe('minInputLength 最少輸入字數', () => {
     expect(loadOptions).not.toHaveBeenCalled()
   })
 })
+
+describe('isSearchable / minResultsForSearch', () => {
+  it('預設可搜尋', () => {
+    const s = createSelkit({ options: OPTIONS })
+    expect(s.isSearchable()).toBe(true)
+  })
+
+  it('searchable false 時不可搜尋', () => {
+    const s = createSelkit({ options: OPTIONS, searchable: false })
+    expect(s.isSearchable()).toBe(false)
+  })
+
+  it('選項數未達 minResultsForSearch 時不可搜尋', () => {
+    const s = createSelkit({ options: OPTIONS, minResultsForSearch: 10 })
+    expect(s.isSearchable()).toBe(false)
+  })
+
+  it('選項數達到 minResultsForSearch 時可搜尋', () => {
+    const s = createSelkit({ options: OPTIONS, minResultsForSearch: 4 })
+    expect(s.isSearchable()).toBe(true)
+  })
+
+  it('setOptions 後依新選項數重新判定', () => {
+    const s = createSelkit({ options: OPTIONS, minResultsForSearch: 4 })
+    expect(s.isSearchable()).toBe(true)
+    s.setOptions([{ value: 'x', label: 'X' }])
+    expect(s.isSearchable()).toBe(false)
+  })
+})

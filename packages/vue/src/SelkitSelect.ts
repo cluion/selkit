@@ -35,6 +35,7 @@ export const SelkitSelect = defineComponent({
     multiple: { type: Boolean, default: false },
     placeholder: { type: String, default: '' },
     searchable: { type: Boolean, default: true },
+    minResultsForSearch: { type: Number, default: undefined },
     clearable: { type: Boolean, default: undefined },
     disabled: { type: Boolean, default: false },
     classPrefix: { type: String, default: 'selkit' },
@@ -66,6 +67,9 @@ export const SelkitSelect = defineComponent({
       searchable: props.searchable,
       disabled: props.disabled,
       taggable: props.taggable,
+      ...(props.minResultsForSearch !== undefined
+        ? { minResultsForSearch: props.minResultsForSearch }
+        : {}),
       ...(props.clearable !== undefined ? { clearable: props.clearable } : {}),
       ...(props.loadOptions ? { loadOptions: props.loadOptions } : {}),
       ...(props.debounce !== undefined ? { debounce: props.debounce } : {}),
@@ -253,6 +257,7 @@ export const SelkitSelect = defineComponent({
           value: query.value,
           placeholder: s.selected.length === 0 ? props.placeholder : '',
           disabled: s.disabled,
+          readonly: !controller.isSearchable(),
           onInput,
         }),
       )

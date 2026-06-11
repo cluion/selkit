@@ -50,6 +50,8 @@ export interface SelkitConfig<T = unknown> {
   multiple?: boolean
   /** 是否可搜尋 預設 true  */
   searchable?: boolean
+  /** 選項數達此值才顯示搜尋框 預設 0（一律顯示）  */
+  minResultsForSearch?: number
   /** 是否顯示清除鈕 單選預設 true  */
   clearable?: boolean
   /** 是否停用 預設 false  */
@@ -181,6 +183,8 @@ export type Unsubscribe = () => void
 export interface SelkitController<T = unknown> {
   /** 取得目前狀態快照（唯讀）  */
   getState(): Readonly<SelkitState<T>>
+  /** 是否該顯示搜尋框 由 searchable 與 minResultsForSearch 共同決定  */
+  isSearchable(): boolean
   /** 訂閱狀態變化 回傳 unsubscribe  */
   subscribe(listener: SelkitListener<T>): Unsubscribe
 

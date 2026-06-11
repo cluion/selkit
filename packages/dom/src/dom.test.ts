@@ -46,6 +46,24 @@ describe('掛載結構', () => {
     expect(control.getAttribute('aria-expanded')).toBe('false')
     expect(control.getAttribute('aria-haspopup')).toBe('listbox')
   })
+
+  it('預設搜尋框可輸入', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS })
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    expect(input.readOnly).toBe(false)
+  })
+
+  it('選項數未達 minResultsForSearch 時搜尋框唯讀', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS, minResultsForSearch: 10 })
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    expect(input.readOnly).toBe(true)
+  })
+
+  it('searchable false 時搜尋框唯讀', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS, searchable: false })
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    expect(input.readOnly).toBe(true)
+  })
 })
 
 describe('開關', () => {

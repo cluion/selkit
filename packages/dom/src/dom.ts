@@ -467,6 +467,8 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     }
 
     this.#input.disabled = s.disabled
+    // 選項太少或 searchable false 時把輸入框設為唯讀 仍可聚焦走鍵盤導航
+    this.#input.readOnly = !this.controller.isSearchable()
   }
 
   #syncOpen(s: Readonly<SelkitState<T>>): void {
