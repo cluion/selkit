@@ -103,6 +103,7 @@ export const SelkitSelect = defineComponent({
     const inputRef = ref<HTMLInputElement | null>(null)
     const dropdownRef = ref<HTMLElement | null>(null)
     const scrollTop = ref(0)
+    let dragFrom = -1
     let syncing = false
 
     const currentValue = (): SelkitValue => {
@@ -244,7 +245,15 @@ export const SelkitSelect = defineComponent({
       if (props.multiple) {
         s.selected.forEach((opt, i) => {
           fieldChildren.push(
-            h('span', { class: cls('tag'), key: `tag-${opt.value}` }, [
+            h(
+              'span',
+              {
+                class: cls('tag'),
+                key: `tag-${opt.value}`,
+                draggable: true,
+                'data-index': String(i),
+              },
+              [
               h('span', { class: cls('tag-label') }, opt.label),
               h(
                 'button',
@@ -384,7 +393,39 @@ export const SelkitSelect = defineComponent({
             onKeydown,
           },
           [
-            h('div', { class: cls('field') }, fieldChildren),
+            h(
+              'div',
+              {
+                class: cls('field'),
+                onDragstart: (e: DragEvent) => {
+                  const tag = (e.target as HTMLElement).closest(
+                    `.${cls('tag')}`,
+                  ) as HTMLElement | null
+                  if (!tag) return
+                  dragFrom = Number(tag.dataset.index)
+                  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+                },
+                onDragover: (e: DragEvent) => {
+                  if (dragFrom >= 0) e.preventDefault()
+                },
+                onDrop: (e: DragEvent) => {
+                  if (dragFrom < 0) return
+                  e.preventDefault()
+                  const tag = (e.target as HTMLElement).closest(
+                    `.${cls('tag')}`,
+                  ) as HTMLElement | null
+                  const to = tag
+                    ? Number(tag.dataset.index)
+                    : controller.getState().selected.length - 1
+                  controller.moveSelected(dragFrom, to)
+                  dragFrom = -1
+                },
+                onDragend: () => {
+                  dragFrom = -1
+                },
+              },
+              fieldChildren,
+            ),
             h('div', { class: cls('indicators') }, indicators),
           ],
         ),

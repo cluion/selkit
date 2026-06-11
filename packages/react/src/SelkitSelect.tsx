@@ -114,6 +114,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const dropdownRef = useRef<HTMLDivElement | null>(null)
+  const dragFromRef = useRef(-1)
   const [scrollTop, setScrollTop] = useState(0)
   const syncingRef = useRef(false)
   const onChangeRef = useRef(onChange)
@@ -353,10 +354,40 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         onPointerDown={onControlPointerDown}
         onKeyDown={onKeyDown}
       >
-        <div className={cls('field')}>
+        <div
+          className={cls('field')}
+          onDragStart={(e) => {
+            const tag = (e.target as HTMLElement).closest(`.${cls('tag')}`)
+            if (!(tag instanceof HTMLElement)) return
+            dragFromRef.current = Number(tag.dataset.index)
+            if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+          }}
+          onDragOver={(e) => {
+            if (dragFromRef.current >= 0) e.preventDefault()
+          }}
+          onDrop={(e) => {
+            if (dragFromRef.current < 0) return
+            e.preventDefault()
+            const tag = (e.target as HTMLElement).closest(`.${cls('tag')}`)
+            const to =
+              tag instanceof HTMLElement
+                ? Number(tag.dataset.index)
+                : controller.getState().selected.length - 1
+            controller.moveSelected(dragFromRef.current, to)
+            dragFromRef.current = -1
+          }}
+          onDragEnd={() => {
+            dragFromRef.current = -1
+          }}
+        >
           {multiple ? (
             s.selected.map((opt, i) => (
-              <span className={cls('tag')} key={`tag-${opt.value}`}>
+              <span
+                className={cls('tag')}
+                key={`tag-${opt.value}`}
+                draggable
+                data-index={i}
+              >
                 <span className={cls('tag-label')}>{opt.label}</span>
                 <button
                   type="button"

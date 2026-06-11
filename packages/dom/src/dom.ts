@@ -145,6 +145,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #dropdown: HTMLElement
   #hiddenContainer: HTMLDivElement | null = null
   #selectPrevDisplay = ''
+  #dragFrom = -1
 
   #positioner: Positioner | null = null
   readonly #unsubscribe: () => void
@@ -313,6 +314,35 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       // 虛擬捲動時依新捲動位置重算可視切片
       if (this.#virtual) this.#renderOptions(this.controller.getState())
     })
+
+    // tag 拖曳排序 委派在 field 上 以 dataset.index 計算來源與目標
+    this.#field.addEventListener('dragstart', (e) => {
+      const tag = (e.target as HTMLElement).closest(
+        `.${this.#cls('tag')}`,
+      ) as HTMLElement | null
+      if (!tag) return
+      this.#dragFrom = Number(tag.dataset.index)
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+    })
+    this.#field.addEventListener('dragover', (e) => {
+      if (this.#dragFrom < 0) return
+      e.preventDefault() // 允許 drop
+    })
+    this.#field.addEventListener('drop', (e) => {
+      if (this.#dragFrom < 0) return
+      e.preventDefault()
+      const tag = (e.target as HTMLElement).closest(
+        `.${this.#cls('tag')}`,
+      ) as HTMLElement | null
+      const to = tag
+        ? Number(tag.dataset.index)
+        : this.controller.getState().selected.length - 1
+      this.controller.moveSelected(this.#dragFrom, to)
+      this.#dragFrom = -1
+    })
+    this.#field.addEventListener('dragend', () => {
+      this.#dragFrom = -1
+    })
   }
 
   #onKeydown(e: KeyboardEvent): void {
@@ -382,6 +412,8 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       s.selected.forEach((opt, i) => {
         const tag = document.createElement('span')
         tag.className = this.#cls('tag')
+        tag.draggable = true
+        tag.dataset.index = String(i)
 
         const label = document.createElement('span')
         label.className = this.#cls('tag-label')

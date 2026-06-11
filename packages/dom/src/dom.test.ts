@@ -238,6 +238,24 @@ describe('虛擬捲動 virtualScroll', () => {
   })
 })
 
+describe('tag 拖曳排序', () => {
+  it('拖曳 tag 放到另一個 tag 上呼叫 moveSelected 重排', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      multiple: true,
+      value: ['a', 'b'],
+    })
+    const tags = $$(inst.element, '.selkit__tag')
+    expect(tags).toHaveLength(2)
+    tags[0]!.dispatchEvent(new Event('dragstart', { bubbles: true }))
+    tags[1]!.dispatchEvent(new Event('drop', { bubbles: true }))
+    expect(inst.controller.getState().selected.map((o) => o.value)).toEqual([
+      'b',
+      'a',
+    ])
+  })
+})
+
 describe('無限捲動 loadMore', () => {
   it('dropdown 捲到底觸發 loadMore 載入下一頁', async () => {
     const loadOptions = vi.fn(async (_q: string, p: number) =>
