@@ -8,25 +8,35 @@
  * 表單整合：host 是 <select> 時走增強模式（讀 option 並同步值回原生 select）
  * 否則給了 config.name 就自動維護 hidden input 讓傳統表單 submit 帶值
  */
-import { createSelkit } from '@selkit/core'
+import { computeVirtualRange, createSelkit } from '@selkit/core'
 import type {
+  SelkitA11y,
   SelkitConfig,
   SelkitController,
   SelkitItem,
   SelkitOption,
   SelkitState,
   SelkitValue,
+  SelkitViewRow,
 } from '@selkit/core'
 import { attachPositioner, type Positioner } from './positioner'
 
 /** 捲動距底多少 px 內即預載下一頁 */
 const LOAD_MORE_THRESHOLD = 32
+/** 虛擬捲動的預設單列高度 px 對齊 base theme 的選項高度 */
+const DEFAULT_ITEM_HEIGHT = 36
+
+type OptionRow<T> = Extract<SelkitViewRow<T>, { type: 'option' }>
 
 export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
   /** class 前綴 預設 "selkit" */
   classPrefix?: string
   /** 表單欄位名 設定後自動維護 hidden input 讓傳統表單 submit 帶值 */
   name?: string
+  /** 啟用虛擬捲動 大量選項時只渲染可視切片 僅在無分組的扁平清單生效 */
+  virtualScroll?: boolean
+  /** 虛擬捲動的單列固定高度 px 預設 36 須與實際樣式高度一致 */
+  itemHeight?: number
 }
 
 export interface SelkitDomInstance<T = unknown> {
@@ -124,6 +134,8 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #clearable: boolean
   readonly #placeholder: string
   readonly #name: string | undefined
+  readonly #virtual: boolean
+  readonly #itemHeight: number
   readonly #sourceSelect: HTMLSelectElement | null
 
   readonly #control: HTMLElement
@@ -157,6 +169,8 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#clearable = cfg.clearable ?? !this.#multiple
     this.#placeholder = cfg.placeholder ?? ''
     this.#name = cfg.name
+    this.#virtual = cfg.virtualScroll ?? false
+    this.#itemHeight = cfg.itemHeight ?? DEFAULT_ITEM_HEIGHT
     this.controller = createSelkit<T>(cfg)
 
     this.element = document.createElement('div')
@@ -296,6 +310,8 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       if (el.scrollTop + el.clientHeight >= el.scrollHeight - LOAD_MORE_THRESHOLD) {
         this.controller.loadMore()
       }
+      // 虛擬捲動時依新捲動位置重算可視切片
+      if (this.#virtual) this.#renderOptions(this.controller.getState())
     })
   }
 
@@ -426,6 +442,26 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       return
     }
 
+    const hasGroups = view.rows.some((r) => r.type === 'group')
+    // 虛擬捲動僅在無分組的扁平清單啟用 分組列高不一會破壞固定高度計算
+    if (this.#virtual && !hasGroups) {
+      const range = computeVirtualRange({
+        scrollTop: this.#dropdown.scrollTop,
+        viewportHeight: this.#dropdown.clientHeight,
+        itemHeight: this.#itemHeight,
+        itemCount: view.rows.length,
+      })
+      this.#dropdown.append(this.#spacer(range.paddingTop))
+      for (let i = range.startIndex; i < range.endIndex; i++) {
+        const row = view.rows[i]
+        if (row?.type === 'option') {
+          this.#dropdown.append(this.#buildOption(row, a11y, s.activeIndex))
+        }
+      }
+      this.#dropdown.append(this.#spacer(range.paddingBottom))
+      return
+    }
+
     for (const row of view.rows) {
       if (row.type === 'group') {
         const group = document.createElement('div')
@@ -435,24 +471,39 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         this.#dropdown.append(group)
         continue
       }
-
-      const attrs = a11y.option(row.index)
-      const option = document.createElement('div')
-      option.className = this.#cls('option')
-      option.id = attrs.id
-      option.dataset.index = String(row.index)
-      option.setAttribute('role', 'option')
-      option.setAttribute('aria-selected', String(attrs['aria-selected']))
-      if (attrs['aria-disabled']) option.setAttribute('aria-disabled', 'true')
-      if (row.index === s.activeIndex) {
-        option.classList.add(this.#cls('option', 'active'))
-      }
-      if (attrs['aria-selected']) {
-        option.classList.add(this.#cls('option', 'selected'))
-      }
-      option.textContent = row.option.label
-      this.#dropdown.append(option)
+      this.#dropdown.append(this.#buildOption(row, a11y, s.activeIndex))
     }
+  }
+
+  /** 撐高佔位節點 維持虛擬捲動時的捲動總高度 */
+  #spacer(height: number): HTMLElement {
+    const el = document.createElement('div')
+    el.style.height = `${height}px`
+    el.setAttribute('aria-hidden', 'true')
+    return el
+  }
+
+  #buildOption(
+    row: OptionRow<T>,
+    a11y: SelkitA11y,
+    activeIndex: number,
+  ): HTMLElement {
+    const attrs = a11y.option(row.index)
+    const option = document.createElement('div')
+    option.className = this.#cls('option')
+    option.id = attrs.id
+    option.dataset.index = String(row.index)
+    option.setAttribute('role', 'option')
+    option.setAttribute('aria-selected', String(attrs['aria-selected']))
+    if (attrs['aria-disabled']) option.setAttribute('aria-disabled', 'true')
+    if (row.index === activeIndex) {
+      option.classList.add(this.#cls('option', 'active'))
+    }
+    if (attrs['aria-selected']) {
+      option.classList.add(this.#cls('option', 'selected'))
+    }
+    option.textContent = row.option.label
+    return option
   }
 
   #syncA11y(s: Readonly<SelkitState<T>>): void {

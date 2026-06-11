@@ -198,6 +198,46 @@ describe('destroy', () => {
   })
 })
 
+describe('虛擬捲動 virtualScroll', () => {
+  const many: SelkitItem[] = Array.from({ length: 100 }, (_, i) => ({
+    value: i,
+    label: `Item ${i}`,
+  }))
+
+  it('未啟用時渲染全部選項', () => {
+    const inst = createSelkitDom(host, { options: many })
+    inst.controller.open()
+    expect($$(inst.element, '.selkit__option')).toHaveLength(100)
+  })
+
+  it('啟用時只渲染可視切片', () => {
+    const inst = createSelkitDom(host, {
+      options: many,
+      virtualScroll: true,
+      itemHeight: 36,
+    })
+    inst.controller.open()
+    const opts = $$(inst.element, '.selkit__option')
+    expect(opts.length).toBeGreaterThan(0)
+    expect(opts.length).toBeLessThan(100)
+  })
+
+  it('有分組時退回完整渲染 不虛擬化', () => {
+    const grouped: SelkitItem[] = [
+      {
+        label: 'G',
+        options: Array.from({ length: 50 }, (_, i) => ({
+          value: i,
+          label: `Item ${i}`,
+        })),
+      },
+    ]
+    const inst = createSelkitDom(host, { options: grouped, virtualScroll: true })
+    inst.controller.open()
+    expect($$(inst.element, '.selkit__option')).toHaveLength(50)
+  })
+})
+
 describe('無限捲動 loadMore', () => {
   it('dropdown 捲到底觸發 loadMore 載入下一頁', async () => {
     const loadOptions = vi.fn(async (_q: string, p: number) =>
