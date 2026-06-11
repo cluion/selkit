@@ -11,16 +11,20 @@ import type {
   PointerEvent as ReactPointerEvent,
   ReactNode,
 } from 'react'
+import { computeVirtualRange } from '@selkit/core'
 import type {
   SelkitItem,
   SelkitLoadResult,
   SelkitOption,
   SelkitValue,
+  SelkitViewRow,
 } from '@selkit/core'
 import { useSelkit } from './useSelkit'
 
 /** 捲動距底多少 px 內即預載下一頁 */
 const LOAD_MORE_THRESHOLD = 32
+
+type OptionRow<T> = Extract<SelkitViewRow<T>, { type: 'option' }>
 
 function sameValue(a: SelkitValue, b: SelkitValue): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -42,6 +46,8 @@ export interface SelkitSelectProps<T = unknown> {
   placeholder?: string
   searchable?: boolean
   minResultsForSearch?: number
+  virtualScroll?: boolean
+  itemHeight?: number
   clearable?: boolean
   disabled?: boolean
   classPrefix?: string
@@ -68,6 +74,8 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     placeholder = '',
     searchable = true,
     minResultsForSearch,
+    virtualScroll = false,
+    itemHeight = 36,
     clearable,
     disabled = false,
     classPrefix = 'selkit',
@@ -105,6 +113,8 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   queryRef.current = query
   const rootRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const dropdownRef = useRef<HTMLDivElement | null>(null)
+  const [scrollTop, setScrollTop] = useState(0)
   const syncingRef = useRef(false)
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
@@ -260,6 +270,75 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   if (s.isOpen) rootClass.push(cls('', 'open'))
   if (s.disabled) rootClass.push(cls('', 'disabled'))
 
+  const buildOption = (row: OptionRow<T>): ReactNode => {
+    const attrs = a11y.option(row.index)
+    const isDisabled = attrs['aria-disabled'] === true
+    const optClass = [cls('option')]
+    if (row.index === s.activeIndex) optClass.push(cls('option', 'active'))
+    if (attrs['aria-selected']) optClass.push(cls('option', 'selected'))
+    return (
+      <div
+        key={`opt-${row.option.value}`}
+        className={optClass.join(' ')}
+        id={attrs.id}
+        role="option"
+        aria-selected={attrs['aria-selected']}
+        aria-disabled={isDisabled || undefined}
+        onPointerDown={(e) => {
+          if (isDisabled) return
+          e.preventDefault()
+          controller.select(row.option.value)
+        }}
+      >
+        {renderOption
+          ? renderOption(row.option, {
+              index: row.index,
+              active: row.index === s.activeIndex,
+              selected: attrs['aria-selected'],
+            })
+          : row.option.label}
+      </div>
+    )
+  }
+
+  const hasGroups = view.rows.some((r) => r.type === 'group')
+  let dropdownContent: ReactNode
+  if (view.rows.length === 0) {
+    dropdownContent = (
+      <div className={cls('empty')}>{s.loading ? 'Loading…' : 'No results'}</div>
+    )
+  } else if (virtualScroll && !hasGroups) {
+    // 虛擬捲動僅在無分組的扁平清單啟用
+    const range = computeVirtualRange({
+      scrollTop,
+      viewportHeight: dropdownRef.current?.clientHeight ?? 0,
+      itemHeight,
+      itemCount: view.rows.length,
+    })
+    const slice: ReactNode[] = []
+    for (let i = range.startIndex; i < range.endIndex; i++) {
+      const row = view.rows[i]
+      if (row?.type === 'option') slice.push(buildOption(row))
+    }
+    dropdownContent = (
+      <>
+        <div aria-hidden style={{ height: range.paddingTop }} />
+        {slice}
+        <div aria-hidden style={{ height: range.paddingBottom }} />
+      </>
+    )
+  } else {
+    dropdownContent = view.rows.map((row) =>
+      row.type === 'group' ? (
+        <div className={cls('group')} key={`group-${row.label}`}>
+          {row.label}
+        </div>
+      ) : (
+        buildOption(row)
+      ),
+    )
+  }
+
   return (
     <div className={rootClass.join(' ')} ref={rootRef}>
       <div
@@ -316,6 +395,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
       </div>
       {s.isOpen ? (
         <div
+          ref={dropdownRef}
           className={cls('dropdown')}
           id={a11y.listbox.id}
           role="listbox"
@@ -329,6 +409,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
           onPointerDown={(e) => e.stopPropagation()}
           onScroll={(e) => {
             const el = e.currentTarget
+            setScrollTop(el.scrollTop)
             if (
               el.scrollTop + el.clientHeight >=
               el.scrollHeight - LOAD_MORE_THRESHOLD
@@ -337,49 +418,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
             }
           }}
         >
-          {view.rows.length === 0 ? (
-            <div className={cls('empty')}>
-              {s.loading ? 'Loading…' : 'No results'}
-            </div>
-          ) : (
-            view.rows.map((row) => {
-              if (row.type === 'group') {
-                return (
-                  <div className={cls('group')} key={`group-${row.label}`}>
-                    {row.label}
-                  </div>
-                )
-              }
-              const attrs = a11y.option(row.index)
-              const isDisabled = attrs['aria-disabled'] === true
-              const optClass = [cls('option')]
-              if (row.index === s.activeIndex) optClass.push(cls('option', 'active'))
-              if (attrs['aria-selected']) optClass.push(cls('option', 'selected'))
-              return (
-                <div
-                  key={`opt-${row.option.value}`}
-                  className={optClass.join(' ')}
-                  id={attrs.id}
-                  role="option"
-                  aria-selected={attrs['aria-selected']}
-                  aria-disabled={isDisabled || undefined}
-                  onPointerDown={(e) => {
-                    if (isDisabled) return
-                    e.preventDefault()
-                    controller.select(row.option.value)
-                  }}
-                >
-                  {renderOption
-                    ? renderOption(row.option, {
-                        index: row.index,
-                        active: row.index === s.activeIndex,
-                        selected: attrs['aria-selected'],
-                      })
-                    : row.option.label}
-                </div>
-              )
-            })
-          )}
+          {dropdownContent}
         </div>
       ) : null}
     </div>

@@ -14,16 +14,20 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
+import { computeVirtualRange } from '@selkit/core'
 import type {
   SelkitItem,
   SelkitLoadResult,
   SelkitOption,
   SelkitValue,
+  SelkitViewRow,
 } from '@selkit/core'
 import { useSelkit } from './useSelkit'
 
 /** 捲動距底多少 px 內即預載下一頁 */
 const LOAD_MORE_THRESHOLD = 32
+
+type OptionRow = Extract<SelkitViewRow, { type: 'option' }>
 
 function sameValue(a: SelkitValue, b: SelkitValue): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -44,6 +48,8 @@ export const SelkitSelect = defineComponent({
     placeholder: { type: String, default: '' },
     searchable: { type: Boolean, default: true },
     minResultsForSearch: { type: Number, default: undefined },
+    virtualScroll: { type: Boolean, default: false },
+    itemHeight: { type: Number, default: 36 },
     clearable: { type: Boolean, default: undefined },
     disabled: { type: Boolean, default: false },
     classPrefix: { type: String, default: 'selkit' },
@@ -95,6 +101,8 @@ export const SelkitSelect = defineComponent({
     const query = ref('')
     const rootRef = ref<HTMLElement | null>(null)
     const inputRef = ref<HTMLInputElement | null>(null)
+    const dropdownRef = ref<HTMLElement | null>(null)
+    const scrollTop = ref(0)
     let syncing = false
 
     const currentValue = (): SelkitValue => {
@@ -288,48 +296,68 @@ export const SelkitSelect = defineComponent({
       }
       indicators.push(h('span', { class: cls('arrow'), 'aria-hidden': 'true' }))
 
+      const buildOption = (row: OptionRow): VNode => {
+        const attrs = a11y.option(row.index)
+        const optClasses = [cls('option')]
+        if (row.index === s.activeIndex) optClasses.push(cls('option', 'active'))
+        if (attrs['aria-selected']) optClasses.push(cls('option', 'selected'))
+        const isDisabled = attrs['aria-disabled'] === true
+        return h(
+          'div',
+          {
+            key: `opt-${row.option.value}`,
+            class: optClasses,
+            id: attrs.id,
+            role: 'option',
+            'aria-selected': String(attrs['aria-selected']),
+            ...(isDisabled ? { 'aria-disabled': 'true' } : {}),
+            onPointerdown: (e: PointerEvent) => {
+              if (isDisabled) return
+              e.preventDefault()
+              controller.select(row.option.value)
+            },
+          },
+          slots.option
+            ? slots.option({
+                option: row.option,
+                index: row.index,
+                active: row.index === s.activeIndex,
+                selected: attrs['aria-selected'],
+              })
+            : row.option.label,
+        )
+      }
+
+      const spacer = (key: string, height: number): VNode =>
+        h('div', { key, 'aria-hidden': 'true', style: { height: `${height}px` } })
+
       const dropdownChildren: VNode[] = []
+      const hasGroups = view.rows.some((r) => r.type === 'group')
       if (view.rows.length === 0) {
         dropdownChildren.push(
           h('div', { class: cls('empty') }, s.loading ? 'Loading…' : 'No results'),
         )
+      } else if (props.virtualScroll && !hasGroups) {
+        // 虛擬捲動僅在無分組的扁平清單啟用
+        const range = computeVirtualRange({
+          scrollTop: scrollTop.value,
+          viewportHeight: dropdownRef.value?.clientHeight ?? 0,
+          itemHeight: props.itemHeight,
+          itemCount: view.rows.length,
+        })
+        dropdownChildren.push(spacer('vtop', range.paddingTop))
+        for (let i = range.startIndex; i < range.endIndex; i++) {
+          const row = view.rows[i]
+          if (row?.type === 'option') dropdownChildren.push(buildOption(row))
+        }
+        dropdownChildren.push(spacer('vbot', range.paddingBottom))
       } else {
         for (const row of view.rows) {
           if (row.type === 'group') {
             dropdownChildren.push(h('div', { class: cls('group') }, row.label))
             continue
           }
-          const attrs = a11y.option(row.index)
-          const optClasses = [cls('option')]
-          if (row.index === s.activeIndex) optClasses.push(cls('option', 'active'))
-          if (attrs['aria-selected']) optClasses.push(cls('option', 'selected'))
-          const isDisabled = attrs['aria-disabled'] === true
-          dropdownChildren.push(
-            h(
-              'div',
-              {
-                key: `opt-${row.option.value}`,
-                class: optClasses,
-                id: attrs.id,
-                role: 'option',
-                'aria-selected': String(attrs['aria-selected']),
-                ...(isDisabled ? { 'aria-disabled': 'true' } : {}),
-                onPointerdown: (e: PointerEvent) => {
-                  if (isDisabled) return
-                  e.preventDefault()
-                  controller.select(row.option.value)
-                },
-              },
-              slots.option
-                ? slots.option({
-                    option: row.option,
-                    index: row.index,
-                    active: row.index === s.activeIndex,
-                    selected: attrs['aria-selected'],
-                  })
-                : row.option.label,
-            ),
-          )
+          dropdownChildren.push(buildOption(row))
         }
       }
 
@@ -364,6 +392,7 @@ export const SelkitSelect = defineComponent({
           ? h(
               'div',
               {
+                ref: dropdownRef,
                 class: cls('dropdown'),
                 id: a11y.listbox.id,
                 role: 'listbox',
@@ -377,6 +406,7 @@ export const SelkitSelect = defineComponent({
                 onPointerdown: (e: Event) => e.stopPropagation(),
                 onScroll: (e: Event) => {
                   const el = e.currentTarget as HTMLElement
+                  scrollTop.value = el.scrollTop
                   if (
                     el.scrollTop + el.clientHeight >=
                     el.scrollHeight - LOAD_MORE_THRESHOLD

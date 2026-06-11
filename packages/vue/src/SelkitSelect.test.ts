@@ -99,3 +99,26 @@ describe('option slot', () => {
     expect(w.findAll('.selkit__option')[0]!.text()).toBe('★Apple')
   })
 })
+
+describe('虛擬捲動', () => {
+  const many: SelkitItem[] = Array.from({ length: 100 }, (_, i) => ({
+    value: i,
+    label: `Item ${i}`,
+  }))
+
+  it('未啟用時渲染全部選項', async () => {
+    const w = mount(SelkitSelect, { props: { options: many } })
+    await w.find('.selkit__control').trigger('pointerdown')
+    expect(w.findAll('.selkit__option')).toHaveLength(100)
+  })
+
+  it('啟用時只渲染可視切片', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: many, virtualScroll: true, itemHeight: 36 },
+    })
+    await w.find('.selkit__control').trigger('pointerdown')
+    const count = w.findAll('.selkit__option').length
+    expect(count).toBeGreaterThan(0)
+    expect(count).toBeLessThan(100)
+  })
+})

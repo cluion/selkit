@@ -106,3 +106,26 @@ describe('renderOption', () => {
     expect(options(container as HTMLElement)[0]!.textContent).toBe('★Apple')
   })
 })
+
+describe('虛擬捲動', () => {
+  const many: SelkitItem[] = Array.from({ length: 100 }, (_, i) => ({
+    value: i,
+    label: `Item ${i}`,
+  }))
+
+  it('未啟用時渲染全部選項', () => {
+    const { container } = render(<SelkitSelect options={many} />)
+    fireEvent.pointerDown(control(container as HTMLElement))
+    expect(options(container as HTMLElement)).toHaveLength(100)
+  })
+
+  it('啟用時只渲染可視切片', () => {
+    const { container } = render(
+      <SelkitSelect options={many} virtualScroll itemHeight={36} />,
+    )
+    fireEvent.pointerDown(control(container as HTMLElement))
+    const count = options(container as HTMLElement).length
+    expect(count).toBeGreaterThan(0)
+    expect(count).toBeLessThan(100)
+  })
+})
