@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSelkitDom } from './dom'
 import type { SelkitItem } from '@selkit/core'
 
@@ -195,5 +195,27 @@ describe('destroy', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })
     inst.destroy()
     expect(host.contains(inst.element)).toBe(false)
+  })
+})
+
+describe('無限捲動 loadMore', () => {
+  it('dropdown 捲到底觸發 loadMore 載入下一頁', async () => {
+    const loadOptions = vi.fn(async (_q: string, p: number) =>
+      p === 1
+        ? { items: [{ value: 1, label: 'One' }], hasMore: true }
+        : { items: [{ value: 2, label: 'Two' }], hasMore: false },
+    )
+    const inst = createSelkitDom(host, { loadOptions, debounce: 0 })
+    inst.controller.open()
+    inst.controller.setQuery('o')
+    await vi.waitFor(() =>
+      expect(inst.controller.getState().visibleOptions).toHaveLength(1),
+    )
+    const dropdown = $(inst.element, '.selkit__dropdown')
+    dropdown.dispatchEvent(new Event('scroll'))
+    await vi.waitFor(() =>
+      expect(inst.controller.getState().visibleOptions).toHaveLength(2),
+    )
+    expect(loadOptions).toHaveBeenLastCalledWith('o', 2)
   })
 })

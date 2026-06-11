@@ -11,8 +11,16 @@ import type {
   PointerEvent as ReactPointerEvent,
   ReactNode,
 } from 'react'
-import type { SelkitItem, SelkitOption, SelkitValue } from '@selkit/core'
+import type {
+  SelkitItem,
+  SelkitLoadResult,
+  SelkitOption,
+  SelkitValue,
+} from '@selkit/core'
 import { useSelkit } from './useSelkit'
+
+/** 捲動距底多少 px 內即預載下一頁 */
+const LOAD_MORE_THRESHOLD = 32
 
 function sameValue(a: SelkitValue, b: SelkitValue): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -37,7 +45,10 @@ export interface SelkitSelectProps<T = unknown> {
   clearable?: boolean
   disabled?: boolean
   classPrefix?: string
-  loadOptions?: (query: string) => Promise<SelkitItem<T>[]>
+  loadOptions?: (
+    query: string,
+    page: number,
+  ) => Promise<SelkitItem<T>[] | SelkitLoadResult<T>>
   debounce?: number
   taggable?: boolean
   createTag?: (query: string) => SelkitOption<T>
@@ -316,6 +327,15 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
             width: '100%',
           }}
           onPointerDown={(e) => e.stopPropagation()}
+          onScroll={(e) => {
+            const el = e.currentTarget
+            if (
+              el.scrollTop + el.clientHeight >=
+              el.scrollHeight - LOAD_MORE_THRESHOLD
+            ) {
+              controller.loadMore()
+            }
+          }}
         >
           {view.rows.length === 0 ? (
             <div className={cls('empty')}>

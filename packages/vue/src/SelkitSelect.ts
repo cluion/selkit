@@ -14,8 +14,16 @@ import {
   type PropType,
   type VNode,
 } from 'vue'
-import type { SelkitItem, SelkitOption, SelkitValue } from '@selkit/core'
+import type {
+  SelkitItem,
+  SelkitLoadResult,
+  SelkitOption,
+  SelkitValue,
+} from '@selkit/core'
 import { useSelkit } from './useSelkit'
+
+/** 捲動距底多少 px 內即預載下一頁 */
+const LOAD_MORE_THRESHOLD = 32
 
 function sameValue(a: SelkitValue, b: SelkitValue): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -40,7 +48,12 @@ export const SelkitSelect = defineComponent({
     disabled: { type: Boolean, default: false },
     classPrefix: { type: String, default: 'selkit' },
     loadOptions: {
-      type: Function as PropType<(query: string) => Promise<SelkitItem[]>>,
+      type: Function as PropType<
+        (
+          query: string,
+          page: number,
+        ) => Promise<SelkitItem[] | SelkitLoadResult>
+      >,
       default: undefined,
     },
     debounce: { type: Number, default: undefined },
@@ -362,6 +375,15 @@ export const SelkitSelect = defineComponent({
                   width: '100%',
                 },
                 onPointerdown: (e: Event) => e.stopPropagation(),
+                onScroll: (e: Event) => {
+                  const el = e.currentTarget as HTMLElement
+                  if (
+                    el.scrollTop + el.clientHeight >=
+                    el.scrollHeight - LOAD_MORE_THRESHOLD
+                  ) {
+                    controller.loadMore()
+                  }
+                },
               },
               dropdownChildren,
             )

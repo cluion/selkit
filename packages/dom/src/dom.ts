@@ -19,6 +19,9 @@ import type {
 } from '@selkit/core'
 import { attachPositioner, type Positioner } from './positioner'
 
+/** 捲動距底多少 px 內即預載下一頁 */
+const LOAD_MORE_THRESHOLD = 32
+
 export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
   /** class 前綴 預設 "selkit" */
   classPrefix?: string
@@ -285,6 +288,14 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       const index = Number(optEl.dataset.index)
       const opt = this.controller.getState().visibleOptions[index]
       if (opt) this.controller.select(opt.value)
+    })
+
+    // 捲到接近底部時載入下一頁 無更多或載入中時 loadMore 自身會忽略
+    this.#dropdown.addEventListener('scroll', () => {
+      const el = this.#dropdown
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - LOAD_MORE_THRESHOLD) {
+        this.controller.loadMore()
+      }
     })
   }
 
