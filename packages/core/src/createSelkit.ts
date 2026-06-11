@@ -19,7 +19,7 @@ import type {
   SelkitViewRow,
   Unsubscribe,
 } from './types'
-import { defaultFilter, normalize, type NormRow } from './utils'
+import { defaultFilter, fuzzyFilter, normalize, type NormRow } from './utils'
 
 let instanceCounter = 0
 
@@ -55,7 +55,9 @@ class Selkit<T> implements SelkitController<T> {
     this.#id = `selkit-${++instanceCounter}`
     this.#multiple = config.multiple ?? false
     this.#closeOnSelect = config.closeOnSelect ?? !this.#multiple
-    this.#filter = config.filter ?? (defaultFilter as FilterFn<T>)
+    this.#filter =
+      config.filter ??
+      ((config.fuzzy ? fuzzyFilter : defaultFilter) as FilterFn<T>)
     this.#maxSelections = config.maxSelections
 
     this.#loadOptions = config.loadOptions

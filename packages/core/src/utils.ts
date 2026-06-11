@@ -17,6 +17,23 @@ export function defaultFilter<T>(option: SelkitOption<T>, query: string): boolea
   return normalizeText(option.label).includes(normalizeText(query))
 }
 
+/** 子序列比對：query 的字元需依序（不必相鄰）出現於 text 同樣不敏感大小寫與變音符號  */
+export function fuzzyMatch(text: string, query: string): boolean {
+  const q = [...normalizeText(query)]
+  if (q.length === 0) return true
+  let i = 0
+  for (const ch of normalizeText(text)) {
+    if (ch === q[i]) i += 1
+    if (i === q.length) return true
+  }
+  return false
+}
+
+/** fuzzy 過濾：對 label 做子序列比對  */
+export function fuzzyFilter<T>(option: SelkitOption<T>, query: string): boolean {
+  return fuzzyMatch(option.label, query)
+}
+
 /** 型別守衛：判斷 item 是否為分組  */
 export function isGroup<T>(item: SelkitItem<T>): item is SelkitGroup<T> {
   return 'options' in item

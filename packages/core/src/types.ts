@@ -61,6 +61,8 @@ export interface SelkitConfig<T = unknown> {
 
   /** 自訂過濾 預設大小寫不敏感的 label 子字串比對  */
   filter?: FilterFn<T>
+  /** 啟用 fuzzy 子序列比對 取代預設子字串比對 自訂 filter 時此項忽略  */
+  fuzzy?: boolean
 
   /** 非同步載入（AJAX） 提供時 搜尋會觸發此函式  */
   loadOptions?: (query: string) => Promise<SelkitItem<T>[]>

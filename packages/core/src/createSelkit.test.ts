@@ -422,3 +422,38 @@ describe('diacritics 不敏感搜尋', () => {
     expect(s.getState().visibleOptions).toHaveLength(1)
   })
 })
+
+describe('fuzzy 模糊搜尋', () => {
+  it('子序列比對：apl 能搜到 Apple', () => {
+    const s = createSelkit({ options: OPTIONS, fuzzy: true })
+    s.setQuery('apl')
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['a'])
+  })
+
+  it('非連續字元依序出現即相符：bnn 搜到 Banana', () => {
+    const s = createSelkit({ options: OPTIONS, fuzzy: true })
+    s.setQuery('bnn')
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['b'])
+  })
+
+  it('順序不符則不相符：lpa 搜不到 Apple', () => {
+    const s = createSelkit({ options: OPTIONS, fuzzy: true })
+    s.setQuery('lpa')
+    expect(s.getState().visibleOptions).toHaveLength(0)
+  })
+
+  it('未開 fuzzy 時維持子字串比對：apl 搜不到 Apple', () => {
+    const s = createSelkit({ options: OPTIONS })
+    s.setQuery('apl')
+    expect(s.getState().visibleOptions).toHaveLength(0)
+  })
+
+  it('fuzzy 同樣不敏感變音符號：cf 搜到 Café', () => {
+    const s = createSelkit({
+      options: [{ value: 1, label: 'Café' }],
+      fuzzy: true,
+    })
+    s.setQuery('cf')
+    expect(s.getState().visibleOptions).toHaveLength(1)
+  })
+})
