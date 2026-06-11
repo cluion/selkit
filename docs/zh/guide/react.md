@@ -51,6 +51,7 @@ export function Example() {
 | `taggable` / `createTag` | | tagging。 |
 | `maxSelections` | `number` | |
 | `virtualScroll` / `itemHeight` | | 虛擬捲動。 |
+| `dropdownParent` | `HTMLElement \| string` | 用 createPortal 把下拉送出裁切祖先。 |
 | `clearable` | `boolean` | |
 | `renderOption` | `(option, meta) => ReactNode` | 自訂選項渲染。 |
 | `classPrefix` | `string` | |

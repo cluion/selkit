@@ -51,6 +51,7 @@ The component forwards config to the core. Commonly used props:
 | `taggable` / `createTag` | | Tagging. |
 | `maxSelections` | `number` | |
 | `virtualScroll` / `itemHeight` | | Virtual scrolling. |
+| `dropdownParent` | `HTMLElement \| string` | Teleport the dropdown out of clipping ancestors. |
 | `clearable` | `boolean` | |
 | `classPrefix` | `string` | |
 

@@ -52,6 +52,7 @@ When `multiple` is set, `value` is an array.
 | `taggable` / `createTag` | | Tagging. |
 | `maxSelections` | `number` | |
 | `virtualScroll` / `itemHeight` | | Virtual scrolling. |
+| `dropdownParent` | `HTMLElement \| string` | Portal the dropdown (createPortal) out of clipping ancestors. |
 | `clearable` | `boolean` | |
 | `renderOption` | `(option, meta) => ReactNode` | Custom option rendering. |
 | `classPrefix` | `string` | |

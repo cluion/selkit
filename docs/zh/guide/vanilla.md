@@ -76,6 +76,7 @@ createSelkitDom('#fruit') // 選項來自 <select>
 | `name` | `string` | 維護 hidden input 以供傳統表單送出。見[表單](/zh/features/forms)。 |
 | `virtualScroll` | `boolean` | 只渲染可視切片。見[虛擬捲動](/zh/features/virtual-scroll)。 |
 | `itemHeight` | `number` | 虛擬捲動的固定列高，預設 `36`。 |
+| `dropdownParent` | `HTMLElement \| string` | 把下拉浮層 portal 到其他容器（如 `document.body`），逃離 `overflow:hidden` 容器或 modal 等會裁切的祖先。 |
 
 ## 清理
 

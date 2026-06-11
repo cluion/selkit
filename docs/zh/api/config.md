@@ -36,6 +36,7 @@
 | `name` | `string` | — | 維護 hidden input 以供表單送出。 |
 | `virtualScroll` | `boolean` | `false` | 只渲染可視切片。 |
 | `itemHeight` | `number` | `36` | 虛擬捲動的固定列高。 |
+| `dropdownParent` | `HTMLElement \| string` | — | 把下拉 portal 到其他容器以逃離裁切祖先。Vue/React 也是同名 prop。 |
 
 Vue 與 React 元件以 props 揭露相同選項，另加 `virtualScroll` / `itemHeight` 與框架特有的
 部分（React 的 `renderOption`、Vue 的 `option` slot）。

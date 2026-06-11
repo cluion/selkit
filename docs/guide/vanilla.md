@@ -80,6 +80,7 @@ render-time options:
 | `name` | `string` | Maintain hidden inputs for plain form submission. See [Forms](/features/forms). |
 | `virtualScroll` | `boolean` | Render only the visible slice. See [Virtual Scroll](/features/virtual-scroll). |
 | `itemHeight` | `number` | Fixed row height for virtual scroll, defaults to `36`. |
+| `dropdownParent` | `HTMLElement \| string` | Portal the dropdown into another element (e.g. `document.body`) to escape clipping ancestors like `overflow:hidden` containers or modals. |
 
 ## Cleanup
 

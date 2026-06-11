@@ -51,6 +51,7 @@ const options = [
 | `taggable` / `createTag` | | tagging。 |
 | `maxSelections` | `number` | |
 | `virtualScroll` / `itemHeight` | | 虛擬捲動。 |
+| `dropdownParent` | `HTMLElement \| string` | 把下拉 teleport 出裁切祖先。 |
 | `clearable` | `boolean` | |
 | `classPrefix` | `string` | |
 

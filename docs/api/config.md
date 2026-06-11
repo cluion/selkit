@@ -37,6 +37,7 @@ optional.
 | `name` | `string` | — | Maintain hidden inputs for form submission. |
 | `virtualScroll` | `boolean` | `false` | Render only the visible slice. |
 | `itemHeight` | `number` | `36` | Fixed row height for virtual scroll. |
+| `dropdownParent` | `HTMLElement \| string` | — | Portal the dropdown into another element to escape clipping ancestors. Also a Vue/React prop. |
 
 The Vue and React components expose the same options as props, plus
 `virtualScroll` / `itemHeight` and framework-specific bits (`renderOption` in
