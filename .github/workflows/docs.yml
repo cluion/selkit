@@ -37,6 +37,9 @@ jobs:
           DOCS_BASE: /selkit/
 
       - uses: actions/configure-pages@v5
+        # 首次執行自動建立 Pages site 免到 Settings 手動開啟
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
