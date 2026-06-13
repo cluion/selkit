@@ -50,6 +50,11 @@ export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
   itemHeight?: number
   /** 把下拉浮層掛到指定容器（元素或選擇器）逃離 overflow/transform 祖先的裁切 常用 document.body */
   dropdownParent?: HTMLElement | string
+  /** 自訂已選顯示內容（tag 或單值） 回傳字串走 textContent 防 XSS 需 markup（icon 等）請回傳 Node */
+  templateSelection?: (
+    option: SelkitOption<T>,
+    meta: { index: number; multiple: boolean },
+  ) => string | Node
 }
 
 export interface SelkitDomInstance<T = unknown> {
@@ -150,6 +155,12 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #virtual: boolean
   readonly #itemHeight: number
   readonly #dropdownParent: HTMLElement | null
+  readonly #templateSelection:
+    | ((
+        option: SelkitOption<T>,
+        meta: { index: number; multiple: boolean },
+      ) => string | Node)
+    | undefined
   readonly #sourceSelect: HTMLSelectElement | null
 
   readonly #control: HTMLElement
@@ -187,6 +198,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#virtual = cfg.virtualScroll ?? false
     this.#itemHeight = cfg.itemHeight ?? DEFAULT_ITEM_HEIGHT
     this.#dropdownParent = resolveParent(cfg.dropdownParent)
+    this.#templateSelection = cfg.templateSelection
     this.controller = createSelkit<T>(cfg)
 
     this.element = document.createElement('div')
@@ -428,6 +440,21 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.element.classList.toggle(this.#cls('', 'disabled'), s.disabled)
   }
 
+  /** 套用 templateSelection 到已選容器 字串走 textContent Node 直接掛入 無模板則用 label */
+  #fillSelection(
+    host: HTMLElement,
+    option: SelkitOption<T>,
+    meta: { index: number; multiple: boolean },
+  ): void {
+    if (!this.#templateSelection) {
+      host.textContent = option.label
+      return
+    }
+    const out = this.#templateSelection(option, meta)
+    if (out instanceof Node) host.append(out)
+    else host.textContent = out
+  }
+
   #renderField(s: Readonly<SelkitState<T>>): void {
     // 移除 input 以外的舊節點 保留 input 本身以維持輸入焦點
     for (const child of Array.from(this.#field.children)) {
@@ -444,7 +471,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
 
         const label = document.createElement('span')
         label.className = this.#cls('tag-label')
-        label.textContent = opt.label
+        this.#fillSelection(label, opt, { index: i, multiple: true })
 
         const remove = document.createElement('button')
         remove.type = 'button'
@@ -461,7 +488,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       if (sel && this.#input.value === '') {
         const single = document.createElement('span')
         single.className = this.#cls('single-value')
-        single.textContent = sel.label
+        this.#fillSelection(single, sel, { index: 0, multiple: false })
         frag.append(single)
       }
     }

@@ -115,6 +115,47 @@ describe('單選', () => {
   })
 })
 
+describe('templateSelection 自訂已選', () => {
+  it('字串覆寫單值文字（走 textContent）', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      value: 'b',
+      templateSelection: (o) => `✓${o.label}`,
+    })
+    expect($(inst.element, '.selkit__single-value').textContent).toBe('✓Banana')
+  })
+
+  it('回傳 Node 可放 icon 等標記', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      multiple: true,
+      value: ['a'],
+      templateSelection: (o) => {
+        const span = document.createElement('span')
+        span.className = 'icon'
+        span.textContent = o.label
+        return span
+      },
+    })
+    expect($(inst.element, '.selkit__tag-label .icon')).toBeTruthy()
+    expect($(inst.element, '.selkit__tag-label .icon').textContent).toBe('Apple')
+  })
+
+  it('meta 帶 index 與 multiple', () => {
+    const seen: string[] = []
+    createSelkitDom(host, {
+      options: OPTIONS,
+      multiple: true,
+      value: ['a', 'b'],
+      templateSelection: (o, m) => {
+        seen.push(`${m.index}:${m.multiple}`)
+        return o.label
+      },
+    })
+    expect(seen).toEqual(['0:true', '1:true'])
+  })
+})
+
 describe('搜尋', () => {
   it('輸入過濾選項並開啟', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })

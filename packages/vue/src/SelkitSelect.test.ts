@@ -100,6 +100,30 @@ describe('option slot', () => {
   })
 })
 
+describe('selection slot', () => {
+  it('可自訂單值顯示', () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS, modelValue: 'b' },
+      slots: {
+        selection: (p: { option: SelkitOption }) => `✓${p.option.label}`,
+      },
+    })
+    expect(w.find('.selkit__single-value').text()).toBe('✓Banana')
+  })
+
+  it('可自訂 tag 顯示且收到 index / multiple', () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS, multiple: true, modelValue: ['a', 'b'] },
+      slots: {
+        selection: (p: { option: SelkitOption; index: number; multiple: boolean }) =>
+          `${p.index}:${p.option.label}:${p.multiple}`,
+      },
+    })
+    const labels = w.findAll('.selkit__tag-label').map((e) => e.text())
+    expect(labels).toEqual(['0:Apple:true', '1:Banana:true'])
+  })
+})
+
 describe('虛擬捲動', () => {
   const many: SelkitItem[] = Array.from({ length: 100 }, (_, i) => ({
     value: i,

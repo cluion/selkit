@@ -302,7 +302,13 @@ export const SelkitSelect = defineComponent({
                 'data-index': String(i),
               },
               [
-              h('span', { class: cls('tag-label') }, opt.label),
+              h(
+                'span',
+                { class: cls('tag-label') },
+                slots.selection
+                  ? slots.selection({ option: opt, index: i, multiple: true })
+                  : opt.label,
+              ),
               h(
                 'button',
                 {
@@ -320,7 +326,13 @@ export const SelkitSelect = defineComponent({
         const sel = s.selected[0]
         if (sel && query.value === '') {
           fieldChildren.push(
-            h('span', { class: cls('single-value'), key: 'single' }, sel.label),
+            h(
+              'span',
+              { class: cls('single-value'), key: 'single' },
+              slots.selection
+                ? slots.selection({ option: sel, index: 0, multiple: false })
+                : sel.label,
+            ),
           )
         }
       }

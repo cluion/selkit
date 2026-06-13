@@ -120,6 +120,36 @@ describe('renderOption', () => {
   })
 })
 
+describe('renderSelection', () => {
+  it('可自訂單值顯示', () => {
+    const { container } = render(
+      <SelkitSelect
+        options={OPTIONS}
+        value="b"
+        renderSelection={(o) => `✓${o.label}`}
+      />,
+    )
+    expect(container.querySelector('.selkit__single-value')?.textContent).toBe(
+      '✓Banana',
+    )
+  })
+
+  it('可自訂 tag 顯示且收到 index / multiple', () => {
+    const { container } = render(
+      <SelkitSelect
+        options={OPTIONS}
+        multiple
+        value={['a', 'b']}
+        renderSelection={(o, m) => `${m.index}:${o.label}:${m.multiple}`}
+      />,
+    )
+    const labels = Array.from(
+      container.querySelectorAll('.selkit__tag-label'),
+    ).map((e) => e.textContent)
+    expect(labels).toEqual(['0:Apple:true', '1:Banana:true'])
+  })
+})
+
 describe('虛擬捲動', () => {
   const many: SelkitItem[] = Array.from({ length: 100 }, (_, i) => ({
     value: i,

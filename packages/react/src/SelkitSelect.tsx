@@ -70,6 +70,11 @@ export interface SelkitSelectProps<T = unknown> {
     option: SelkitOption<T>,
     meta: { index: number; active: boolean; selected: boolean },
   ) => ReactNode
+  /** 自訂已選顯示內容（tag 或單值） 用於放 icon 等 框架仍保留 tag 外殼與移除鈕 */
+  renderSelection?: (
+    option: SelkitOption<T>,
+    meta: { index: number; multiple: boolean },
+  ) => ReactNode
 }
 
 export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
@@ -97,6 +102,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     maxSelections,
     messages,
     renderOption,
+    renderSelection,
   } = props
 
   const cls = (name: string, mod?: string): string => {
@@ -475,7 +481,11 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
                 draggable
                 data-index={i}
               >
-                <span className={cls('tag-label')}>{opt.label}</span>
+                <span className={cls('tag-label')}>
+                  {renderSelection
+                    ? renderSelection(opt, { index: i, multiple: true })
+                    : opt.label}
+                </span>
                 <button
                   type="button"
                   className={cls('tag-remove')}
@@ -487,7 +497,11 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
               </span>
             ))
           ) : single && query === '' ? (
-            <span className={cls('single-value')}>{single.label}</span>
+            <span className={cls('single-value')}>
+              {renderSelection
+                ? renderSelection(single, { index: 0, multiple: false })
+                : single.label}
+            </span>
           ) : null}
           <input
             ref={inputRef}
