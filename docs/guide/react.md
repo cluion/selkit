@@ -55,6 +55,7 @@ When `multiple` is set, `value` is an array.
 | `dropdownParent` | `HTMLElement \| string` | Portal the dropdown (createPortal) out of clipping ancestors. |
 | `clearable` | `boolean` | |
 | `renderOption` | `(option, meta) => ReactNode` | Custom option rendering. |
+| `renderSelection` | `(option, meta) => ReactNode` | Custom selected tag / single-value content. |
 | `classPrefix` | `string` | |
 
 See the full list in the [Config reference](/api/config).
@@ -66,6 +67,21 @@ See the full list in the [Config reference](/api/config).
   options={options}
   renderOption={(option, { active, selected }) => (
     <span className={selected ? 'is-selected' : undefined}>⭐ {option.label}</span>
+  )}
+/>
+```
+
+## Custom selection rendering
+
+Customize the displayed tag / single value (e.g. add an icon). The component keeps
+the tag wrapper and remove button; `meta` is `{ index, multiple }`.
+
+```jsx
+<SelkitSelect
+  options={options}
+  multiple
+  renderSelection={(option) => (
+    <span>🔖 {option.label}</span>
   )}
 />
 ```

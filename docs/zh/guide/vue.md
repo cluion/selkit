@@ -71,6 +71,20 @@ const options = [
 </template>
 ```
 
+## selection slot
+
+用 `selection` slot 自訂顯示的 tag／單值。元件仍保留 tag 外殼與移除鈕；slot props 為 `{ option, index, multiple }`。
+
+```vue
+<template>
+  <SelkitSelect :options="options" multiple>
+    <template #selection="{ option }">
+      <span>🔖 {{ option.label }}</span>
+    </template>
+  </SelkitSelect>
+</template>
+```
+
 ## Composable
 
 若要完全掌控 markup，使用 `useSelkit` 並自行渲染 state：

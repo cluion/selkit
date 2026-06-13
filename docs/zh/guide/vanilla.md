@@ -77,6 +77,21 @@ createSelkitDom('#fruit') // 選項來自 <select>
 | `virtualScroll` | `boolean` | 只渲染可視切片。見[虛擬捲動](/zh/features/virtual-scroll)。 |
 | `itemHeight` | `number` | 虛擬捲動的固定列高，預設 `36`。 |
 | `dropdownParent` | `HTMLElement \| string` | 把下拉浮層 portal 到其他容器（如 `document.body`），逃離 `overflow:hidden` 容器或 modal 等會裁切的祖先。 |
+| `templateSelection` | `(option, meta) => string \| Node` | 自訂已選 tag／單值內容。`meta` 為 `{ index, multiple }`。 |
+
+回傳**字串**會設為 `textContent`（安全，不注入 HTML）；要包含 icon 等標記請回傳 **`Node`**：
+
+```js
+createSelkitDom(el, {
+  options,
+  multiple: true,
+  templateSelection: (option) => {
+    const span = document.createElement('span')
+    span.textContent = `🔖 ${option.label}`
+    return span
+  },
+})
+```
 
 ## 清理
 

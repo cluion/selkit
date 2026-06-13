@@ -71,6 +71,21 @@ Customize how each option renders with the `option` slot:
 </template>
 ```
 
+## Selection slot
+
+Customize the displayed tag / single value with the `selection` slot. The component
+keeps the tag wrapper and remove button; the slot props are `{ option, index, multiple }`.
+
+```vue
+<template>
+  <SelkitSelect :options="options" multiple>
+    <template #selection="{ option }">
+      <span>🔖 {{ option.label }}</span>
+    </template>
+  </SelkitSelect>
+</template>
+```
+
 ## Composable
 
 For full control over markup, use `useSelkit` and render the state yourself:

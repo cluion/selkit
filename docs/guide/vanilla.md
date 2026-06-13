@@ -81,6 +81,22 @@ render-time options:
 | `virtualScroll` | `boolean` | Render only the visible slice. See [Virtual Scroll](/features/virtual-scroll). |
 | `itemHeight` | `number` | Fixed row height for virtual scroll, defaults to `36`. |
 | `dropdownParent` | `HTMLElement \| string` | Portal the dropdown into another element (e.g. `document.body`) to escape clipping ancestors like `overflow:hidden` containers or modals. |
+| `templateSelection` | `(option, meta) => string \| Node` | Customize the selected tag / single-value content. `meta` is `{ index, multiple }`. |
+
+A returned **string** is set as `textContent` (safe — no HTML injection); return a
+**`Node`** to include markup such as an icon:
+
+```js
+createSelkitDom(el, {
+  options,
+  multiple: true,
+  templateSelection: (option) => {
+    const span = document.createElement('span')
+    span.textContent = `🔖 ${option.label}`
+    return span
+  },
+})
+```
 
 ## Cleanup
 

@@ -54,6 +54,7 @@ export function Example() {
 | `dropdownParent` | `HTMLElement \| string` | 用 createPortal 把下拉送出裁切祖先。 |
 | `clearable` | `boolean` | |
 | `renderOption` | `(option, meta) => ReactNode` | 自訂選項渲染。 |
+| `renderSelection` | `(option, meta) => ReactNode` | 自訂已選 tag／單值內容。 |
 | `classPrefix` | `string` | |
 
 完整清單見 [Config 參考](/zh/api/config)。
@@ -65,6 +66,20 @@ export function Example() {
   options={options}
   renderOption={(option, { active, selected }) => (
     <span className={selected ? 'is-selected' : undefined}>⭐ {option.label}</span>
+  )}
+/>
+```
+
+## 自訂已選渲染
+
+自訂顯示的 tag／單值（例如加 icon）。元件仍保留 tag 外殼與移除鈕；`meta` 為 `{ index, multiple }`。
+
+```jsx
+<SelkitSelect
+  options={options}
+  multiple
+  renderSelection={(option) => (
+    <span>🔖 {option.label}</span>
   )}
 />
 ```
