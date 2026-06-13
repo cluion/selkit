@@ -87,6 +87,12 @@
     </section>
 
     <section>
+      <label for="tpl-selection">templateSelection（已選加 icon）</label>
+      <div id="tpl-selection"></div>
+      <div class="hint">每個 tag 前面加上 🔖；回傳 Node 即可放任意標記。</div>
+    </section>
+
+    <section>
       <label for="few">minResultsForSearch（選項太少時隱藏搜尋框）</label>
       <div id="few"></div>
     </section>
@@ -212,6 +218,18 @@
           loading: '載入中…',
           noResults: '查無資料',
           minInputLength: (n) => `再輸入 ${n} 個字`,
+        },
+      }).controller.on('change', show)
+
+      // 7c. templateSelection：已選顯示加 icon（回傳 Node）
+      createSelkitDom(document.getElementById('tpl-selection'), {
+        options: fruits,
+        multiple: true,
+        placeholder: 'Pick fruits…',
+        templateSelection: (opt) => {
+          const span = document.createElement('span')
+          span.textContent = `🔖 ${opt.label}`
+          return span
         },
       }).controller.on('change', show)
 

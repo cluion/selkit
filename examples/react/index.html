@@ -149,6 +149,11 @@
             </section>
 
             <section>
+              <label>renderSelection（已選加 icon）</label>
+              <${SelkitSelect} options=${fruits} multiple=${true} placeholder="Pick fruits…" renderSelection=${(opt) => `🔖 ${opt.label}`} onChange=${onChange} />
+            </section>
+
+            <section>
               <label>minResultsForSearch（選項太少時隱藏搜尋框）</label>
               <${SelkitSelect} options=${fruits} minResultsForSearch=${10} placeholder="No search box…" onChange=${onChange} />
             </section>

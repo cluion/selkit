@@ -144,6 +144,13 @@
           </section>
 
           <section>
+            <label>selection slot（已選加 icon）</label>
+            <SelkitSelect :options="fruits" multiple placeholder="Pick fruits…" @change="onChange">
+              <template #selection="{ option }">🔖 {{ option.label }}</template>
+            </SelkitSelect>
+          </section>
+
+          <section>
             <label>minResultsForSearch（選項太少時隱藏搜尋框）</label>
             <SelkitSelect :options="fruits" :min-results-for-search="10" placeholder="No search box…" @change="onChange" />
           </section>
