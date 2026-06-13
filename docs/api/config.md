@@ -26,6 +26,39 @@ optional.
 | `taggable` | `boolean` | `false` | Allow creating options on the fly. |
 | `createTag` | `(query) => SelkitOption<T>` | — | Factory for new tags. |
 | `maxSelections` | `number` | — | Cap on selected items. |
+| `messages` | `Partial<SelkitMessages>` | English defaults | Override the empty-state messages (loading / no results / type-more). See [i18n](#i18n-messages). |
+
+## i18n / messages
+
+The dropdown's empty-state text is resolved by the core via
+`controller.getEmptyMessage()`, so every adapter shows the same string. Override
+any subset of the three messages — unspecified keys keep their English default.
+
+```ts
+createSelkit({
+  minInputLength: 3,
+  messages: {
+    loading: '載入中…',
+    noResults: '查無資料',
+    // `remaining` is how many more characters are still needed
+    minInputLength: (remaining) => `再輸入 ${remaining} 個字`,
+  },
+})
+```
+
+`getEmptyMessage()` picks one message based on the current state, in order:
+
+1. `loading` — while async `loadOptions` is in flight.
+2. `minInputLength(remaining)` — when the query is shorter than `minInputLength`.
+3. `noResults` — otherwise (no matching options).
+
+```ts
+interface SelkitMessages {
+  loading: string
+  noResults: string
+  minInputLength: (remaining: number) => string
+}
+```
 
 ## DOM-only options
 

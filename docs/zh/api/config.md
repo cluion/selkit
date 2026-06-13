@@ -25,6 +25,38 @@
 | `taggable` | `boolean` | `false` | 允許即時建立選項。 |
 | `createTag` | `(query) => SelkitOption<T>` | — | 新 tag 的 factory。 |
 | `maxSelections` | `number` | — | 選取上限。 |
+| `messages` | `Partial<SelkitMessages>` | 英文預設 | 覆寫空狀態訊息（載入中／無結果／再輸入 N 字）。見 [i18n](#i18n-訊息)。 |
+
+## i18n / 訊息
+
+下拉的空狀態文字由 core 透過 `controller.getEmptyMessage()` 決定，因此三個 adapter
+顯示一致的字串。可只覆寫三項訊息中的任一子集，未指定的鍵維持英文預設。
+
+```ts
+createSelkit({
+  minInputLength: 3,
+  messages: {
+    loading: '載入中…',
+    noResults: '查無資料',
+    // remaining 為還需輸入的字數
+    minInputLength: (remaining) => `再輸入 ${remaining} 個字`,
+  },
+})
+```
+
+`getEmptyMessage()` 依目前狀態依序擇一：
+
+1. `loading` — 非同步 `loadOptions` 載入中。
+2. `minInputLength(remaining)` — 查詢長度未達 `minInputLength`。
+3. `noResults` — 其餘情況（無相符選項）。
+
+```ts
+interface SelkitMessages {
+  loading: string
+  noResults: string
+  minInputLength: (remaining: number) => string
+}
+```
 
 ## 僅限 DOM 的選項
 

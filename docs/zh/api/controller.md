@@ -91,6 +91,11 @@ const off = controller.on('change', ({ value }) => console.log(value))
 
 回傳要渲染的 row 序列 — 分組標頭與選項交錯，選項的 `index` 對齊 `state.visibleOptions`。
 
+### `getEmptyMessage()`
+
+回傳下拉無 row 時要顯示的字串 — 依目前狀態擇一回傳 `loading`、
+`minInputLength(remaining)` 或 `noResults`。可透過 [`messages` 設定](/zh/api/config#i18n-訊息)自訂。
+
 ## 生命週期
 
 ### `destroy()`

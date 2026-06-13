@@ -96,6 +96,12 @@ Returns ARIA attributes for `trigger`, `listbox` and `option(index)`.
 Returns the row sequence to render — group headers interleaved with options whose
 `index` aligns with `state.visibleOptions`.
 
+### `getEmptyMessage()`
+
+Returns the string to show when the dropdown has no rows — one of `loading`,
+`minInputLength(remaining)` or `noResults`, picked from the current state. Customize
+the strings via the [`messages` config](/api/config#i18n-messages).
+
 ## Lifecycle
 
 ### `destroy()`
