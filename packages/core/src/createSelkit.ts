@@ -14,6 +14,7 @@ import type {
   SelkitItem,
   SelkitListener,
   SelkitLoadResult,
+  SelkitMessages,
   SelkitOption,
   SelkitState,
   SelkitValue,
@@ -30,6 +31,14 @@ import {
 
 let instanceCounter = 0
 
+/** 空狀態訊息的英文預設 config.messages 逐鍵覆寫之  */
+const DEFAULT_MESSAGES: SelkitMessages = {
+  loading: 'Loading…',
+  noResults: 'No results',
+  minInputLength: (remaining) =>
+    `Please enter ${remaining} or more character${remaining === 1 ? '' : 's'}`,
+}
+
 type Handler = (payload: unknown) => void
 
 class Selkit<T> implements SelkitController<T> {
@@ -42,6 +51,7 @@ class Selkit<T> implements SelkitController<T> {
   readonly #minResultsForSearch: number
   readonly #hideSelected: boolean
   readonly #maxSelections: number | undefined
+  readonly #messages: SelkitMessages
 
   readonly #loadOptions:
     | ((
@@ -77,6 +87,7 @@ class Selkit<T> implements SelkitController<T> {
     this.#minResultsForSearch = config.minResultsForSearch ?? 0
     this.#hideSelected = config.hideSelected ?? false
     this.#maxSelections = config.maxSelections
+    this.#messages = { ...DEFAULT_MESSAGES, ...config.messages }
 
     this.#loadOptions = config.loadOptions
     this.#debounce = config.debounce ?? 250
@@ -402,6 +413,15 @@ class Selkit<T> implements SelkitController<T> {
     }
 
     return { rows }
+  }
+
+  getEmptyMessage(): string {
+    const s = this.#state
+    if (s.loading) return this.#messages.loading
+    if (this.#belowMin(s.query)) {
+      return this.#messages.minInputLength(this.#minInputLength - s.query.length)
+    }
+    return this.#messages.noResults
   }
 
   destroy(): void {

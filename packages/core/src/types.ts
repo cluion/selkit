@@ -42,6 +42,19 @@ export interface SelkitLoadResult<T = unknown> {
   hasMore: boolean
 }
 
+/**
+ * 下拉空狀態的可自訂訊息（i18n）
+ * 由 controller.getEmptyMessage() 依目前狀態擇一回傳 adapter 僅負責渲染
+ */
+export interface SelkitMessages {
+  /** 非同步載入中  */
+  loading: string
+  /** 無相符選項  */
+  noResults: string
+  /** 查詢未達 minInputLength remaining 為還需輸入的字數  */
+  minInputLength: (remaining: number) => string
+}
+
 // ─────────────────────────────────────────────────────────────
 // 2. 設定 (Config)
 // ─────────────────────────────────────────────────────────────
@@ -93,6 +106,9 @@ export interface SelkitConfig<T = unknown> {
 
   /** 多選上限 超過則無法再選  */
   maxSelections?: number
+
+  /** 空狀態訊息覆寫（i18n） 未提供的鍵維持英文預設  */
+  messages?: Partial<SelkitMessages>
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -245,6 +261,8 @@ export interface SelkitController<T = unknown> {
   // 衍生視圖
   a11y(): SelkitA11y
   getGroupedView(): SelkitGroupedView<T>
+  /** 下拉為空時應顯示的訊息（loading / 無相符 / 未達字數） 依目前狀態擇一  */
+  getEmptyMessage(): string
 
   destroy(): void
 }

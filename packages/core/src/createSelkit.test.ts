@@ -691,3 +691,54 @@ describe('moveSelected 重排已選', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 })
+
+describe('getEmptyMessage 可自訂訊息 (i18n)', () => {
+  it('預設無相符回傳 No results', () => {
+    const s = createSelkit({ options: [] })
+    expect(s.getEmptyMessage()).toBe('No results')
+  })
+
+  it('載入中回傳 Loading…', async () => {
+    const loadOptions = vi.fn(async () => {
+      await new Promise((r) => setTimeout(r, 5))
+      return OPTIONS
+    })
+    const s = createSelkit({ loadOptions, debounce: 0 })
+    s.setQuery('a')
+    await new Promise((r) => setTimeout(r, 0)) // 等 debounce 計時器觸發 runLoad
+    expect(s.getState().loading).toBe(true)
+    expect(s.getEmptyMessage()).toBe('Loading…')
+  })
+
+  it('未達 minInputLength 時提示還需輸入字數', () => {
+    const s = createSelkit({ options: OPTIONS, minInputLength: 3 })
+    // 初始 query 為空 還差 3 字
+    expect(s.getEmptyMessage()).toBe('Please enter 3 or more characters')
+    s.setQuery('ab') // 還差 1 字
+    expect(s.getEmptyMessage()).toBe('Please enter 1 or more character')
+  })
+
+  it('可用字串覆寫 loading / noResults', () => {
+    const s = createSelkit({
+      options: [],
+      messages: { loading: '載入中…', noResults: '查無資料' },
+    })
+    expect(s.getEmptyMessage()).toBe('查無資料')
+  })
+
+  it('可用函式覆寫 minInputLength 並收到剩餘字數', () => {
+    const s = createSelkit({
+      options: OPTIONS,
+      minInputLength: 2,
+      messages: { minInputLength: (n) => `再輸入 ${n} 個字` },
+    })
+    expect(s.getEmptyMessage()).toBe('再輸入 2 個字')
+    s.setQuery('a')
+    expect(s.getEmptyMessage()).toBe('再輸入 1 個字')
+  })
+
+  it('部分覆寫時其餘維持預設', () => {
+    const s = createSelkit({ options: [], messages: { loading: '載入中…' } })
+    expect(s.getEmptyMessage()).toBe('No results')
+  })
+})
