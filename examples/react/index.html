@@ -106,6 +106,12 @@
         return { items, hasMore: page < 5 }
       }
 
+      const zhMessages = {
+        loading: '載入中…',
+        noResults: '查無資料',
+        minInputLength: (n) => `再輸入 ${n} 個字`,
+      }
+
       function App() {
         const [last, setLast] = useState('（尚未變更）')
         const onChange = (value) => setLast(JSON.stringify(value))
@@ -135,6 +141,11 @@
             <section>
               <label>minInputLength（至少 2 字才過濾）</label>
               <${SelkitSelect} options=${many(30)} minInputLength=${2} placeholder="Type 2+ chars…" onChange=${onChange} />
+            </section>
+
+            <section>
+              <label>i18n / 自訂訊息（messages）</label>
+              <${SelkitSelect} options=${many(30)} minInputLength=${2} messages=${zhMessages} placeholder="輸入以搜尋…" onChange=${onChange} />
             </section>
 
             <section>

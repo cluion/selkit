@@ -105,7 +105,12 @@
           const onChange = (e) => {
             last.value = JSON.stringify(e.value)
           }
-          return { fruits, berries, grouped, many, loadPage, last, onChange }
+          const zhMessages = {
+            loading: '載入中…',
+            noResults: '查無資料',
+            minInputLength: (n) => `再輸入 ${n} 個字`,
+          }
+          return { fruits, berries, grouped, many, loadPage, last, onChange, zhMessages }
         },
         template: `
           <section>
@@ -131,6 +136,11 @@
           <section>
             <label>minInputLength（至少 2 字才過濾）</label>
             <SelkitSelect :options="many(30)" :min-input-length="2" placeholder="Type 2+ chars…" @change="onChange" />
+          </section>
+
+          <section>
+            <label>i18n / 自訂訊息（:messages）</label>
+            <SelkitSelect :options="many(30)" :min-input-length="2" :messages="zhMessages" placeholder="輸入以搜尋…" @change="onChange" />
           </section>
 
           <section>

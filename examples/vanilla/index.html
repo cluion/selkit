@@ -81,6 +81,12 @@
     </section>
 
     <section>
+      <label for="i18n">i18n / 自訂訊息（messages）</label>
+      <div id="i18n"></div>
+      <div class="hint">繁中空狀態訊息：剛開啟顯示「再輸入 N 字」，輸滿後若無相符顯示「查無資料」。</div>
+    </section>
+
+    <section>
       <label for="few">minResultsForSearch（選項太少時隱藏搜尋框）</label>
       <div id="few"></div>
     </section>
@@ -195,6 +201,18 @@
         options: many(30),
         minInputLength: 2,
         placeholder: 'Type 2+ chars…',
+      }).controller.on('change', show)
+
+      // 7b. i18n：自訂繁中空狀態訊息（loading / noResults / minInputLength）
+      createSelkitDom(document.getElementById('i18n'), {
+        options: many(30),
+        minInputLength: 2,
+        placeholder: '輸入以搜尋…',
+        messages: {
+          loading: '載入中…',
+          noResults: '查無資料',
+          minInputLength: (n) => `再輸入 ${n} 個字`,
+        },
       }).controller.on('change', show)
 
       // 8. minResultsForSearch：選項少於 10 個時隱藏搜尋框
