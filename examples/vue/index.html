@@ -144,6 +144,13 @@
           </section>
 
           <section>
+            <label>option slot（選項加 icon）</label>
+            <SelkitSelect :options="fruits" placeholder="Pick a fruit…" @change="onChange">
+              <template #option="{ option, selected }">{{ selected ? '✓ ' : '🍎 ' }}{{ option.label }}</template>
+            </SelkitSelect>
+          </section>
+
+          <section>
             <label>selection slot（已選加 icon）</label>
             <SelkitSelect :options="fruits" multiple placeholder="Pick fruits…" @change="onChange">
               <template #selection="{ option }">🔖 {{ option.label }}</template>

@@ -149,6 +149,11 @@
             </section>
 
             <section>
+              <label>renderOption（選項加 icon）</label>
+              <${SelkitSelect} options=${fruits} placeholder="Pick a fruit…" renderOption=${(opt, { selected }) => `${selected ? '✓ ' : '🍎 '}${opt.label}`} onChange=${onChange} />
+            </section>
+
+            <section>
               <label>renderSelection（已選加 icon）</label>
               <${SelkitSelect} options=${fruits} multiple=${true} placeholder="Pick fruits…" renderSelection=${(opt) => `🔖 ${opt.label}`} onChange=${onChange} />
             </section>

@@ -87,6 +87,12 @@
     </section>
 
     <section>
+      <label for="tpl-option">templateOption（選項加 icon）</label>
+      <div id="tpl-option"></div>
+      <div class="hint">下拉每個選項前加 🍎；已選項顯示 ✓。回傳 Node 即可放任意標記。</div>
+    </section>
+
+    <section>
       <label for="tpl-selection">templateSelection（已選加 icon）</label>
       <div id="tpl-selection"></div>
       <div class="hint">每個 tag 前面加上 🔖；回傳 Node 即可放任意標記。</div>
@@ -218,6 +224,17 @@
           loading: '載入中…',
           noResults: '查無資料',
           minInputLength: (n) => `再輸入 ${n} 個字`,
+        },
+      }).controller.on('change', show)
+
+      // 7c0. templateOption：下拉選項加 icon（回傳 Node），已選顯示 ✓
+      createSelkitDom(document.getElementById('tpl-option'), {
+        options: fruits,
+        placeholder: 'Pick a fruit…',
+        templateOption: (opt, { selected }) => {
+          const span = document.createElement('span')
+          span.textContent = `${selected ? '✓ ' : '🍎 '}${opt.label}`
+          return span
         },
       }).controller.on('change', show)
 
