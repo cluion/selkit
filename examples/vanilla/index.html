@@ -87,6 +87,12 @@
     </section>
 
     <section>
+      <label for="tokens">tokenSeparators（打/貼 <code>a,b,c</code> 自動切 tag）</label>
+      <div id="tokens"></div>
+      <div class="hint">輸入或貼上以逗號／空白分隔的字串，逗號前的片段自動成為 tag。</div>
+    </section>
+
+    <section>
       <label for="tpl-option">templateOption（選項加 icon）</label>
       <div id="tpl-option"></div>
       <div class="hint">下拉每個選項前加 🍎；已選項顯示 ✓。回傳 Node 即可放任意標記。</div>
@@ -225,6 +231,16 @@
           noResults: '查無資料',
           minInputLength: (n) => `再輸入 ${n} 個字`,
         },
+      }).controller.on('change', show)
+
+      // 7b2. tokenSeparators：逗號／空白自動切 tag
+      createSelkitDom(document.getElementById('tokens'), {
+        options: fruits,
+        multiple: true,
+        taggable: true,
+        createTag: (q) => ({ value: q.toLowerCase(), label: q }),
+        tokenSeparators: [',', ' '],
+        placeholder: 'Type or paste a,b,c…',
       }).controller.on('change', show)
 
       // 7c0. templateOption：下拉選項加 icon（回傳 Node），已選顯示 ✓

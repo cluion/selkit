@@ -110,7 +110,8 @@
             noResults: '查無資料',
             minInputLength: (n) => `再輸入 ${n} 個字`,
           }
-          return { fruits, berries, grouped, many, loadPage, last, onChange, zhMessages }
+          const makeTag = (q) => ({ value: q.toLowerCase(), label: q })
+          return { fruits, berries, grouped, many, loadPage, last, onChange, zhMessages, makeTag }
         },
         template: `
           <section>
@@ -141,6 +142,11 @@
           <section>
             <label>i18n / 自訂訊息（:messages）</label>
             <SelkitSelect :options="many(30)" :min-input-length="2" :messages="zhMessages" placeholder="輸入以搜尋…" @change="onChange" />
+          </section>
+
+          <section>
+            <label>tokenSeparators（打/貼 a,b,c 自動切 tag）</label>
+            <SelkitSelect :options="fruits" multiple taggable :create-tag="makeTag" :token-separators="[',', ' ']" placeholder="Type or paste a,b,c…" @change="onChange" />
           </section>
 
           <section>

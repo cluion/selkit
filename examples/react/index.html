@@ -149,6 +149,11 @@
             </section>
 
             <section>
+              <label>tokenSeparators（打/貼 a,b,c 自動切 tag）</label>
+              <${SelkitSelect} options=${fruits} multiple=${true} taggable=${true} createTag=${(q) => ({ value: q.toLowerCase(), label: q })} tokenSeparators=${[',', ' ']} placeholder="Type or paste a,b,c…" onChange=${onChange} />
+            </section>
+
+            <section>
               <label>renderOption（選項加 icon）</label>
               <${SelkitSelect} options=${fruits} placeholder="Pick a fruit…" renderOption=${(opt, { selected }) => `${selected ? '✓ ' : '🍎 '}${opt.label}`} onChange=${onChange} />
             </section>
