@@ -16,6 +16,7 @@ import { computeVirtualRange } from '@selkit/core'
 import type {
   SelkitItem,
   SelkitLoadResult,
+  SelkitMessages,
   SelkitOption,
   SelkitValue,
   SelkitViewRow,
@@ -64,6 +65,7 @@ export interface SelkitSelectProps<T = unknown> {
   taggable?: boolean
   createTag?: (query: string) => SelkitOption<T>
   maxSelections?: number
+  messages?: Partial<SelkitMessages>
   renderOption?: (
     option: SelkitOption<T>,
     meta: { index: number; active: boolean; selected: boolean },
@@ -93,6 +95,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     taggable = false,
     createTag,
     maxSelections,
+    messages,
     renderOption,
   } = props
 
@@ -118,6 +121,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     ...(debounce !== undefined ? { debounce } : {}),
     ...(createTag ? { createTag } : {}),
     ...(maxSelections !== undefined ? { maxSelections } : {}),
+    ...(messages ? { messages } : {}),
   })
 
   const [query, setQuery] = useState('')
@@ -345,7 +349,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   let dropdownContent: ReactNode
   if (view.rows.length === 0) {
     dropdownContent = (
-      <div className={cls('empty')}>{s.loading ? 'Loading…' : 'No results'}</div>
+      <div className={cls('empty')}>{controller.getEmptyMessage()}</div>
     )
   } else if (virtualScroll && !hasGroups) {
     // 虛擬捲動僅在無分組的扁平清單啟用

@@ -19,6 +19,7 @@ import { computeVirtualRange } from '@selkit/core'
 import type {
   SelkitItem,
   SelkitLoadResult,
+  SelkitMessages,
   SelkitOption,
   SelkitValue,
   SelkitViewRow,
@@ -77,6 +78,10 @@ export const SelkitSelect = defineComponent({
       default: undefined,
     },
     maxSelections: { type: Number, default: undefined },
+    messages: {
+      type: Object as PropType<Partial<SelkitMessages>>,
+      default: undefined,
+    },
   },
   emits: ['update:modelValue', 'change'],
   setup(props, { emit, slots, expose }) {
@@ -109,6 +114,7 @@ export const SelkitSelect = defineComponent({
       ...(props.maxSelections !== undefined
         ? { maxSelections: props.maxSelections }
         : {}),
+      ...(props.messages ? { messages: props.messages } : {}),
     })
 
     const query = ref('')
@@ -386,7 +392,7 @@ export const SelkitSelect = defineComponent({
       const hasGroups = view.rows.some((r) => r.type === 'group')
       if (view.rows.length === 0) {
         dropdownChildren.push(
-          h('div', { class: cls('empty') }, s.loading ? 'Loading…' : 'No results'),
+          h('div', { class: cls('empty') }, controller.getEmptyMessage()),
         )
       } else if (props.virtualScroll && !hasGroups) {
         // 虛擬捲動僅在無分組的扁平清單啟用

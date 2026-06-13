@@ -496,7 +496,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     if (view.rows.length === 0) {
       const empty = document.createElement('div')
       empty.className = this.#cls('empty')
-      empty.textContent = s.loading ? 'Loading…' : 'No results'
+      empty.textContent = this.controller.getEmptyMessage()
       this.#dropdown.append(empty)
       return
     }

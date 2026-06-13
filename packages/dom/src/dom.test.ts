@@ -144,6 +144,33 @@ describe('搜尋', () => {
   })
 })
 
+describe('i18n 可自訂訊息', () => {
+  it('無結果套用自訂 noResults', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      messages: { noResults: '查無資料' },
+    })
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    input.value = 'zzz'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect($(inst.element, '.selkit__empty').textContent).toBe('查無資料')
+  })
+
+  it('未達 minInputLength 顯示自訂提示與剩餘字數', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      minInputLength: 3,
+      messages: { minInputLength: (n) => `再輸入 ${n} 個字` },
+    })
+    inst.controller.open()
+    expect($(inst.element, '.selkit__empty').textContent).toBe('再輸入 3 個字')
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    input.value = 'ab'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect($(inst.element, '.selkit__empty').textContent).toBe('再輸入 1 個字')
+  })
+})
+
 describe('鍵盤', () => {
   it('ArrowDown 開啟並移動 highlight，Enter 選取', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })
