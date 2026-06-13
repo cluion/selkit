@@ -71,13 +71,15 @@ interface SelkitMessages {
 | `virtualScroll` | `boolean` | `false` | Render only the visible slice. |
 | `itemHeight` | `number` | `36` | Fixed row height for virtual scroll. |
 | `dropdownParent` | `HTMLElement \| string` | — | Portal the dropdown into another element to escape clipping ancestors. Also a Vue/React prop. |
-| `templateSelection` | `(option, meta) => string \| Node` | — | Customize the selected tag / single-value content. Strings are set as text; return a `Node` for markup (icons). DOM-only — see `renderSelection` / `selection` slot for Vue/React. |
+| `templateOption` | `(option, meta) => string \| Node` | — | Customize a dropdown option's content. Strings are set as text; return a `Node` for markup (icons). `meta` is `{ index, active, selected }`. DOM-only — see `renderOption` / `option` slot for Vue/React. |
+| `templateSelection` | `(option, meta) => string \| Node` | — | Customize the selected tag / single-value content. Strings are set as text; return a `Node` for markup (icons). `meta` is `{ index, multiple }`. DOM-only — see `renderSelection` / `selection` slot for Vue/React. |
 
 The Vue and React components expose the same options as props, plus
-`virtualScroll` / `itemHeight` and framework-specific bits. Customize options with
-`renderOption` (React) / the `option` slot (Vue), and the selected display with
-`renderSelection` (React) / the `selection` slot (Vue) — the DOM equivalent is
-`templateSelection`. All receive `meta` `{ index, multiple }` for the selection.
+`virtualScroll` / `itemHeight` and framework-specific bits. Customize a dropdown
+option with `renderOption` (React) / the `option` slot (Vue) / `templateOption`
+(DOM), and the selected display with `renderSelection` (React) / the `selection`
+slot (Vue) / `templateSelection` (DOM). Option `meta` is `{ index, active,
+selected }`; selection `meta` is `{ index, multiple }`.
 
 ## Types
 

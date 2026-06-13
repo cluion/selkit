@@ -69,12 +69,13 @@ interface SelkitMessages {
 | `virtualScroll` | `boolean` | `false` | 只渲染可視切片。 |
 | `itemHeight` | `number` | `36` | 虛擬捲動的固定列高。 |
 | `dropdownParent` | `HTMLElement \| string` | — | 把下拉 portal 到其他容器以逃離裁切祖先。Vue/React 也是同名 prop。 |
-| `templateSelection` | `(option, meta) => string \| Node` | — | 自訂已選 tag／單值內容。字串走 textContent；要 markup（icon）請回傳 `Node`。僅限 DOM — Vue/React 見 `renderSelection`／`selection` slot。 |
+| `templateOption` | `(option, meta) => string \| Node` | — | 自訂下拉選項內容。字串走 textContent；要 markup（icon）請回傳 `Node`。`meta` 為 `{ index, active, selected }`。僅限 DOM — Vue/React 見 `renderOption`／`option` slot。 |
+| `templateSelection` | `(option, meta) => string \| Node` | — | 自訂已選 tag／單值內容。字串走 textContent；要 markup（icon）請回傳 `Node`。`meta` 為 `{ index, multiple }`。僅限 DOM — Vue/React 見 `renderSelection`／`selection` slot。 |
 
 Vue 與 React 元件以 props 揭露相同選項，另加 `virtualScroll` / `itemHeight` 與框架特有的
-部分。自訂選項用 `renderOption`（React）／`option` slot（Vue）；自訂已選顯示用
-`renderSelection`（React）／`selection` slot（Vue）— DOM 對應為 `templateSelection`。
-已選的 `meta` 皆為 `{ index, multiple }`。
+部分。自訂選項用 `renderOption`（React）／`option` slot（Vue）／`templateOption`（DOM）；
+自訂已選顯示用 `renderSelection`（React）／`selection` slot（Vue）／`templateSelection`（DOM）。
+選項 `meta` 為 `{ index, active, selected }`；已選 `meta` 為 `{ index, multiple }`。
 
 ## 型別
 
