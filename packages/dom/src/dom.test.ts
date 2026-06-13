@@ -156,6 +156,45 @@ describe('templateSelection 自訂已選', () => {
   })
 })
 
+describe('templateOption 自訂選項', () => {
+  it('字串覆寫選項文字（走 textContent）', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      templateOption: (o) => `★${o.label}`,
+    })
+    pointerdown($(inst.element, '.selkit__control'))
+    expect($$(inst.element, '.selkit__option')[0]!.textContent).toBe('★Apple')
+  })
+
+  it('回傳 Node 可放 icon 等標記', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      templateOption: (o) => {
+        const span = document.createElement('span')
+        span.className = 'icon'
+        span.textContent = o.label
+        return span
+      },
+    })
+    pointerdown($(inst.element, '.selkit__control'))
+    expect($(inst.element, '.selkit__option .icon').textContent).toBe('Apple')
+  })
+
+  it('meta 帶 index / active / selected', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      value: 'b',
+      templateOption: (o, m) =>
+        `${m.index}:${m.active}:${m.selected}:${o.label}`,
+    })
+    pointerdown($(inst.element, '.selkit__control'))
+    const texts = $$(inst.element, '.selkit__option').map((e) => e.textContent)
+    // 開啟後 activeIndex 落在已選且可見的項目（Banana, index 1）
+    expect(texts[0]).toBe('0:false:false:Apple')
+    expect(texts[1]).toBe('1:true:true:Banana')
+  })
+})
+
 describe('搜尋', () => {
   it('輸入過濾選項並開啟', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })

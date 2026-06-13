@@ -55,6 +55,11 @@ export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
     option: SelkitOption<T>,
     meta: { index: number; multiple: boolean },
   ) => string | Node
+  /** 自訂下拉選項內容 回傳字串走 textContent 防 XSS 需 markup（icon 等）請回傳 Node */
+  templateOption?: (
+    option: SelkitOption<T>,
+    meta: { index: number; active: boolean; selected: boolean },
+  ) => string | Node
 }
 
 export interface SelkitDomInstance<T = unknown> {
@@ -161,6 +166,12 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         meta: { index: number; multiple: boolean },
       ) => string | Node)
     | undefined
+  readonly #templateOption:
+    | ((
+        option: SelkitOption<T>,
+        meta: { index: number; active: boolean; selected: boolean },
+      ) => string | Node)
+    | undefined
   readonly #sourceSelect: HTMLSelectElement | null
 
   readonly #control: HTMLElement
@@ -199,6 +210,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#itemHeight = cfg.itemHeight ?? DEFAULT_ITEM_HEIGHT
     this.#dropdownParent = resolveParent(cfg.dropdownParent)
     this.#templateSelection = cfg.templateSelection
+    this.#templateOption = cfg.templateOption
     this.controller = createSelkit<T>(cfg)
 
     this.element = document.createElement('div')
@@ -588,7 +600,17 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     if (attrs['aria-selected']) {
       option.classList.add(this.#cls('option', 'selected'))
     }
-    option.textContent = row.option.label
+    if (this.#templateOption) {
+      const out = this.#templateOption(row.option, {
+        index: row.index,
+        active: row.index === activeIndex,
+        selected: attrs['aria-selected'],
+      })
+      if (out instanceof Node) option.append(out)
+      else option.textContent = out
+    } else {
+      option.textContent = row.option.label
+    }
     return option
   }
 
