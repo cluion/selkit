@@ -47,6 +47,25 @@ createSelkit({
 在沒有相符選項時按 Enter 會建立並選取新 tag，並觸發 `create` 事件。若已存在同名 label
 的選項，則改為選取既有選項，不會重複建立。
 
+## 分隔符（token separators）
+
+多選模式下，`tokenSeparators` 會在偵測到分隔符時即時把打字或貼上的文字切成 tag —
+特別適合貼上逗號或空白分隔的清單：
+
+```js
+createSelkit({
+  options,
+  multiple: true,
+  taggable: true,
+  createTag: (query) => ({ value: query.toLowerCase(), label: query }),
+  tokenSeparators: [',', ' '],
+})
+```
+
+打字或貼上 `apple, banana, ch` 會選取 `apple` 與 `banana`（比對既有選項，或在 `taggable`
+時建立為 tag），並把 `ch` 留在輸入框。未開 `taggable` 時，無相符的 token 會被丟棄。
+Vue/React 元件亦提供同名 prop。
+
 ## 重新排序 tag
 
 `moveSelected(from, to)` 以不可變方式重排已選陣列，並以新順序觸發 `change`。adapter 把

@@ -51,6 +51,26 @@ Pressing Enter with no matching option creates and selects a new tag, firing a
 `create` event. If a tag with the same label already exists, the existing option
 is selected instead of duplicating it.
 
+## Token separators
+
+In multiple-select mode, `tokenSeparators` turns typed or pasted text into tags as
+soon as a separator is seen — ideal for pasting comma- or space-delimited lists:
+
+```js
+createSelkit({
+  options,
+  multiple: true,
+  taggable: true,
+  createTag: (query) => ({ value: query.toLowerCase(), label: query }),
+  tokenSeparators: [',', ' '],
+})
+```
+
+Typing or pasting `apple, banana, ch` selects `apple` and `banana` (matching
+existing options, or created as tags when `taggable`), and leaves `ch` in the
+input. Tokens that match no option are dropped when `taggable` is off. The same
+prop is available on the Vue/React components.
+
 ## Reordering tags
 
 `moveSelected(from, to)` reorders the selected array immutably and fires

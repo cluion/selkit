@@ -24,6 +24,7 @@
 | `filterRemote` | `boolean` | `false` | 對遠端結果再套本地過濾。 |
 | `taggable` | `boolean` | `false` | 允許即時建立選項。 |
 | `createTag` | `(query) => SelkitOption<T>` | — | 新 tag 的 factory。 |
+| `tokenSeparators` | `string[]` | `[]` | 打字或貼上時依分隔符（如 `[',', ' ']`）自動切成多個 tag。僅多選生效；建立新 tag 另需 `taggable`。與既有選項同名的 token 會被選取，剩餘片段留在輸入框。 |
 | `maxSelections` | `number` | — | 選取上限。 |
 | `messages` | `Partial<SelkitMessages>` | 英文預設 | 覆寫空狀態訊息（載入中／無結果／再輸入 N 字）。見 [i18n](#i18n-訊息)。 |
 
