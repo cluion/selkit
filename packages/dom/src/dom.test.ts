@@ -224,6 +224,25 @@ describe('搜尋', () => {
   })
 })
 
+describe('tokenSeparators 自動切 tag', () => {
+  it('輸入含分隔符自動切成多個 tag 剩餘回寫輸入框', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      multiple: true,
+      taggable: true,
+      createTag: (q) => ({ value: q, label: q }),
+      tokenSeparators: [','],
+    })
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    input.value = 'apple,Mango,ba'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    const tags = $$(inst.element, '.selkit__tag').map((t) => t.textContent)
+    expect(tags.some((t) => t?.includes('Apple'))).toBe(true)
+    expect(tags.some((t) => t?.includes('Mango'))).toBe(true)
+    expect(input.value).toBe('ba')
+  })
+})
+
 describe('i18n 可自訂訊息', () => {
   it('無結果套用自訂 noResults', () => {
     const inst = createSelkitDom(host, {

@@ -104,6 +104,9 @@ export interface SelkitConfig<T = unknown> {
   /** 由查詢字串建立新選項  */
   createTag?: (query: string) => SelkitOption<T>
 
+  /** 分隔符（如 [',', ' ']）打字或貼上含分隔符時自動切出 token 逐一選取/建立 僅多選生效 建立新 tag 另需 taggable */
+  tokenSeparators?: string[]
+
   /** 多選上限 超過則無法再選  */
   maxSelections?: number
 

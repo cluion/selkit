@@ -64,6 +64,7 @@ export interface SelkitSelectProps<T = unknown> {
   debounce?: number
   taggable?: boolean
   createTag?: (query: string) => SelkitOption<T>
+  tokenSeparators?: string[]
   maxSelections?: number
   messages?: Partial<SelkitMessages>
   renderOption?: (
@@ -99,6 +100,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     debounce,
     taggable = false,
     createTag,
+    tokenSeparators,
     maxSelections,
     messages,
     renderOption,
@@ -126,6 +128,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     ...(loadOptions ? { loadOptions } : {}),
     ...(debounce !== undefined ? { debounce } : {}),
     ...(createTag ? { createTag } : {}),
+    ...(tokenSeparators ? { tokenSeparators } : {}),
     ...(maxSelections !== undefined ? { maxSelections } : {}),
     ...(messages ? { messages } : {}),
   })
@@ -259,10 +262,12 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
 
   const onInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const v = e.target.value
-    setQuery(v)
-    queryRef.current = v
     controller.open()
     controller.setQuery(v)
+    // tokenization 可能改寫 query（切出 tag）以 core 的 query 為準
+    const q = controller.getState().query
+    setQuery(q)
+    queryRef.current = q
   }
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>): void => {

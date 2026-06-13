@@ -77,6 +77,10 @@ export const SelkitSelect = defineComponent({
       type: Function as PropType<(query: string) => SelkitOption>,
       default: undefined,
     },
+    tokenSeparators: {
+      type: Array as PropType<string[]>,
+      default: undefined,
+    },
     maxSelections: { type: Number, default: undefined },
     messages: {
       type: Object as PropType<Partial<SelkitMessages>>,
@@ -111,6 +115,9 @@ export const SelkitSelect = defineComponent({
       ...(props.loadOptions ? { loadOptions: props.loadOptions } : {}),
       ...(props.debounce !== undefined ? { debounce: props.debounce } : {}),
       ...(props.createTag ? { createTag: props.createTag } : {}),
+      ...(props.tokenSeparators
+        ? { tokenSeparators: props.tokenSeparators }
+        : {}),
       ...(props.maxSelections !== undefined
         ? { maxSelections: props.maxSelections }
         : {}),
@@ -235,9 +242,11 @@ export const SelkitSelect = defineComponent({
     }
 
     const onInput = (e: Event): void => {
-      query.value = (e.target as HTMLInputElement).value
+      const v = (e.target as HTMLInputElement).value
       controller.open()
-      controller.setQuery(query.value)
+      controller.setQuery(v)
+      // tokenization 可能改寫 query（切出 tag）以 core 的 query 為準
+      query.value = controller.getState().query
     }
 
     const onKeydown = (e: KeyboardEvent): void => {

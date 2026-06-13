@@ -340,6 +340,9 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#input.addEventListener('input', () => {
       this.controller.open()
       this.controller.setQuery(this.#input.value)
+      // tokenization 可能改寫 query（切出 tag）僅在不同時回寫 避免一般輸入游標跳動
+      const q = this.controller.getState().query
+      if (q !== this.#input.value) this.#input.value = q
     })
 
     this.#control.addEventListener('keydown', (e) => this.#onKeydown(e))

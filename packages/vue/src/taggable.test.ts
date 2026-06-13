@@ -24,3 +24,23 @@ describe('taggable prop 透傳', () => {
     expect(tags.some((t) => t.includes('Mango'))).toBe(true)
   })
 })
+
+describe('tokenSeparators 透傳', () => {
+  it('輸入含分隔符自動切成多個 tag 剩餘留在輸入框', async () => {
+    const w = mount(SelkitSelect, {
+      props: {
+        options: OPTIONS,
+        multiple: true,
+        taggable: true,
+        createTag: (q: string) => ({ value: q, label: q }),
+        tokenSeparators: [','],
+      },
+    })
+    const input = w.find('.selkit__input')
+    await input.setValue('apple,Mango,ba')
+    const tags = w.findAll('.selkit__tag').map((t) => t.text())
+    expect(tags.some((t) => t.includes('Apple'))).toBe(true)
+    expect(tags.some((t) => t.includes('Mango'))).toBe(true)
+    expect((input.element as HTMLInputElement).value).toBe('ba')
+  })
+})

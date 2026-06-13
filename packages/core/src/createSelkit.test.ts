@@ -486,6 +486,80 @@ describe('tagging', () => {
   })
 })
 
+describe('tokenSeparators 自動切 tag', () => {
+  const ms = (extra = {}) =>
+    createSelkit({
+      options: OPTIONS,
+      multiple: true,
+      tokenSeparators: [','],
+      ...extra,
+    })
+
+  it('分隔符前的 token 選取既有選項 剩餘留在 query', () => {
+    const s = ms()
+    s.setQuery('apple,banana,ch')
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a', 'b'])
+    expect(s.getState().query).toBe('ch')
+  })
+
+  it('結尾即分隔符時 query 清空', () => {
+    const s = ms()
+    s.setQuery('apple,')
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a'])
+    expect(s.getState().query).toBe('')
+  })
+
+  it('taggable 時無相符 token 建立新 tag 並觸發 create', () => {
+    const onCreate = vi.fn()
+    const s = ms({ taggable: true, createTag: (q: string) => ({ value: q, label: q }) })
+    s.on('create', onCreate)
+    s.setQuery('apple,Mango,')
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a', 'Mango'])
+    expect(onCreate).toHaveBeenCalledWith({ option: { value: 'Mango', label: 'Mango' } })
+  })
+
+  it('非 taggable 時無相符 token 丟棄', () => {
+    const s = ms()
+    s.setQuery('apple,zzz,')
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a'])
+    expect(s.getState().query).toBe('')
+  })
+
+  it('空 token 與前後空白皆忽略', () => {
+    const s = ms()
+    s.setQuery(' apple , , banana ,')
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a', 'b'])
+  })
+
+  it('支援多個分隔符（逗號與空白）', () => {
+    const s = ms({ tokenSeparators: [',', ' '] })
+    s.setQuery('apple banana c')
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a', 'b'])
+    expect(s.getState().query).toBe('c')
+  })
+
+  it('已選不重複 disabled 不選', () => {
+    const s = ms({ value: ['a'] })
+    s.setQuery('apple,cherry,date,')
+    // apple 已選略過 cherry disabled 略過 date 選取
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a', 'd'])
+  })
+
+  it('單選時不啟用 tokenization', () => {
+    const s = createSelkit({ options: OPTIONS, tokenSeparators: [','] })
+    s.setQuery('apple,banana')
+    expect(s.getState().query).toBe('apple,banana')
+    expect(s.getState().selected).toEqual([])
+  })
+
+  it('無分隔符的一般輸入照舊', () => {
+    const s = ms()
+    s.setQuery('ch')
+    expect(s.getState().selected).toEqual([])
+    expect(s.getState().query).toBe('ch')
+  })
+})
+
 describe('diacritics 不敏感搜尋', () => {
   it('cafe 能搜到 café', () => {
     const s = createSelkit({

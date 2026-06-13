@@ -63,6 +63,7 @@ class Selkit<T> implements SelkitController<T> {
   readonly #filterRemote: boolean
   readonly #taggable: boolean
   readonly #createTag: ((query: string) => SelkitOption<T>) | undefined
+  readonly #tokenSeparators: string[]
 
   #rows: NormRow<T>[]
   #flat: SelkitOption<T>[]
@@ -94,6 +95,7 @@ class Selkit<T> implements SelkitController<T> {
     this.#filterRemote = config.filterRemote ?? false
     this.#taggable = config.taggable ?? false
     this.#createTag = config.createTag
+    this.#tokenSeparators = config.tokenSeparators ?? []
 
     const { rows, flat } = normalize(config.options ?? [])
     this.#rows = rows
@@ -165,6 +167,12 @@ class Selkit<T> implements SelkitController<T> {
 
   // ── 搜尋 ─────────────────────────────────────────────────
   setQuery(query: string): void {
+    // tokenization：含分隔符時切出完整 token 逐一消化 剩餘片段續為 query
+    if (this.#shouldTokenize(query)) {
+      const { tokens, rest } = this.#splitTokens(query)
+      for (const token of tokens) this.#consumeToken(token)
+      query = rest
+    }
     if (this.#loadOptions) {
       // 非同步路徑 先更新 query 與 search 事件 再 debounce 載入
       this.#patch({ query })
@@ -318,6 +326,51 @@ class Selkit<T> implements SelkitController<T> {
     this.#fire('create', { option })
     this.select(option.value)
     this.#patch({ query: '', visibleOptions: this.#computeVisible('') })
+  }
+
+  /** 多選且設了 tokenSeparators 並含其一時才走 tokenization */
+  #shouldTokenize(raw: string): boolean {
+    if (!this.#multiple || this.#tokenSeparators.length === 0) return false
+    return this.#tokenSeparators.some((sep) => sep !== '' && raw.includes(sep))
+  }
+
+  /** 依分隔符切割 結尾未被分隔符終結的片段為 rest 支援多字元分隔符 */
+  #splitTokens(raw: string): { tokens: string[]; rest: string } {
+    const seps = this.#tokenSeparators
+    const tokens: string[] = []
+    let buf = ''
+    let i = 0
+    while (i < raw.length) {
+      const sep = seps.find((s) => s !== '' && raw.startsWith(s, i))
+      if (sep) {
+        tokens.push(buf)
+        buf = ''
+        i += sep.length
+      } else {
+        buf += raw[i]
+        i += 1
+      }
+    }
+    return { tokens, rest: buf }
+  }
+
+  /** 消化單一 token：選既有同名選項 否則 taggable 時建立新 tag 皆不動 query */
+  #consumeToken(text: string): void {
+    const token = text.trim()
+    if (token === '') return
+    const existing = this.#flat.find(
+      (o) => o.label.toLowerCase() === token.toLowerCase(),
+    )
+    if (existing) {
+      if (!existing.disabled) this.select(existing.value)
+      return
+    }
+    if (!this.#taggable || !this.#createTag) return
+    const option = this.#createTag(token)
+    this.#flat = [...this.#flat, option]
+    this.#rows = [...this.#rows, { kind: 'option', option, groupLabel: null }]
+    this.#fire('create', { option })
+    this.select(option.value)
   }
 
   // ── 動態更新 ──────────────────────────────────────────────
