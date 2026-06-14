@@ -43,6 +43,27 @@ createSelkit({
 })
 ```
 
+## Sorting results
+
+After filtering, reorder results with `sorter` — a comparator `(a, b, query) =>
+number` (same contract as `Array.prototype.sort`, plus the current query for
+relevance ranking). It applies to flat lists only and is ignored when options are
+grouped (sorting across groups would break the headers).
+
+```js
+// Rank options whose label starts with the query first
+createSelkit({
+  options,
+  sorter: (a, b, query) => {
+    const rank = (o) =>
+      o.label.toLowerCase().startsWith(query.toLowerCase()) ? 0 : 1
+    return rank(a) - rank(b)
+  },
+})
+```
+
+The Vue and React components expose `sorter` as a prop.
+
 ## Minimum input length
 
 `minInputLength` gates filtering — and async loading — until the user has typed

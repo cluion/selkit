@@ -14,6 +14,7 @@
 | `minInputLength` | `number` | `0` | 過濾 / 載入前的最少字數。 |
 | `fuzzy` | `boolean` | `false` | 改用 fuzzy 子序列比對。設定 `filter` 時忽略。 |
 | `filter` | `FilterFn<T>` | 子字串 | 自訂比對函式 `(option, query) => boolean`。 |
+| `sorter` | `SorterFn<T>` | — | 自訂結果排序 `(a, b, query) => number`（如相關度）。僅扁平清單；分組時忽略。Vue/React 也是同名 prop。 |
 | `hideSelected` | `boolean` | `false` | 把已選項從清單移除。 |
 | `clearable` | `boolean` | 單選 `true` | 顯示清除鈕。 |
 | `closeOnSelect` | `boolean` | 單選 `true` / 多選 `false` | 選取後關閉下拉。 |
@@ -114,6 +115,12 @@ type SelkitItem<T = unknown> = SelkitOption<T> | SelkitGroup<T>
 type SelkitValue = string | number | null | Array<string | number>
 
 type FilterFn<T = unknown> = (option: SelkitOption<T>, query: string) => boolean
+
+type SorterFn<T = unknown> = (
+  a: SelkitOption<T>,
+  b: SelkitOption<T>,
+  query: string,
+) => number
 
 interface SelkitLoadResult<T = unknown> {
   items: SelkitItem<T>[]

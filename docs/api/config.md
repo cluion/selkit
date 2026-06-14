@@ -15,6 +15,7 @@ optional.
 | `minInputLength` | `number` | `0` | Minimum characters before filtering / loading. |
 | `fuzzy` | `boolean` | `false` | Use fuzzy subsequence matching instead of substring. Ignored if `filter` is set. |
 | `filter` | `FilterFn<T>` | substring | Custom match predicate `(option, query) => boolean`. |
+| `sorter` | `SorterFn<T>` | — | Custom result ordering `(a, b, query) => number` (e.g. relevance). Flat lists only — ignored when options are grouped. Also a Vue/React prop. |
 | `hideSelected` | `boolean` | `false` | Remove chosen options from the list. |
 | `clearable` | `boolean` | `true` single | Show a clear button. |
 | `closeOnSelect` | `boolean` | `true` single / `false` multiple | Close the dropdown after selecting. |
@@ -118,6 +119,12 @@ type SelkitItem<T = unknown> = SelkitOption<T> | SelkitGroup<T>
 type SelkitValue = string | number | null | Array<string | number>
 
 type FilterFn<T = unknown> = (option: SelkitOption<T>, query: string) => boolean
+
+type SorterFn<T = unknown> = (
+  a: SelkitOption<T>,
+  b: SelkitOption<T>,
+  query: string,
+) => number
 
 interface SelkitLoadResult<T = unknown> {
   items: SelkitItem<T>[]

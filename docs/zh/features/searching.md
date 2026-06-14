@@ -40,6 +40,26 @@ createSelkit({
 })
 ```
 
+## 排序結果
+
+過濾後可用 `sorter` 重排結果 — 比較器 `(a, b, query) => number`（契約同
+`Array.prototype.sort`，並多帶目前 query 以利相關度排序）。僅扁平清單套用，分組時忽略
+（跨組排序會破壞標頭）。
+
+```js
+// 以 query 開頭的選項排最前
+createSelkit({
+  options,
+  sorter: (a, b, query) => {
+    const rank = (o) =>
+      o.label.toLowerCase().startsWith(query.toLowerCase()) ? 0 : 1
+    return rank(a) - rank(b)
+  },
+})
+```
+
+Vue 與 React 元件以 `sorter` prop 揭露。
+
 ## 最少輸入字數
 
 `minInputLength` 會在使用者輸入足夠字數前，擋下過濾 — 以及非同步載入。未達門檻時不顯示
