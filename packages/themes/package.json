@@ -1,9 +1,11 @@
 {
   "name": "@selkit/themes",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Themes for Selkit — base and Bootstrap 5 styles (CSS variable driven).",
   "license": "MIT",
-  "files": ["*.css"],
+  "files": [
+    "*.css"
+  ],
   "exports": {
     "./base.css": "./base.css",
     "./bs5.css": "./bs5.css"
@@ -12,5 +14,17 @@
     "build": "echo \"no build (static css)\"",
     "test": "echo \"no tests\"",
     "typecheck": "echo \"no types\""
+  },
+  "homepage": "https://cluion.github.io/selkit/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cluion/selkit.git",
+    "directory": "packages/themes"
+  },
+  "bugs": {
+    "url": "https://github.com/cluion/selkit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

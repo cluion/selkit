@@ -1,6 +1,6 @@
 {
   "name": "@selkit/react",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "React adapter for Selkit — useSyncExternalStore over @selkit/core.",
   "license": "MIT",
   "type": "module",
@@ -41,5 +41,17 @@
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
+  },
+  "homepage": "https://cluion.github.io/selkit/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cluion/selkit.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/cluion/selkit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

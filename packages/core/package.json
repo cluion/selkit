@@ -1,6 +1,6 @@
 {
   "name": "@selkit/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Headless state machine for Selkit — framework-agnostic select logic.",
   "license": "MIT",
   "type": "module",
@@ -14,7 +14,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
@@ -26,5 +28,17 @@
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
+  },
+  "homepage": "https://cluion.github.io/selkit/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cluion/selkit.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/cluion/selkit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@selkit/dom",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Vanilla JS renderer for Selkit — DOM, events, a11y and default positioner.",
   "license": "MIT",
   "type": "module",
@@ -33,5 +33,17 @@
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
+  },
+  "homepage": "https://cluion.github.io/selkit/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cluion/selkit.git",
+    "directory": "packages/dom"
+  },
+  "bugs": {
+    "url": "https://github.com/cluion/selkit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
