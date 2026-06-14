@@ -145,6 +145,11 @@
           </section>
 
           <section>
+            <label>restoreOnBackspace（退格刪 tag 並回填文字）</label>
+            <SelkitSelect :options="fruits" multiple taggable :create-tag="makeTag" restore-on-backspace placeholder="Pick, then backspace…" @change="onChange" />
+          </section>
+
+          <section>
             <label>checkbox 多選（選項打勾，可再點取消）</label>
             <SelkitSelect :options="fruits" multiple checkboxes placeholder="Tick fruits…" @change="onChange" />
           </section>

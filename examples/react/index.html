@@ -149,6 +149,11 @@
             </section>
 
             <section>
+              <label>restoreOnBackspace（退格刪 tag 並回填文字）</label>
+              <${SelkitSelect} options=${fruits} multiple=${true} taggable=${true} createTag=${(q) => ({ value: q.toLowerCase(), label: q })} restoreOnBackspace=${true} placeholder="Pick, then backspace…" onChange=${onChange} />
+            </section>
+
+            <section>
               <label>checkbox 多選（選項打勾，可再點取消）</label>
               <${SelkitSelect} options=${fruits} multiple=${true} checkboxes=${true} placeholder="Tick fruits…" onChange=${onChange} />
             </section>

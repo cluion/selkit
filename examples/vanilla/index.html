@@ -93,6 +93,12 @@
     </section>
 
     <section>
+      <label for="restore">restoreOnBackspace（退格刪 tag 並回填文字）</label>
+      <div id="restore"></div>
+      <div class="hint">選幾個後，把輸入框清空再按 Backspace：最後一個 tag 被刪、其文字回到輸入框可編輯。</div>
+    </section>
+
+    <section>
       <label for="tokens">tokenSeparators（打/貼 <code>a,b,c</code> 自動切 tag）</label>
       <div id="tokens"></div>
       <div class="hint">輸入或貼上以逗號／空白分隔的字串，逗號前的片段自動成為 tag。</div>
@@ -243,6 +249,16 @@
           noResults: '查無資料',
           minInputLength: (n) => `再輸入 ${n} 個字`,
         },
+      }).controller.on('change', show)
+
+      // 7b0. restoreOnBackspace：退格刪 tag 並回填文字
+      createSelkitDom(document.getElementById('restore'), {
+        options: fruits,
+        multiple: true,
+        taggable: true,
+        createTag: (q) => ({ value: q.toLowerCase(), label: q }),
+        restoreOnBackspace: true,
+        placeholder: 'Pick, then backspace…',
       }).controller.on('change', show)
 
       // 7b1. checkbox 多選：選項打勾 點擊 toggle
