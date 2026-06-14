@@ -6,24 +6,28 @@
 [![Deploy Docs](https://github.com/cluion/selkit/actions/workflows/docs.yml/badge.svg)](https://github.com/cluion/selkit/actions/workflows/docs.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-一套 headless core，支援原生 JS / Vue / React，統一 API，零 jQuery、零必要依賴。對標 Select2 與 Tom Select 的現代化、TypeScript-first 替代方案。
+English | [繁體中文](./README.zh-Hant.md)
 
-📖 **文件站：[cluion.github.io/selkit](https://cluion.github.io/selkit/)** · [繁體中文](https://cluion.github.io/selkit/zh/)
+A headless core for native JS / Vue / React with one unified API — no jQuery, no
+required dependencies. A modern, TypeScript-first alternative to Select2 and
+Tom Select.
 
-## 套件 (Packages)
+📖 **Docs: [cluion.github.io/selkit](https://cluion.github.io/selkit/)** · [繁體中文](https://cluion.github.io/selkit/zh/)
 
-| 套件 | 說明 |
+## Packages
+
+| Package | Description |
 |------|------|
-| `@selkit/core` | 純 TS 狀態機，零 DOM、零框架依賴（行為單一來源） |
-| `@selkit/dom` | 原生 JS 渲染層 + 浮層 |
+| `@selkit/core` | Pure TS state machine — zero DOM, zero framework deps (single source of behavior) |
+| `@selkit/dom` | Vanilla JS renderer + dropdown positioner |
 | `@selkit/vue` | Vue 3 adapter |
 | `@selkit/react` | React adapter |
-| `@selkit/themes` | base / bs5 樣式（CSS 變數驅動） |
+| `@selkit/themes` | base / bs5 styles (CSS-variable driven) |
 
-## 安裝 (Install)
+## Install
 
 ```bash
-# 原生 JS
+# Vanilla JS
 pnpm add @selkit/dom @selkit/themes
 # Vue 3
 pnpm add @selkit/vue @selkit/themes
@@ -31,31 +35,33 @@ pnpm add @selkit/vue @selkit/themes
 pnpm add @selkit/react @selkit/themes
 ```
 
-`@selkit/core` 會作為相依自動安裝；`@selkit/themes` 提供 base / bs5 樣式。
+`@selkit/core` is installed automatically as a dependency; `@selkit/themes`
+provides the base / bs5 styles.
 
-## 文件 (Documentation)
+## Documentation
 
-完整指南、功能說明與 API 參考見文件站：
+Full guides, feature docs and API reference are on the docs site:
 
 - English — [cluion.github.io/selkit](https://cluion.github.io/selkit/)
 - 繁體中文 — [cluion.github.io/selkit/zh](https://cluion.github.io/selkit/zh/)
 
-三框架的可執行 demo 在 [`examples/`](./examples/)（`vanilla` / `vue` / `react`）。
+Runnable demos for all three frameworks live in [`examples/`](./examples/)
+(`vanilla` / `vue` / `react`).
 
-## 開發
+## Development
 
 ```bash
-pnpm install        # 安裝相依
-pnpm build          # 建置所有套件
-pnpm test           # 跑測試（含 axe-core 無障礙檢查）
-pnpm typecheck      # 型別檢查
-pnpm --filter @selkit/docs docs:dev   # 本地預覽文件站
+pnpm install        # install dependencies
+pnpm build          # build all packages
+pnpm test           # run tests (incl. axe-core a11y checks)
+pnpm typecheck      # type-check
+pnpm --filter @selkit/docs docs:dev   # preview the docs site locally
 ```
 
-## 貢獻 (Contributing)
+## Contributing
 
-歡迎 issue 與 PR，流程見 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+Issues and PRs welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## 授權
+## License
 
 [MIT](./LICENSE) © cluion
