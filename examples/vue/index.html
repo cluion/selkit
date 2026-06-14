@@ -111,7 +111,12 @@
             minInputLength: (n) => `再輸入 ${n} 個字`,
           }
           const makeTag = (q) => ({ value: q.toLowerCase(), label: q })
-          return { fruits, berries, grouped, many, loadPage, last, onChange, zhMessages, makeTag }
+          const startsFirst = (a, b, q) => {
+            const rank = (o) =>
+              o.label.toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1
+            return rank(a) - rank(b)
+          }
+          return { fruits, berries, grouped, many, loadPage, last, onChange, zhMessages, makeTag, startsFirst }
         },
         template: `
           <section>
@@ -176,6 +181,11 @@
             <SelkitSelect :options="fruits" multiple placeholder="Pick fruits…" @change="onChange">
               <template #selection="{ option }">🔖 {{ option.label }}</template>
             </SelkitSelect>
+          </section>
+
+          <section>
+            <label>sorter（相關度：以輸入開頭者排前）</label>
+            <SelkitSelect :options="fruits" :sorter="startsFirst" placeholder='Type "a"…' @change="onChange" />
           </section>
 
           <section>

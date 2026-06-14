@@ -81,6 +81,12 @@
     </section>
 
     <section>
+      <label for="sorter">sorter（相關度：以輸入開頭者排前）</label>
+      <div id="sorter"></div>
+      <div class="hint">輸入 <code>a</code>：以 a 開頭的選項排到最前。</div>
+    </section>
+
+    <section>
       <label for="i18n">i18n / 自訂訊息（messages）</label>
       <div id="i18n"></div>
       <div class="hint">繁中空狀態訊息：剛開啟顯示「再輸入 N 字」，輸滿後若無相符顯示「查無資料」。</div>
@@ -237,6 +243,18 @@
         options: many(30),
         minInputLength: 2,
         placeholder: 'Type 2+ chars…',
+      }).controller.on('change', show)
+
+      // 7a. sorter：相關度排序（以輸入開頭者優先）
+      const startsFirst = (a, b, q) => {
+        const rank = (o) =>
+          o.label.toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1
+        return rank(a) - rank(b)
+      }
+      createSelkitDom(document.getElementById('sorter'), {
+        options: fruits,
+        sorter: startsFirst,
+        placeholder: 'Type "a"…',
       }).controller.on('change', show)
 
       // 7b. i18n：自訂繁中空狀態訊息（loading / noResults / minInputLength）

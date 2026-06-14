@@ -112,6 +112,12 @@
         minInputLength: (n) => `再輸入 ${n} 個字`,
       }
 
+      const startsFirst = (a, b, q) => {
+        const rank = (o) =>
+          o.label.toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1
+        return rank(a) - rank(b)
+      }
+
       function App() {
         const [last, setLast] = useState('（尚未變更）')
         const onChange = (value) => setLast(JSON.stringify(value))
@@ -176,6 +182,11 @@
             <section>
               <label>renderSelection（已選加 icon）</label>
               <${SelkitSelect} options=${fruits} multiple=${true} placeholder="Pick fruits…" renderSelection=${(opt) => `🔖 ${opt.label}`} onChange=${onChange} />
+            </section>
+
+            <section>
+              <label>sorter（相關度：以輸入開頭者排前）</label>
+              <${SelkitSelect} options=${fruits} sorter=${startsFirst} placeholder='Type "a"…' onChange=${onChange} />
             </section>
 
             <section>
