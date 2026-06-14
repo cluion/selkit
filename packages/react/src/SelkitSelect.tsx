@@ -46,6 +46,8 @@ export interface SelkitSelectProps<T = unknown> {
   value?: SelkitValue
   onChange?: (value: SelkitValue, payload: SelkitChangePayload<T>) => void
   multiple?: boolean
+  /** 多選時於選項顯示打勾（checkbox 樣式）點擊改為 toggle */
+  checkboxes?: boolean
   placeholder?: string
   searchable?: boolean
   minResultsForSearch?: number
@@ -85,6 +87,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     value,
     onChange,
     multiple = false,
+    checkboxes = false,
     placeholder = '',
     searchable = true,
     minResultsForSearch,
@@ -323,6 +326,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
 
   const rootClass = [classPrefix]
   if (multiple) rootClass.push(cls('', 'multiple'))
+  if (multiple && checkboxes) rootClass.push(cls('', 'checkboxes'))
   if (s.isOpen) rootClass.push(cls('', 'open'))
   if (s.disabled) rootClass.push(cls('', 'disabled'))
 
@@ -343,7 +347,8 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         onPointerDown={(e) => {
           if (isDisabled) return
           e.preventDefault()
-          controller.select(row.option.value)
+          if (multiple) controller.toggleSelect(row.option.value)
+          else controller.select(row.option.value)
         }}
       >
         {renderOption

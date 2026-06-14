@@ -44,6 +44,8 @@ export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
   classPrefix?: string
   /** 表單欄位名 設定後自動維護 hidden input 讓傳統表單 submit 帶值 */
   name?: string
+  /** 多選時於選項顯示打勾（checkbox 樣式）選項點擊改為 toggle 不隱藏已選 */
+  checkboxes?: boolean
   /** 啟用虛擬捲動 大量選項時只渲染可視切片 僅在無分組的扁平清單生效 */
   virtualScroll?: boolean
   /** 虛擬捲動的單列固定高度 px 預設 36 須與實際樣式高度一致 */
@@ -154,6 +156,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
 
   readonly #prefix: string
   readonly #multiple: boolean
+  readonly #checkboxes: boolean
   readonly #clearable: boolean
   readonly #placeholder: string
   readonly #name: string | undefined
@@ -204,6 +207,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#sourceSelect = sourceSelect
     this.#prefix = cfg.classPrefix ?? 'selkit'
     this.#multiple = cfg.multiple ?? false
+    this.#checkboxes = cfg.checkboxes ?? false
     this.#clearable = cfg.clearable ?? !this.#multiple
     this.#placeholder = cfg.placeholder ?? ''
     this.#name = cfg.name
@@ -217,6 +221,9 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.element = document.createElement('div')
     this.element.className = this.#prefix
     if (this.#multiple) this.element.classList.add(this.#cls('', 'multiple'))
+    if (this.#multiple && this.#checkboxes) {
+      this.element.classList.add(this.#cls('', 'checkboxes'))
+    }
 
     this.#control = document.createElement('div')
     this.#control.className = this.#cls('control')
@@ -367,7 +374,10 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       }
       const index = Number(optEl.dataset.index)
       const opt = this.controller.getState().visibleOptions[index]
-      if (opt) this.controller.select(opt.value)
+      if (!opt) return
+      // 多選點擊改為 toggle 讓已選項可再點取消（checkbox UX）
+      if (this.#multiple) this.controller.toggleSelect(opt.value)
+      else this.controller.select(opt.value)
     })
 
     // 捲到接近底部時載入下一頁 無更多或載入中時 loadMore 自身會忽略

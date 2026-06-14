@@ -219,3 +219,41 @@
 .selkit__create.selkit__option--active {
   color: inherit;
 }
+
+/* checkbox 多選樣式：每個選項前置可勾選方框 由 aria-selected 驅動 */
+.selkit--checkboxes .selkit__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selkit--checkboxes .selkit__option::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--selkit-border);
+  border-radius: 4px;
+  background: var(--selkit-bg);
+  box-sizing: border-box;
+}
+
+.selkit--checkboxes .selkit__option[aria-selected='true']::before {
+  border-color: var(--selkit-border-focus);
+  background: var(--selkit-border-focus);
+  /* 白色勾號 */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* 選取後不再加底色 改以打勾表示 避免雙重視覺 */
+.selkit--checkboxes .selkit__option--selected {
+  background: transparent;
+  font-weight: 400;
+}
+
+/* 建立列不顯示勾選框 */
+.selkit--checkboxes .selkit__create::before {
+  content: none;
+}

@@ -265,7 +265,9 @@ class Selkit<T> implements SelkitController<T> {
     const { activeIndex, visibleOptions } = this.#state
     const opt = activeIndex >= 0 ? visibleOptions[activeIndex] : undefined
     if (opt) {
-      this.select(opt.value)
+      // 多選：再次觸發同一項即取消（checkbox 式 toggle）單選維持選取
+      if (this.#multiple) this.toggleSelect(opt.value)
+      else this.select(opt.value)
     } else if (this.#taggable) {
       // 落在建立列（index === visibleOptions.length）或無相符 Enter 皆建立 tag
       this.createTag()

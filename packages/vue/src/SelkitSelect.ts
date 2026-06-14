@@ -48,6 +48,7 @@ export const SelkitSelect = defineComponent({
       default: null,
     },
     multiple: { type: Boolean, default: false },
+    checkboxes: { type: Boolean, default: false },
     placeholder: { type: String, default: '' },
     searchable: { type: Boolean, default: true },
     minResultsForSearch: { type: Number, default: undefined },
@@ -393,7 +394,8 @@ export const SelkitSelect = defineComponent({
             onPointerdown: (e: PointerEvent) => {
               if (isDisabled) return
               e.preventDefault()
-              controller.select(row.option.value)
+              if (props.multiple) controller.toggleSelect(row.option.value)
+              else controller.select(row.option.value)
             },
           },
           slots.option
@@ -469,6 +471,9 @@ export const SelkitSelect = defineComponent({
 
       const rootClasses = [prefix]
       if (props.multiple) rootClasses.push(cls('', 'multiple'))
+      if (props.multiple && props.checkboxes) {
+        rootClasses.push(cls('', 'checkboxes'))
+      }
       if (s.isOpen) rootClasses.push(cls('', 'open'))
       if (s.disabled) rootClasses.push(cls('', 'disabled'))
 

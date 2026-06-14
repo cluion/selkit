@@ -192,6 +192,24 @@ describe('highlight 移動（不 wrap、跳過 disabled）', () => {
     s.selectActive()
     expect(s.getState().selected.map((o) => o.value)).toEqual(['b'])
   })
+
+  it('多選 selectActive 對已選項目再觸發即取消（toggle）', () => {
+    const s = createSelkit({ options: OPTIONS, multiple: true })
+    s.open()
+    s.moveActive(1) // Banana
+    s.selectActive() // 選取
+    s.selectActive() // 再次 → 取消
+    expect(s.getState().selected).toEqual([])
+  })
+
+  it('單選 selectActive 不 toggle（再觸發維持選取）', () => {
+    const s = createSelkit({ options: OPTIONS })
+    s.open()
+    s.selectActive() // Apple
+    s.open()
+    s.selectActive()
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a'])
+  })
 })
 
 describe('clear / 動態更新', () => {

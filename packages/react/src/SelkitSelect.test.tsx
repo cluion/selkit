@@ -95,6 +95,42 @@ describe('多選', () => {
     expect(container.querySelectorAll('.selkit__tag')).toHaveLength(2)
     expect(container.querySelector('.selkit__dropdown')).toBeTruthy()
   })
+
+  it('再點已選項即取消（toggle）', () => {
+    const { container } = render(<SelkitSelect options={OPTIONS} multiple />)
+    fireEvent.pointerDown(control(container as HTMLElement))
+    fireEvent.pointerDown(options(container as HTMLElement)[0]!)
+    expect(container.querySelectorAll('.selkit__tag')).toHaveLength(1)
+    fireEvent.pointerDown(options(container as HTMLElement)[0]!)
+    expect(container.querySelectorAll('.selkit__tag')).toHaveLength(0)
+  })
+})
+
+describe('checkboxes 多選打勾', () => {
+  it('多選 + checkboxes 加上 root modifier class', () => {
+    const { container } = render(
+      <SelkitSelect options={OPTIONS} multiple checkboxes />,
+    )
+    expect(
+      container.querySelector('.selkit')?.classList.contains('selkit--checkboxes'),
+    ).toBe(true)
+  })
+
+  it('已選選項以 aria-selected 標記供樣式打勾', () => {
+    const { container } = render(
+      <SelkitSelect options={OPTIONS} multiple checkboxes value={['a']} />,
+    )
+    fireEvent.pointerDown(control(container as HTMLElement))
+    const first = options(container as HTMLElement)[0]!
+    expect(first.getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('單選時不加 checkboxes class', () => {
+    const { container } = render(<SelkitSelect options={OPTIONS} checkboxes />)
+    expect(
+      container.querySelector('.selkit')?.classList.contains('selkit--checkboxes'),
+    ).toBe(false)
+  })
 })
 
 describe('搜尋', () => {

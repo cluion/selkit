@@ -76,6 +76,33 @@ describe('多選', () => {
     expect(w.findAll('.selkit__tag')).toHaveLength(2)
     expect(w.find('.selkit__dropdown').exists()).toBe(true)
   })
+
+  it('再點已選項即取消（toggle）', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS, multiple: true },
+    })
+    await w.find('.selkit__control').trigger('pointerdown')
+    await w.findAll('.selkit__option')[0]!.trigger('pointerdown')
+    expect(w.findAll('.selkit__tag')).toHaveLength(1)
+    await w.findAll('.selkit__option')[0]!.trigger('pointerdown')
+    expect(w.findAll('.selkit__tag')).toHaveLength(0)
+  })
+})
+
+describe('checkboxes 多選打勾', () => {
+  it('多選 + checkboxes 加上 root modifier class', () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS, multiple: true, checkboxes: true },
+    })
+    expect(w.find('.selkit').classes()).toContain('selkit--checkboxes')
+  })
+
+  it('單選時不加 checkboxes class', () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS, checkboxes: true },
+    })
+    expect(w.find('.selkit').classes()).not.toContain('selkit--checkboxes')
+  })
 })
 
 describe('搜尋', () => {

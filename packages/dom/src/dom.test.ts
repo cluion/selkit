@@ -363,6 +363,44 @@ describe('多選', () => {
     const inst = createSelkitDom(host, { options: OPTIONS, multiple: true })
     expect($(inst.element, '.selkit__dropdown').getAttribute('aria-multiselectable')).toBe('true')
   })
+
+  it('再點已選項即取消（toggle）', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS, multiple: true })
+    pointerdown($(inst.element, '.selkit__control'))
+    pointerdown($$(inst.element, '.selkit__option')[0]!)
+    expect(inst.controller.getState().selected.map((o) => o.value)).toEqual(['a'])
+    pointerdown($$(inst.element, '.selkit__option')[0]!)
+    expect(inst.controller.getState().selected).toEqual([])
+  })
+})
+
+describe('checkboxes 多選打勾', () => {
+  it('多選 + checkboxes 加上 root modifier class', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      multiple: true,
+      checkboxes: true,
+    })
+    expect(inst.element.classList.contains('selkit--checkboxes')).toBe(true)
+  })
+
+  it('已選選項帶 aria-selected=true 供樣式打勾', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      multiple: true,
+      checkboxes: true,
+      value: ['a'],
+    })
+    pointerdown($(inst.element, '.selkit__control'))
+    expect(
+      $$(inst.element, '.selkit__option')[0]!.getAttribute('aria-selected'),
+    ).toBe('true')
+  })
+
+  it('單選時不加 checkboxes class', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS, checkboxes: true })
+    expect(inst.element.classList.contains('selkit--checkboxes')).toBe(false)
+  })
 })
 
 describe('destroy', () => {
