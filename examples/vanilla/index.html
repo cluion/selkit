@@ -93,6 +93,12 @@
     </section>
 
     <section>
+      <label for="create-row">可見建立列（清單顯示 Add "foo" 可點）</label>
+      <div id="create-row"></div>
+      <div class="hint">輸入不存在的字，清單末尾出現可點的建立列；此處用自訂文字「建立 …」。</div>
+    </section>
+
+    <section>
       <label for="tpl-option">templateOption（選項加 icon）</label>
       <div id="tpl-option"></div>
       <div class="hint">下拉每個選項前加 🍎；已選項顯示 ✓。回傳 Node 即可放任意標記。</div>
@@ -241,6 +247,16 @@
         createTag: (q) => ({ value: q.toLowerCase(), label: q }),
         tokenSeparators: [',', ' '],
         placeholder: 'Type or paste a,b,c…',
+      }).controller.on('change', show)
+
+      // 7b3. 可見建立列：taggable 時清單顯示可點的「建立 …」列
+      createSelkitDom(document.getElementById('create-row'), {
+        options: fruits,
+        multiple: true,
+        taggable: true,
+        createTag: (q) => ({ value: q.toLowerCase(), label: q }),
+        messages: { create: (q) => `建立「${q}」` },
+        placeholder: 'Type a new fruit…',
       }).controller.on('change', show)
 
       // 7c0. templateOption：下拉選項加 icon（回傳 Node），已選顯示 ✓

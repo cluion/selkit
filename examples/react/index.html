@@ -154,6 +154,11 @@
             </section>
 
             <section>
+              <label>可見建立列（清單顯示 Add "foo" 可點）</label>
+              <${SelkitSelect} options=${fruits} multiple=${true} taggable=${true} createTag=${(q) => ({ value: q.toLowerCase(), label: q })} messages=${{ create: (q) => `建立「${q}」` }} placeholder="Type a new fruit…" onChange=${onChange} />
+            </section>
+
+            <section>
               <label>renderOption（選項加 icon）</label>
               <${SelkitSelect} options=${fruits} placeholder="Pick a fruit…" renderOption=${(opt, { selected }) => `${selected ? '✓ ' : '🍎 '}${opt.label}`} onChange=${onChange} />
             </section>

@@ -150,6 +150,11 @@
           </section>
 
           <section>
+            <label>可見建立列（清單顯示 Add "foo" 可點）</label>
+            <SelkitSelect :options="fruits" multiple taggable :create-tag="makeTag" :messages="{ create: (q) => `建立「${q}」` }" placeholder="Type a new fruit…" @change="onChange" />
+          </section>
+
+          <section>
             <label>option slot（選項加 icon）</label>
             <SelkitSelect :options="fruits" placeholder="Pick a fruit…" @change="onChange">
               <template #option="{ option, selected }">{{ selected ? '✓ ' : '🍎 ' }}{{ option.label }}</template>
