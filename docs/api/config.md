@@ -100,6 +100,30 @@ option with `renderOption` (React) / the `option` slot (Vue) / `templateOption`
 slot (Vue) / `templateSelection` (DOM). Option `meta` is `{ index, active,
 selected }`; selection `meta` is `{ index, multiple }`.
 
+## Swappable components
+
+Beyond option/selection content, you can replace the content of the structural
+chrome — the dropdown arrow, clear button, tag remove button, group heading and
+the empty/loading row. Each adapter uses its idiomatic mechanism, and **only the
+inner content is swapped** — the wrappers, classes and behavior (click handling,
+event delegation) stay intact, so you can't accidentally break the clear/remove
+buttons.
+
+| Part | DOM config | Vue slot | React prop | Meta |
+| --- | --- | --- | --- | --- |
+| Dropdown arrow | `templateArrow` | `arrow` | `renderArrow` | `{ open }` |
+| Clear button | `templateClear` | `clear` | `renderClear` | — |
+| Tag remove button | `templateTagRemove` | `tag-remove` | `renderTagRemove` | `(option, { index })` |
+| Group heading | `templateGroup` | `group` | `renderGroup` | `{ label, disabled }` |
+| Empty / loading | `templateEmpty` | `empty` | `renderEmpty` | `{ reason, message, query }` |
+
+DOM hooks return `string | Node` (strings are set as text for XSS safety, Nodes
+are appended); Vue slots and React props return their native node types. The
+`empty` hook's `reason` is `'loading' \| 'min-input' \| 'no-results'` and
+`message` is the resolved default text — branch on `reason` to show a spinner
+while loading and fall back to `message` otherwise. These are presentation-only,
+so they live entirely in the adapters (not in `@selkit/core`).
+
 ## Types
 
 ```ts

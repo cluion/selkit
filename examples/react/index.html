@@ -191,6 +191,21 @@
             </section>
 
             <section>
+              <label>可換元件（箭頭／清除鈕／移除鈕／分組標題／空狀態）</label>
+              <${SelkitSelect}
+                options=${grouped}
+                multiple=${true}
+                placeholder="Swappable parts…"
+                renderArrow=${({ open }) => (open ? '▾' : '▸')}
+                renderClear=${() => '🧹'}
+                renderTagRemove=${() => '✖'}
+                renderGroup=${({ label }) => `— ${label} —`}
+                renderEmpty=${({ reason, message }) => (reason === 'no-results' ? '🤷 找不到符合的項目' : message)}
+                onChange=${onChange}
+              />
+            </section>
+
+            <section>
               <label>autogrow（輸入框寬度隨字增長）</label>
               <${SelkitSelect} options=${fruits} multiple=${true} autogrow=${true} placeholder="Type…" onChange=${onChange} />
             </section>

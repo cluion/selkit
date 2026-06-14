@@ -265,6 +265,71 @@ describe('renderSelection', () => {
   })
 })
 
+describe('可換元件 render* 自訂結構零件', () => {
+  const GROUPED: SelkitItem[] = [
+    { label: 'Fruit', options: [{ value: 'a', label: 'Apple' }] },
+  ]
+
+  it('renderArrow 覆寫箭頭內容並帶 open', () => {
+    const { container } = render(
+      <SelkitSelect
+        options={OPTIONS}
+        renderArrow={(m) => (m.open ? 'OPEN' : 'CLOSED')}
+      />,
+    )
+    const arrow = () => container.querySelector('.selkit__arrow') as HTMLElement
+    expect(arrow().textContent).toBe('CLOSED')
+    fireEvent.pointerDown(control(container as HTMLElement))
+    expect(arrow().textContent).toBe('OPEN')
+  })
+
+  it('renderClear 覆寫清除鈕內容', () => {
+    const { container } = render(
+      <SelkitSelect options={OPTIONS} value="a" renderClear={() => '✗'} />,
+    )
+    expect(container.querySelector('.selkit__clear')?.textContent).toBe('✗')
+  })
+
+  it('renderTagRemove 覆寫移除鈕內容並帶 index', () => {
+    const { container } = render(
+      <SelkitSelect
+        options={OPTIONS}
+        multiple
+        value={['a', 'b']}
+        renderTagRemove={(_o, m) => `del${m.index}`}
+      />,
+    )
+    const texts = Array.from(
+      container.querySelectorAll('.selkit__tag-remove'),
+    ).map((e) => e.textContent)
+    expect(texts).toEqual(['del0', 'del1'])
+  })
+
+  it('renderGroup 覆寫分組標題並帶 meta', () => {
+    const { container } = render(
+      <SelkitSelect options={GROUPED} renderGroup={(m) => `# ${m.label}`} />,
+    )
+    fireEvent.pointerDown(control(container as HTMLElement))
+    expect(container.querySelector('.selkit__group')?.textContent).toBe(
+      '# Fruit',
+    )
+  })
+
+  it('renderEmpty 覆寫空狀態並帶 reason / message', () => {
+    const { container } = render(
+      <SelkitSelect
+        options={OPTIONS}
+        renderEmpty={(m) => `${m.reason}:${m.message}`}
+      />,
+    )
+    const input = container.querySelector('.selkit__input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'zzz' } })
+    expect(container.querySelector('.selkit__empty')?.textContent).toBe(
+      'no-results:No results',
+    )
+  })
+})
+
 describe('虛擬捲動', () => {
   const many: SelkitItem[] = Array.from({ length: 100 }, (_, i) => ({
     value: i,

@@ -97,6 +97,12 @@ const off = controller.on('change', ({ value }) => console.log(value))
 回傳下拉無 row 時要顯示的字串 — 依目前狀態擇一回傳 `loading`、
 `minInputLength(remaining)` 或 `noResults`。可透過 [`messages` 設定](/zh/api/config#i18n-訊息)自訂。
 
+### `getEmptyReason()`
+
+回傳下拉為空的原因 — `'loading' | 'min-input' | 'no-results'`，與 `getEmptyMessage()`
+同優先序。adapter 會把它傳給 [`empty` 可換元件](/zh/api/config#可換元件)，讓你能分流
+（例如僅在 `'loading'` 時顯示 spinner）。
+
 ## 生命週期
 
 ### `destroy()`

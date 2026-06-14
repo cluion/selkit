@@ -1119,3 +1119,28 @@ describe('getEmptyMessage 可自訂訊息 (i18n)', () => {
     expect(s.getEmptyMessage()).toBe('No results')
   })
 })
+
+describe('getEmptyReason 與 getEmptyMessage 同優先序', () => {
+  it('無相符回傳 no-results', () => {
+    const s = createSelkit({ options: [] })
+    expect(s.getEmptyReason()).toBe('no-results')
+  })
+
+  it('未達 minInputLength 回傳 min-input', () => {
+    const s = createSelkit({ options: OPTIONS, minInputLength: 3 })
+    expect(s.getEmptyReason()).toBe('min-input')
+    s.setQuery('abc') // 達標後改回 no-results 或有結果
+    expect(s.getEmptyReason()).toBe('no-results')
+  })
+
+  it('載入中回傳 loading', async () => {
+    const loadOptions = vi.fn(async () => {
+      await new Promise((r) => setTimeout(r, 5))
+      return OPTIONS
+    })
+    const s = createSelkit({ loadOptions, debounce: 0 })
+    s.setQuery('a')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(s.getEmptyReason()).toBe('loading')
+  })
+})

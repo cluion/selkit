@@ -234,6 +234,9 @@ export interface SelkitGroupedView<T = unknown> {
   rows: SelkitViewRow<T>[]
 }
 
+/** 下拉為空的原因 對應 getEmptyMessage 的優先序：載入中 / 未達最少字數 / 無相符 */
+export type SelkitEmptyReason = 'loading' | 'min-input' | 'no-results'
+
 // ─────────────────────────────────────────────────────────────
 // 7. Controller 介面
 // ─────────────────────────────────────────────────────────────
@@ -296,6 +299,8 @@ export interface SelkitController<T = unknown> {
   getGroupedView(): SelkitGroupedView<T>
   /** 下拉為空時應顯示的訊息（loading / 無相符 / 未達字數） 依目前狀態擇一  */
   getEmptyMessage(): string
+  /** 下拉為空的原因 與 getEmptyMessage 同優先序 供 adapter 自訂 empty/loading 渲染時分流 */
+  getEmptyReason(): SelkitEmptyReason
 
   destroy(): void
 }

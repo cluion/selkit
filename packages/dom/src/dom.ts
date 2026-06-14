@@ -13,6 +13,7 @@ import type {
   SelkitA11y,
   SelkitConfig,
   SelkitController,
+  SelkitEmptyReason,
   SelkitItem,
   SelkitOption,
   SelkitState,
@@ -69,6 +70,23 @@ export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
     option: SelkitOption<T>,
     meta: { index: number; active: boolean; selected: boolean },
   ) => string | Node
+  /** 自訂下拉箭頭內容（▾）外殼保留 回傳 string 走 textContent Node 直接掛入 */
+  templateArrow?: (meta: { open: boolean }) => string | Node
+  /** 自訂清除鈕內容（×）按鈕外殼與 click 行為保留 */
+  templateClear?: () => string | Node
+  /** 自訂多選標籤移除鈕內容（×）按鈕外殼與 click 行為保留 */
+  templateTagRemove?: (
+    option: SelkitOption<T>,
+    meta: { index: number },
+  ) => string | Node
+  /** 自訂分組標題內容 外殼保留 */
+  templateGroup?: (meta: { label: string; disabled: boolean }) => string | Node
+  /** 自訂下拉為空/載入中的整塊內容 reason 分流 message 為預設文字 */
+  templateEmpty?: (meta: {
+    reason: SelkitEmptyReason
+    message: string
+    query: string
+  }) => string | Node
 }
 
 export interface SelkitDomInstance<T = unknown> {
@@ -184,6 +202,11 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         meta: { index: number; active: boolean; selected: boolean },
       ) => string | Node)
     | undefined
+  readonly #templateArrow: SelkitDomConfig<T>['templateArrow']
+  readonly #templateClear: SelkitDomConfig<T>['templateClear']
+  readonly #templateTagRemove: SelkitDomConfig<T>['templateTagRemove']
+  readonly #templateGroup: SelkitDomConfig<T>['templateGroup']
+  readonly #templateEmpty: SelkitDomConfig<T>['templateEmpty']
   readonly #sourceSelect: HTMLSelectElement | null
 
   readonly #control: HTMLElement
@@ -229,6 +252,11 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#dropdownParent = resolveParent(cfg.dropdownParent)
     this.#templateSelection = cfg.templateSelection
     this.#templateOption = cfg.templateOption
+    this.#templateArrow = cfg.templateArrow
+    this.#templateClear = cfg.templateClear
+    this.#templateTagRemove = cfg.templateTagRemove
+    this.#templateGroup = cfg.templateGroup
+    this.#templateEmpty = cfg.templateEmpty
     this.controller = createSelkit<T>(cfg)
 
     this.element = document.createElement('div')
@@ -512,7 +540,13 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.element.classList.toggle(this.#cls('', 'disabled'), s.disabled)
   }
 
-  /** 套用 templateSelection 到已選容器 字串走 textContent Node 直接掛入 無模板則用 label */
+  /** 套用模板輸出：字串走 textContent（防 XSS）Node 直接掛入 */
+  #applyTemplate(host: HTMLElement, out: string | Node): void {
+    if (out instanceof Node) host.append(out)
+    else host.textContent = out
+  }
+
+  /** 套用 templateSelection 到已選容器 無模板則用 label */
   #fillSelection(
     host: HTMLElement,
     option: SelkitOption<T>,
@@ -522,9 +556,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       host.textContent = option.label
       return
     }
-    const out = this.#templateSelection(option, meta)
-    if (out instanceof Node) host.append(out)
-    else host.textContent = out
+    this.#applyTemplate(host, this.#templateSelection(option, meta))
   }
 
   #renderField(s: Readonly<SelkitState<T>>): void {
@@ -550,7 +582,11 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         remove.className = this.#cls('tag-remove')
         remove.dataset.index = String(i)
         remove.setAttribute('aria-label', `Remove ${opt.label}`)
-        remove.textContent = '×'
+        if (this.#templateTagRemove) {
+          this.#applyTemplate(remove, this.#templateTagRemove(opt, { index: i }))
+        } else {
+          remove.textContent = '×'
+        }
 
         tag.append(label, remove)
         frag.append(tag)
@@ -585,13 +621,20 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       clear.type = 'button'
       clear.className = this.#cls('clear')
       clear.setAttribute('aria-label', 'Clear')
-      clear.textContent = '×'
+      if (this.#templateClear) {
+        this.#applyTemplate(clear, this.#templateClear())
+      } else {
+        clear.textContent = '×'
+      }
       this.#indicators.append(clear)
     }
 
     const arrow = document.createElement('span')
     arrow.className = this.#cls('arrow')
     arrow.setAttribute('aria-hidden', 'true')
+    if (this.#templateArrow) {
+      this.#applyTemplate(arrow, this.#templateArrow({ open: s.isOpen }))
+    }
     this.#indicators.append(arrow)
   }
 
@@ -603,7 +646,19 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     if (view.rows.length === 0) {
       const empty = document.createElement('div')
       empty.className = this.#cls('empty')
-      empty.textContent = this.controller.getEmptyMessage()
+      const message = this.controller.getEmptyMessage()
+      if (this.#templateEmpty) {
+        this.#applyTemplate(
+          empty,
+          this.#templateEmpty({
+            reason: this.controller.getEmptyReason(),
+            message,
+            query: s.query,
+          }),
+        )
+      } else {
+        empty.textContent = message
+      }
       this.#dropdown.append(empty)
       return
     }
@@ -635,7 +690,14 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         const group = document.createElement('div')
         group.className = this.#cls('group')
         if (row.disabled) group.classList.add(this.#cls('group', 'disabled'))
-        group.textContent = row.label
+        if (this.#templateGroup) {
+          this.#applyTemplate(
+            group,
+            this.#templateGroup({ label: row.label, disabled: !!row.disabled }),
+          )
+        } else {
+          group.textContent = row.label
+        }
         this.#dropdown.append(group)
         continue
       }

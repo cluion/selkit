@@ -141,6 +141,14 @@
     </section>
 
     <section>
+      <label for="swappable">可換元件（換掉箭頭／清除鈕／移除鈕／分組標題／空狀態）</label>
+      <div id="swappable"></div>
+      <div class="hint">
+        箭頭換成 ▸/▾、清除鈕與移除鈕換成 emoji、分組標題加前綴、查無資料時顯示自訂文案。
+      </div>
+    </section>
+
+    <section>
       <label for="few">minResultsForSearch（選項太少時隱藏搜尋框）</label>
       <div id="few"></div>
     </section>
@@ -360,6 +368,19 @@
           span.textContent = `🔖 ${opt.label}`
           return span
         },
+      }).controller.on('change', show)
+
+      // 7d. 可換元件：替換結構性零件的內容（外殼與行為保留）
+      createSelkitDom(document.getElementById('swappable'), {
+        options: grouped,
+        multiple: true,
+        placeholder: 'Swappable parts…',
+        templateArrow: ({ open }) => (open ? '▾' : '▸'),
+        templateClear: () => '🧹',
+        templateTagRemove: () => '✖',
+        templateGroup: ({ label }) => `— ${label} —`,
+        templateEmpty: ({ reason, message }) =>
+          reason === 'no-results' ? '🤷 找不到符合的項目' : message,
       }).controller.on('change', show)
 
       // 8. minResultsForSearch：選項少於 10 個時隱藏搜尋框

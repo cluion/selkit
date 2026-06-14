@@ -15,6 +15,7 @@ import type {
 } from 'react'
 import { computeVirtualRange } from '@selkit/core'
 import type {
+  SelkitEmptyReason,
   SelkitItem,
   SelkitLoadResult,
   SelkitMessages,
@@ -104,6 +105,23 @@ export interface SelkitSelectProps<T = unknown> {
     option: SelkitOption<T>,
     meta: { index: number; multiple: boolean },
   ) => ReactNode
+  /** 自訂下拉箭頭內容（▾）外殼保留 */
+  renderArrow?: (meta: { open: boolean }) => ReactNode
+  /** 自訂清除鈕內容（×）按鈕外殼與 click 行為保留 */
+  renderClear?: () => ReactNode
+  /** 自訂多選標籤移除鈕內容（×）按鈕外殼與 click 行為保留 */
+  renderTagRemove?: (
+    option: SelkitOption<T>,
+    meta: { index: number },
+  ) => ReactNode
+  /** 自訂分組標題內容 外殼保留 */
+  renderGroup?: (meta: { label: string; disabled: boolean }) => ReactNode
+  /** 自訂下拉為空/載入中的整塊內容 reason 分流 message 為預設文字 */
+  renderEmpty?: (meta: {
+    reason: SelkitEmptyReason
+    message: string
+    query: string
+  }) => ReactNode
 }
 
 export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
@@ -139,6 +157,11 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     messages,
     renderOption,
     renderSelection,
+    renderArrow,
+    renderClear,
+    renderTagRemove,
+    renderGroup,
+    renderEmpty,
   } = props
 
   const cls = (name: string, mod?: string): string => {
@@ -432,8 +455,17 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   const hasGroups = view.rows.some((r) => r.type === 'group')
   let dropdownContent: ReactNode
   if (view.rows.length === 0) {
+    const emptyMessage = controller.getEmptyMessage()
     dropdownContent = (
-      <div className={cls('empty')}>{controller.getEmptyMessage()}</div>
+      <div className={cls('empty')}>
+        {renderEmpty
+          ? renderEmpty({
+              reason: controller.getEmptyReason(),
+              message: emptyMessage,
+              query,
+            })
+          : emptyMessage}
+      </div>
     )
   } else if (virtualScroll && !hasGroups) {
     // 虛擬捲動僅在無分組的扁平清單啟用
@@ -460,7 +492,9 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     dropdownContent = view.rows.map((row) =>
       row.type === 'group' ? (
         <div className={cls('group')} key={`group-${row.label}`}>
-          {row.label}
+          {renderGroup
+            ? renderGroup({ label: row.label, disabled: !!row.disabled })
+            : row.label}
         </div>
       ) : row.type === 'create' ? (
         buildCreateRow(row)
@@ -577,7 +611,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
                   data-index={i}
                   aria-label={`Remove ${opt.label}`}
                 >
-                  ×
+                  {renderTagRemove ? renderTagRemove(opt, { index: i }) : '×'}
                 </button>
               </span>
             ))
@@ -614,10 +648,12 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         <div className={cls('indicators')}>
           {clearableResolved && s.selected.length > 0 ? (
             <button type="button" className={cls('clear')} aria-label="Clear">
-              ×
+              {renderClear ? renderClear() : '×'}
             </button>
           ) : null}
-          <span className={cls('arrow')} aria-hidden="true" />
+          <span className={cls('arrow')} aria-hidden="true">
+            {renderArrow ? renderArrow({ open: s.isOpen }) : null}
+          </span>
         </div>
       </div>
       {s.isOpen ? renderDropdown() : null}

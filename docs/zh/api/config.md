@@ -96,6 +96,26 @@ Vue 與 React 元件以 props 揭露相同選項，另加 `virtualScroll` / `ite
 自訂已選顯示用 `renderSelection`（React）／`selection` slot（Vue）／`templateSelection`（DOM）。
 選項 `meta` 為 `{ index, active, selected }`；已選 `meta` 為 `{ index, multiple }`。
 
+## 可換元件
+
+除了選項／已選的內容外，你還能替換結構性零件的內容——下拉箭頭、清除鈕、標籤移除鈕、
+分組標題、以及空／載入列。每個 adapter 用各自的慣用機制，且**只替換內層內容**——外殼、
+class、行為（click 處理、事件委派）都維持不變，所以不會不小心弄壞清除／移除鈕。
+
+| 零件 | DOM config | Vue slot | React prop | Meta |
+| --- | --- | --- | --- | --- |
+| 下拉箭頭 | `templateArrow` | `arrow` | `renderArrow` | `{ open }` |
+| 清除鈕 | `templateClear` | `clear` | `renderClear` | — |
+| 標籤移除鈕 | `templateTagRemove` | `tag-remove` | `renderTagRemove` | `(option, { index })` |
+| 分組標題 | `templateGroup` | `group` | `renderGroup` | `{ label, disabled }` |
+| 空／載入 | `templateEmpty` | `empty` | `renderEmpty` | `{ reason, message, query }` |
+
+DOM 鉤子回傳 `string | Node`（字串走 textContent 防 XSS、Node 直接掛入）；Vue slot 與
+React prop 回傳各自原生的節點型別。`empty` 鉤子的 `reason` 為
+`'loading' | 'min-input' | 'no-results'`，`message` 為已解析的預設文字——可依 `reason`
+分流（例如載入中顯示 spinner、其餘沿用 `message`）。這些都是純呈現層，因此完全位於
+adapter（不在 `@selkit/core`）。
+
 ## 型別
 
 ```ts

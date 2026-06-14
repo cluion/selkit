@@ -9,6 +9,7 @@ import type {
   SelkitA11y,
   SelkitConfig,
   SelkitController,
+  SelkitEmptyReason,
   SelkitEvents,
   SelkitGroupedView,
   SelkitItem,
@@ -547,6 +548,13 @@ class Selkit<T> implements SelkitController<T> {
       return this.#messages.minInputLength(this.#minInputLength - s.query.length)
     }
     return this.#messages.noResults
+  }
+
+  getEmptyReason(): SelkitEmptyReason {
+    const s = this.#state
+    if (s.loading) return 'loading'
+    if (this.#belowMin(s.query)) return 'min-input'
+    return 'no-results'
   }
 
   destroy(): void {

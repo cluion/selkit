@@ -195,6 +195,103 @@ describe('templateOption 自訂選項', () => {
   })
 })
 
+describe('可換元件 template* 自訂結構零件', () => {
+  const GROUPED: SelkitItem[] = [
+    { label: 'Fruit', options: [{ value: 'a', label: 'Apple' }] },
+  ]
+
+  it('templateArrow 覆寫箭頭內容並帶 open meta', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      templateArrow: (m) => (m.open ? 'OPEN' : 'CLOSED'),
+    })
+    expect($(inst.element, '.selkit__arrow').textContent).toBe('CLOSED')
+    pointerdown($(inst.element, '.selkit__control'))
+    expect($(inst.element, '.selkit__arrow').textContent).toBe('OPEN')
+  })
+
+  it('templateArrow 回傳 Node', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      templateArrow: () => {
+        const i = document.createElement('i')
+        i.className = 'chevron'
+        return i
+      },
+    })
+    expect($(inst.element, '.selkit__arrow .chevron')).toBeTruthy()
+  })
+
+  it('templateClear 覆寫清除鈕內容 點擊仍清除', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      value: 'a',
+      templateClear: () => '✗',
+    })
+    const clear = $(inst.element, '.selkit__clear')
+    expect(clear.textContent).toBe('✗')
+    pointerdown(clear)
+    expect(inst.controller.getState().selected).toEqual([])
+  })
+
+  it('templateTagRemove 覆寫移除鈕內容 點擊仍刪 tag 並帶 meta', () => {
+    const seen: number[] = []
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      multiple: true,
+      value: ['a', 'b'],
+      templateTagRemove: (_o, m) => {
+        seen.push(m.index)
+        return 'del'
+      },
+    })
+    expect(seen).toEqual([0, 1])
+    const remove = $$(inst.element, '.selkit__tag-remove')[0]!
+    expect(remove.textContent).toBe('del')
+    pointerdown(remove)
+    expect(inst.controller.getState().selected.map((o) => o.value)).toEqual(['b'])
+  })
+
+  it('templateGroup 覆寫分組標題內容並帶 meta', () => {
+    const inst = createSelkitDom(host, {
+      options: GROUPED,
+      templateGroup: (m) => `# ${m.label}`,
+    })
+    pointerdown($(inst.element, '.selkit__control'))
+    expect($(inst.element, '.selkit__group').textContent).toBe('# Fruit')
+  })
+
+  it('templateEmpty no-results：reason 與預設 message 傳入', () => {
+    const seen: Array<{ reason: string; message: string; query: string }> = []
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      templateEmpty: (m) => {
+        seen.push({ reason: m.reason, message: m.message, query: m.query })
+        return `自訂：${m.message}`
+      },
+    })
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    input.value = 'zzz'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect($(inst.element, '.selkit__empty').textContent).toBe('自訂：No results')
+    expect(seen.at(-1)).toEqual({
+      reason: 'no-results',
+      message: 'No results',
+      query: 'zzz',
+    })
+  })
+
+  it('templateEmpty min-input：reason 為 min-input', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      minInputLength: 3,
+      templateEmpty: (m) => m.reason,
+    })
+    pointerdown($(inst.element, '.selkit__control'))
+    expect($(inst.element, '.selkit__empty').textContent).toBe('min-input')
+  })
+})
+
 describe('搜尋', () => {
   it('輸入過濾選項並開啟', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })

@@ -103,6 +103,13 @@ Returns the string to show when the dropdown has no rows — one of `loading`,
 `minInputLength(remaining)` or `noResults`, picked from the current state. Customize
 the strings via the [`messages` config](/api/config#i18n-messages).
 
+### `getEmptyReason()`
+
+Returns why the dropdown is empty — `'loading' | 'min-input' | 'no-results'`,
+using the same precedence as `getEmptyMessage()`. Adapters pass this to the
+[`empty` swappable component](/api/config#swappable-components) so you can branch
+(e.g. render a spinner only while `'loading'`).
+
 ## Lifecycle
 
 ### `destroy()`

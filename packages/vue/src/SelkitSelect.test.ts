@@ -226,6 +226,64 @@ describe('selection slot', () => {
   })
 })
 
+describe('可換元件 slot 自訂結構零件', () => {
+  const GROUPED: SelkitItem[] = [
+    { label: 'Fruit', options: [{ value: 'a', label: 'Apple' }] },
+  ]
+
+  it('arrow slot 覆寫箭頭內容並帶 open', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS },
+      slots: { arrow: (p: { open: boolean }) => (p.open ? 'OPEN' : 'CLOSED') },
+    })
+    expect(w.find('.selkit__arrow').text()).toBe('CLOSED')
+    await w.find('.selkit__control').trigger('pointerdown')
+    expect(w.find('.selkit__arrow').text()).toBe('OPEN')
+  })
+
+  it('clear slot 覆寫清除鈕內容', () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS, modelValue: 'a' },
+      slots: { clear: () => '✗' },
+    })
+    expect(w.find('.selkit__clear').text()).toBe('✗')
+  })
+
+  it('tag-remove slot 覆寫移除鈕內容並帶 index', () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS, multiple: true, modelValue: ['a', 'b'] },
+      slots: {
+        'tag-remove': (p: { option: SelkitOption; index: number }) =>
+          `del${p.index}`,
+      },
+    })
+    const texts = w.findAll('.selkit__tag-remove').map((e) => e.text())
+    expect(texts).toEqual(['del0', 'del1'])
+  })
+
+  it('group slot 覆寫分組標題並帶 meta', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: GROUPED },
+      slots: { group: (p: { label: string }) => `# ${p.label}` },
+    })
+    await w.find('.selkit__control').trigger('pointerdown')
+    expect(w.find('.selkit__group').text()).toBe('# Fruit')
+  })
+
+  it('empty slot 覆寫空狀態並帶 reason / message', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS },
+      slots: {
+        empty: (p: { reason: string; message: string }) =>
+          `${p.reason}:${p.message}`,
+      },
+    })
+    const input = w.find('.selkit__input')
+    await input.setValue('zzz')
+    expect(w.find('.selkit__empty').text()).toBe('no-results:No results')
+  })
+})
+
 describe('虛擬捲動', () => {
   const many: SelkitItem[] = Array.from({ length: 100 }, (_, i) => ({
     value: i,

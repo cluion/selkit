@@ -359,7 +359,9 @@ export const SelkitSelect = defineComponent({
                   'data-index': String(i),
                   'aria-label': `Remove ${opt.label}`,
                 },
-                '×',
+                slots['tag-remove']
+                  ? slots['tag-remove']({ option: opt, index: i })
+                  : '×',
               ),
             ]),
           )
@@ -413,11 +415,17 @@ export const SelkitSelect = defineComponent({
           h(
             'button',
             { type: 'button', class: cls('clear'), 'aria-label': 'Clear' },
-            '×',
+            slots.clear ? slots.clear({}) : '×',
           ),
         )
       }
-      indicators.push(h('span', { class: cls('arrow'), 'aria-hidden': 'true' }))
+      indicators.push(
+        h(
+          'span',
+          { class: cls('arrow'), 'aria-hidden': 'true' },
+          slots.arrow ? slots.arrow({ open: s.isOpen }) : undefined,
+        ),
+      )
 
       const buildOption = (row: OptionRow): VNode => {
         const attrs = a11y.option(row.index)
@@ -479,8 +487,19 @@ export const SelkitSelect = defineComponent({
       const dropdownChildren: VNode[] = []
       const hasGroups = view.rows.some((r) => r.type === 'group')
       if (view.rows.length === 0) {
+        const emptyMessage = controller.getEmptyMessage()
         dropdownChildren.push(
-          h('div', { class: cls('empty') }, controller.getEmptyMessage()),
+          h(
+            'div',
+            { class: cls('empty') },
+            slots.empty
+              ? slots.empty({
+                  reason: controller.getEmptyReason(),
+                  message: emptyMessage,
+                  query: query.value,
+                })
+              : emptyMessage,
+          ),
         )
       } else if (props.virtualScroll && !hasGroups) {
         // 虛擬捲動僅在無分組的扁平清單啟用
@@ -501,7 +520,15 @@ export const SelkitSelect = defineComponent({
       } else {
         for (const row of view.rows) {
           if (row.type === 'group') {
-            dropdownChildren.push(h('div', { class: cls('group') }, row.label))
+            dropdownChildren.push(
+              h(
+                'div',
+                { class: cls('group') },
+                slots.group
+                  ? slots.group({ label: row.label, disabled: !!row.disabled })
+                  : row.label,
+              ),
+            )
             continue
           }
           if (row.type === 'create') {
