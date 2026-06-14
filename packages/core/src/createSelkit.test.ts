@@ -234,6 +234,77 @@ describe('clear / 動態更新', () => {
   })
 })
 
+describe('aria-live 公告 announce', () => {
+  const capture = (s: ReturnType<typeof createSelkit>) => {
+    const msgs: string[] = []
+    s.on('announce', (p) => msgs.push(p.message))
+    return msgs
+  }
+
+  it('選取觸發 selected 公告', () => {
+    const s = createSelkit({ options: OPTIONS, multiple: true })
+    const msgs = capture(s)
+    s.select('a')
+    expect(msgs).toContain('Apple selected')
+  })
+
+  it('取消選取觸發 removed 公告', () => {
+    const s = createSelkit({ options: OPTIONS, multiple: true, value: ['a'] })
+    const msgs = capture(s)
+    s.deselect('a')
+    expect(msgs).toContain('Apple removed')
+  })
+
+  it('clear 觸發 cleared 公告', () => {
+    const s = createSelkit({ options: OPTIONS, multiple: true, value: ['a', 'b'] })
+    const msgs = capture(s)
+    s.clear()
+    expect(msgs).toContain('Selection cleared')
+  })
+
+  it('開啟後搜尋公告結果數（複數）', () => {
+    const s = createSelkit({ options: OPTIONS })
+    const msgs = capture(s)
+    s.open()
+    s.setQuery('a') // Apple / Banana / Date
+    expect(msgs).toContain('3 results available')
+  })
+
+  it('結果為 1 用單數', () => {
+    const s = createSelkit({ options: OPTIONS })
+    const msgs = capture(s)
+    s.open()
+    s.setQuery('Banana')
+    expect(msgs).toContain('1 result available')
+  })
+
+  it('搜尋無相符公告 No results available', () => {
+    const s = createSelkit({ options: OPTIONS })
+    const msgs = capture(s)
+    s.open()
+    s.setQuery('zzz')
+    expect(msgs).toContain('No results available')
+  })
+
+  it('未開啟時不公告結果數', () => {
+    const s = createSelkit({ options: OPTIONS })
+    const msgs = capture(s)
+    s.setQuery('a')
+    expect(msgs).toEqual([])
+  })
+
+  it('公告文字可自訂 (i18n)', () => {
+    const s = createSelkit({
+      options: OPTIONS,
+      multiple: true,
+      messages: { selected: (l) => `已選 ${l}` },
+    })
+    const msgs = capture(s)
+    s.select('a')
+    expect(msgs).toContain('已選 Apple')
+  })
+})
+
 describe('subscribe', () => {
   it('狀態變更時通知，unsubscribe 後停止', () => {
     const s = createSelkit({ options: OPTIONS })

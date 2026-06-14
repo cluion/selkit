@@ -89,6 +89,26 @@ describe('多選', () => {
   })
 })
 
+describe('aria-live 公告', () => {
+  it('掛載 polite live region 並於選取後更新', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS, multiple: true },
+    })
+    const live = w.find('.selkit__live')
+    expect(live.attributes('aria-live')).toBe('polite')
+    await w.find('.selkit__control').trigger('pointerdown')
+    await w.findAll('.selkit__option')[0]!.trigger('pointerdown')
+    expect(w.find('.selkit__live').text()).toBe('Apple selected')
+  })
+
+  it('搜尋後公告結果數', async () => {
+    const w = mount(SelkitSelect, { props: { options: OPTIONS } })
+    await w.find('.selkit__control').trigger('pointerdown')
+    await w.find('.selkit__input').setValue('Banana')
+    expect(w.find('.selkit__live').text()).toBe('1 result available')
+  })
+})
+
 describe('checkboxes 多選打勾', () => {
   it('多選 + checkboxes 加上 root modifier class', () => {
     const w = mount(SelkitSelect, {

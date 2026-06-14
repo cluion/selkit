@@ -25,6 +25,9 @@ import { attachPositioner, type Positioner } from './positioner'
 const LOAD_MORE_THRESHOLD = 32
 /** 虛擬捲動的預設單列高度 px 對齊 base theme 的選項高度 */
 const DEFAULT_ITEM_HEIGHT = 36
+/** sr-only：視覺隱藏但螢幕報讀可讀 內聯以免未載入主題時外露 */
+const SR_ONLY_CSS =
+  'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0'
 
 type OptionRow<T> = Extract<SelkitViewRow<T>, { type: 'option' }>
 
@@ -182,6 +185,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #input: HTMLInputElement
   readonly #indicators: HTMLElement
   readonly #dropdown: HTMLElement
+  readonly #live: HTMLElement
   #hiddenContainer: HTMLDivElement | null = null
   #selectPrevDisplay = ''
   #dragFrom = -1
@@ -190,6 +194,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #unsubscribe: () => void
   readonly #offClose: () => void
   readonly #offCreate: () => void
+  readonly #offAnnounce: () => void
   readonly #onDocPointer: (e: Event) => void
 
   constructor(target: HTMLElement | string, config: SelkitDomConfig<T>) {
@@ -245,6 +250,14 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#dropdown.className = this.#cls('dropdown')
     this.#dropdown.hidden = true
 
+    // aria-live region：螢幕報讀公告（選取/結果變化）視覺隱藏
+    this.#live = document.createElement('div')
+    this.#live.className = this.#cls('live')
+    this.#live.setAttribute('role', 'status')
+    this.#live.setAttribute('aria-live', 'polite')
+    this.#live.setAttribute('aria-atomic', 'true')
+    this.#live.style.cssText = SR_ONLY_CSS
+
     this.#field.append(this.#input)
     this.#control.append(this.#field, this.#indicators)
     if (this.#dropdownParent) {
@@ -255,6 +268,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     } else {
       this.element.append(this.#control, this.#dropdown)
     }
+    this.element.append(this.#live)
 
     if (sourceSelect) {
       // 增強模式：把元件插在原生 select 後面並隱藏 select 表單提交仍走原生 select
@@ -296,6 +310,11 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       this.#input.value = ''
     })
 
+    // 螢幕報讀公告寫入 aria-live region
+    this.#offAnnounce = this.controller.on('announce', ({ message }) => {
+      this.#live.textContent = message
+    })
+
     this.#unsubscribe = this.controller.subscribe((s) => this.#render(s))
     this.#render(this.controller.getState())
   }
@@ -304,6 +323,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#unsubscribe()
     this.#offClose()
     this.#offCreate()
+    this.#offAnnounce()
     this.#positioner?.destroy()
     document.removeEventListener('pointerdown', this.#onDocPointer)
     this.controller.destroy()

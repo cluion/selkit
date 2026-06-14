@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type {
   ChangeEvent,
+  CSSProperties,
   KeyboardEvent as ReactKeyboardEvent,
   PointerEvent as ReactPointerEvent,
   ReactNode,
@@ -28,6 +29,19 @@ const LOAD_MORE_THRESHOLD = 32
 
 type OptionRow<T> = Extract<SelkitViewRow<T>, { type: 'option' }>
 type CreateRow = Extract<SelkitViewRow, { type: 'create' }>
+
+/** sr-only：視覺隱藏但螢幕報讀可讀 內聯以免未載入主題時外露 */
+const SR_ONLY: CSSProperties = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+}
 
 function sameValue(a: SelkitValue, b: SelkitValue): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -138,6 +152,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   })
 
   const [query, setQuery] = useState('')
+  const [liveMessage, setLiveMessage] = useState('')
   const queryRef = useRef('')
   queryRef.current = query
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -171,6 +186,14 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
       setQuery('')
       queryRef.current = ''
     })
+    return off
+  }, [controller])
+
+  // 螢幕報讀公告 → aria-live region
+  useEffect(() => {
+    const off = controller.on('announce', ({ message }) =>
+      setLiveMessage(message),
+    )
     return off
   }, [controller])
 
@@ -561,6 +584,15 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         </div>
       </div>
       {s.isOpen ? renderDropdown() : null}
+      <div
+        className={cls('live')}
+        style={SR_ONLY}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {liveMessage}
+      </div>
     </div>
   )
 }

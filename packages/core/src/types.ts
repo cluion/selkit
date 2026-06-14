@@ -55,6 +55,14 @@ export interface SelkitMessages {
   minInputLength: (remaining: number) => string
   /** taggable 時「建立新項」列的文字 query 為目前輸入  */
   create: (query: string) => string
+  /** aria-live：選取某項時的公告  */
+  selected: (label: string) => string
+  /** aria-live：取消選取某項時的公告  */
+  deselected: (label: string) => string
+  /** aria-live：清空全部選取時的公告  */
+  cleared: () => string
+  /** aria-live：搜尋後可見結果數的公告  */
+  resultsCount: (count: number) => string
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -160,6 +168,8 @@ export interface SelkitEvents<T = unknown> {
   'load:end': { options: SelkitItem<T>[] }
   'load:error': { error: unknown }
   create: { option: SelkitOption<T> }
+  /** 螢幕報讀公告（選取/結果變化）adapter 寫入 aria-live region  */
+  announce: { message: string }
 }
 
 // ─────────────────────────────────────────────────────────────

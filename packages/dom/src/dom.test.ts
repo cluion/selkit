@@ -403,6 +403,33 @@ describe('checkboxes 多選打勾', () => {
   })
 })
 
+describe('aria-live 公告', () => {
+  it('掛載 polite live region', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS })
+    const live = $(inst.element, '.selkit__live')
+    expect(live).toBeTruthy()
+    expect(live.getAttribute('aria-live')).toBe('polite')
+    expect(live.getAttribute('role')).toBe('status')
+  })
+
+  it('選取後寫入公告文字', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS, multiple: true })
+    pointerdown($(inst.element, '.selkit__control'))
+    pointerdown($$(inst.element, '.selkit__option')[0]!)
+    expect($(inst.element, '.selkit__live').textContent).toBe('Apple selected')
+  })
+
+  it('搜尋後公告結果數', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS })
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    input.value = 'Banana'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect($(inst.element, '.selkit__live').textContent).toBe(
+      '1 result available',
+    )
+  })
+})
+
 describe('destroy', () => {
   it('移除元素並解除訂閱', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })

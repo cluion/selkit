@@ -106,6 +106,29 @@ describe('多選', () => {
   })
 })
 
+describe('aria-live 公告', () => {
+  it('掛載 polite live region 並於選取後更新', () => {
+    const { container } = render(<SelkitSelect options={OPTIONS} multiple />)
+    const live = container.querySelector('.selkit__live')
+    expect(live?.getAttribute('aria-live')).toBe('polite')
+    fireEvent.pointerDown(control(container as HTMLElement))
+    fireEvent.pointerDown(options(container as HTMLElement)[0]!)
+    expect(live?.textContent).toBe('Apple selected')
+  })
+
+  it('搜尋後公告結果數', () => {
+    const { container } = render(<SelkitSelect options={OPTIONS} />)
+    fireEvent.pointerDown(control(container as HTMLElement))
+    fireEvent.change(
+      container.querySelector('.selkit__input') as HTMLInputElement,
+      { target: { value: 'Banana' } },
+    )
+    expect(container.querySelector('.selkit__live')?.textContent).toBe(
+      '1 result available',
+    )
+  })
+})
+
 describe('checkboxes 多選打勾', () => {
   it('多選 + checkboxes 加上 root modifier class', () => {
     const { container } = render(

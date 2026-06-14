@@ -38,6 +38,13 @@ const DEFAULT_MESSAGES: SelkitMessages = {
   minInputLength: (remaining) =>
     `Please enter ${remaining} or more character${remaining === 1 ? '' : 's'}`,
   create: (query) => `Add "${query}"`,
+  selected: (label) => `${label} selected`,
+  deselected: (label) => `${label} removed`,
+  cleared: () => 'Selection cleared',
+  resultsCount: (count) =>
+    count === 0
+      ? 'No results available'
+      : `${count} result${count === 1 ? '' : 's'} available`,
 }
 
 type Handler = (payload: unknown) => void
@@ -204,7 +211,13 @@ class Selkit<T> implements SelkitController<T> {
       activeIndex,
     })
     this.#fire('search', { query })
-    if (this.#state.isOpen) this.#fireHighlight(activeIndex)
+    if (this.#state.isOpen) {
+      this.#fireHighlight(activeIndex)
+      // 未達字數時仍在輸入中 不公告「無結果」避免誤導
+      if (!this.#belowMin(query)) {
+        this.#announce(this.#messages.resultsCount(visibleOptions.length))
+      }
+    }
   }
 
   loadMore(): void {
@@ -291,13 +304,16 @@ class Selkit<T> implements SelkitController<T> {
       this.#applySelection([opt])
     }
     this.#fireChange()
+    this.#announce(this.#messages.selected(opt.label))
     if (this.#closeOnSelect) this.close()
   }
 
   deselect(value: string | number): void {
-    if (!this.#isSelected(value)) return
+    const removed = this.#state.selected.find((o) => o.value === value)
+    if (!removed) return
     this.#applySelection(this.#state.selected.filter((o) => o.value !== value))
     this.#fireChange()
+    this.#announce(this.#messages.deselected(removed.label))
   }
 
   toggleSelect(value: string | number): void {
@@ -308,6 +324,7 @@ class Selkit<T> implements SelkitController<T> {
     if (this.#state.selected.length === 0) return
     this.#applySelection([])
     this.#fireChange()
+    this.#announce(this.#messages.cleared())
   }
 
   moveSelected(from: number, to: number): void {
@@ -555,6 +572,10 @@ class Selkit<T> implements SelkitController<T> {
             : -1,
       })
       this.#fire('load:end', { options: items })
+      // 首次載入（非追加）且開啟時公告結果數
+      if (!append && this.#state.isOpen) {
+        this.#announce(this.#messages.resultsCount(visibleOptions.length))
+      }
     } catch (error) {
       if (seq !== this.#loadSeq || this.#destroyed) return
       this.#patch({ loading: false, loadingMore: false })
@@ -700,6 +721,11 @@ class Selkit<T> implements SelkitController<T> {
 
   #fireChange(): void {
     this.#fire('change', { selected: this.#state.selected, value: this.#value() })
+  }
+
+  /** 發出 aria-live 公告 空字串略過 */
+  #announce(message: string): void {
+    if (message) this.#fire('announce', { message })
   }
 
   #fireHighlight(index: number): void {

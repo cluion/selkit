@@ -13,6 +13,7 @@ import {
   Teleport,
   watch,
   type PropType,
+  type StyleValue,
   type VNode,
 } from 'vue'
 import { computeVirtualRange } from '@selkit/core'
@@ -31,6 +32,19 @@ const LOAD_MORE_THRESHOLD = 32
 
 type OptionRow = Extract<SelkitViewRow, { type: 'option' }>
 type CreateRow = Extract<SelkitViewRow, { type: 'create' }>
+
+/** sr-only：視覺隱藏但螢幕報讀可讀 內聯以免未載入主題時外露 */
+const SR_ONLY: StyleValue = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  padding: '0',
+  margin: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  border: '0',
+}
 
 function sameValue(a: SelkitValue, b: SelkitValue): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -127,6 +141,7 @@ export const SelkitSelect = defineComponent({
     })
 
     const query = ref('')
+    const liveMessage = ref('')
     const rootRef = ref<HTMLElement | null>(null)
     const inputRef = ref<HTMLInputElement | null>(null)
     const dropdownRef = ref<HTMLElement | null>(null)
@@ -174,6 +189,10 @@ export const SelkitSelect = defineComponent({
 
     controller.on('create', () => {
       query.value = ''
+    })
+
+    controller.on('announce', ({ message }) => {
+      liveMessage.value = message
     })
 
     controller.on('close', () => {
@@ -575,6 +594,18 @@ export const SelkitSelect = defineComponent({
           ],
         ),
         dropdownSlot,
+        // aria-live region：螢幕報讀公告 視覺隱藏
+        h(
+          'div',
+          {
+            class: cls('live'),
+            role: 'status',
+            'aria-live': 'polite',
+            'aria-atomic': 'true',
+            style: SR_ONLY,
+          },
+          liveMessage.value,
+        ),
       ])
     }
   },
