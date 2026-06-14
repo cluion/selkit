@@ -34,6 +34,7 @@ Subscribe with [`on(event, handler)`](/api/controller#on-event-handler).
 | `load:end` | `{ options }` | An async load resolves. |
 | `load:error` | `{ error }` | An async load rejects. |
 | `create` | `{ option }` | A tag is created. |
+| `announce` | `{ message }` | A screen-reader message should be read (selection / result-count changes). Adapters write it to an `aria-live` region automatically. |
 
 ```js
 controller.on('change', ({ selected, value }) => {
@@ -72,3 +73,12 @@ interface SelkitA11y {
   }
 }
 ```
+
+## Live announcements
+
+Beyond the static ARIA attributes, every adapter renders a visually-hidden
+`aria-live="polite"` region and writes the [`announce`](#events) message to it, so
+screen readers hear selection and result-count changes. Customize the wording with
+the `selected` / `deselected` / `cleared` / `resultsCount`
+[messages](/api/config#i18n-messages). The behavior is on by default — no config
+needed.

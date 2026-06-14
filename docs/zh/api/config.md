@@ -60,8 +60,16 @@ interface SelkitMessages {
   noResults: string
   minInputLength: (remaining: number) => string
   create: (query: string) => string // 預設 `Add "${query}"`
+  // aria-live 公告（螢幕報讀朗讀）
+  selected: (label: string) => string //   `${label} selected`
+  deselected: (label: string) => string // `${label} removed`
+  cleared: () => string //                  'Selection cleared'
+  resultsCount: (count: number) => string //'N results available'
 }
 ```
+
+`selected` / `deselected` / `cleared` / `resultsCount`為螢幕報讀
+[live-region 公告](/zh/api/events#live-公告)的文字。`announce` 事件預設開啟，無需設定。
 
 ## 僅限 DOM 的選項
 

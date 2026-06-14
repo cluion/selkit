@@ -33,6 +33,7 @@
 | `load:end` | `{ options }` | 非同步載入完成。 |
 | `load:error` | `{ error }` | 非同步載入失敗。 |
 | `create` | `{ option }` | 建立 tag。 |
+| `announce` | `{ message }` | 應朗讀的螢幕報讀訊息（選取／結果數變化）。adapter 會自動寫入 `aria-live` region。 |
 
 ```js
 controller.on('change', ({ selected, value }) => {
@@ -71,3 +72,10 @@ interface SelkitA11y {
   }
 }
 ```
+
+## live 公告
+
+除了靜態 ARIA 屬性，每個 adapter 都會渲染一個視覺隱藏的 `aria-live="polite"`
+region，並把 [`announce`](#事件) 訊息寫入，讓螢幕報讀朗讀選取與結果數變化。文字可用
+`selected` / `deselected` / `cleared` / `resultsCount`
+[messages](/zh/api/config#i18n-訊息) 自訂。預設開啟，無需設定。

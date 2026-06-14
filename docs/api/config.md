@@ -62,8 +62,16 @@ interface SelkitMessages {
   noResults: string
   minInputLength: (remaining: number) => string
   create: (query: string) => string // defaults to `Add "${query}"`
+  // aria-live announcements (read by screen readers)
+  selected: (label: string) => string //   `${label} selected`
+  deselected: (label: string) => string // `${label} removed`
+  cleared: () => string //                  'Selection cleared'
+  resultsCount: (count: number) => string //'N results available'
 }
 ```
+
+The `selected` / `deselected` / `cleared` / `resultsCount` keys label the
+[live-region announcements](/api/events#live-announcements) for screen readers.
 
 ## DOM-only options
 
