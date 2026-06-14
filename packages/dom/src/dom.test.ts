@@ -372,6 +372,30 @@ describe('多選', () => {
     pointerdown($$(inst.element, '.selkit__option')[0]!)
     expect(inst.controller.getState().selected).toEqual([])
   })
+
+  it('空輸入 Backspace 刪最後一個 tag', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      multiple: true,
+      value: ['a', 'b'],
+    })
+    keydown($(inst.element, '.selkit__control'), 'Backspace')
+    expect(inst.controller.getState().selected.map((o) => o.value)).toEqual(['a'])
+  })
+
+  it('restoreOnBackspace 把刪除的 label 回填輸入框', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      multiple: true,
+      value: ['a', 'b'],
+      restoreOnBackspace: true,
+    })
+    keydown($(inst.element, '.selkit__control'), 'Backspace')
+    expect(inst.controller.getState().selected.map((o) => o.value)).toEqual(['a'])
+    expect(($(inst.element, '.selkit__input') as HTMLInputElement).value).toBe(
+      'Banana',
+    )
+  })
 })
 
 describe('checkboxes 多選打勾', () => {

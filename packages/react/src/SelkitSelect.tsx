@@ -84,6 +84,8 @@ export interface SelkitSelectProps<T = unknown> {
   taggable?: boolean
   createTag?: (query: string) => SelkitOption<T>
   tokenSeparators?: string[]
+  /** 多選輸入框為空按 Backspace 刪最後一個 tag 並回填其文字到輸入框 */
+  restoreOnBackspace?: boolean
   maxSelections?: number
   messages?: Partial<SelkitMessages>
   renderOption?: (
@@ -122,6 +124,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     taggable = false,
     createTag,
     tokenSeparators,
+    restoreOnBackspace,
     maxSelections,
     messages,
     renderOption,
@@ -150,6 +153,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     ...(debounce !== undefined ? { debounce } : {}),
     ...(createTag ? { createTag } : {}),
     ...(tokenSeparators ? { tokenSeparators } : {}),
+    ...(restoreOnBackspace ? { restoreOnBackspace } : {}),
     ...(maxSelections !== undefined ? { maxSelections } : {}),
     ...(messages ? { messages } : {}),
   })
@@ -337,8 +341,11 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         break
       case 'Backspace':
         if (multiple && queryRef.current === '' && s.selected.length) {
-          const last = s.selected[s.selected.length - 1]
-          if (last) controller.deselect(last.value)
+          controller.backspace()
+          // restoreOnBackspace 時把回填的 label 帶進輸入框
+          const q = controller.getState().query
+          setQuery(q)
+          queryRef.current = q
         }
         break
     }

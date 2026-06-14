@@ -480,8 +480,9 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         break
       case 'Backspace':
         if (this.#multiple && this.#input.value === '' && st.selected.length) {
-          const last = st.selected[st.selected.length - 1]
-          if (last) this.controller.deselect(last.value)
+          this.controller.backspace()
+          // restoreOnBackspace 時把回填的 label 帶進輸入框（否則維持空字串）
+          this.#input.value = this.controller.getState().query
         }
         break
     }

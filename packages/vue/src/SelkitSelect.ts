@@ -98,6 +98,7 @@ export const SelkitSelect = defineComponent({
       type: Array as PropType<string[]>,
       default: undefined,
     },
+    restoreOnBackspace: { type: Boolean, default: false },
     maxSelections: { type: Number, default: undefined },
     messages: {
       type: Object as PropType<Partial<SelkitMessages>>,
@@ -135,6 +136,7 @@ export const SelkitSelect = defineComponent({
       ...(props.tokenSeparators
         ? { tokenSeparators: props.tokenSeparators }
         : {}),
+      ...(props.restoreOnBackspace ? { restoreOnBackspace: true } : {}),
       ...(props.maxSelections !== undefined
         ? { maxSelections: props.maxSelections }
         : {}),
@@ -308,8 +310,9 @@ export const SelkitSelect = defineComponent({
           break
         case 'Backspace':
           if (props.multiple && query.value === '' && s.selected.length) {
-            const last = s.selected[s.selected.length - 1]
-            if (last) controller.deselect(last.value)
+            controller.backspace()
+            // restoreOnBackspace 時把回填的 label 帶進輸入框
+            query.value = controller.getState().query
           }
           break
       }

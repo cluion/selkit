@@ -119,6 +119,9 @@ export interface SelkitConfig<T = unknown> {
   /** 分隔符（如 [',', ' ']）打字或貼上含分隔符時自動切出 token 逐一選取/建立 僅多選生效 建立新 tag 另需 taggable */
   tokenSeparators?: string[]
 
+  /** 多選時輸入框為空按 Backspace 刪除最後一個 tag 並把其 label 回填輸入框供編輯 預設 false */
+  restoreOnBackspace?: boolean
+
   /** 多選上限 超過則無法再選  */
   maxSelections?: number
 
@@ -266,6 +269,8 @@ export interface SelkitController<T = unknown> {
   moveSelected(from: number, to: number): void
   /** taggable 模式 用目前查詢字串建立並選取新選項 */
   createTag(): void
+  /** 多選輸入框為空時刪除最後一個 tag restoreOnBackspace 開啟則把 label 回填 query 供 adapter 在 Backspace 呼叫 */
+  backspace(): void
 
   // 動態更新
   setOptions(options: SelkitItem<T>[]): void

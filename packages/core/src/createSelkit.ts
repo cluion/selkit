@@ -72,6 +72,7 @@ class Selkit<T> implements SelkitController<T> {
   readonly #taggable: boolean
   readonly #createTag: ((query: string) => SelkitOption<T>) | undefined
   readonly #tokenSeparators: string[]
+  readonly #restoreOnBackspace: boolean
 
   #rows: NormRow<T>[]
   #flat: SelkitOption<T>[]
@@ -104,6 +105,7 @@ class Selkit<T> implements SelkitController<T> {
     this.#taggable = config.taggable ?? false
     this.#createTag = config.createTag
     this.#tokenSeparators = config.tokenSeparators ?? []
+    this.#restoreOnBackspace = config.restoreOnBackspace ?? false
 
     const { rows, flat } = normalize(config.options ?? [])
     this.#rows = rows
@@ -357,6 +359,19 @@ class Selkit<T> implements SelkitController<T> {
     this.#fire('create', { option })
     this.select(option.value)
     this.#patch({ query: '', visibleOptions: this.#computeVisible('') })
+  }
+
+  backspace(): void {
+    // 僅多選、輸入框（query）為空時生效 由 adapter 在 Backspace 呼叫
+    if (!this.#multiple || this.#state.query !== '') return
+    const last = this.#state.selected[this.#state.selected.length - 1]
+    if (!last) return
+    this.deselect(last.value)
+    // 回填模式：把剛移除的 label 放回 query 並開啟下拉顯示相符 供使用者編輯
+    if (this.#restoreOnBackspace) {
+      if (!this.#state.isOpen) this.open()
+      this.setQuery(last.label)
+    }
   }
 
   /** 多選且設了 tokenSeparators 並含其一時才走 tokenization */

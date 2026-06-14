@@ -104,6 +104,17 @@ describe('多選', () => {
     fireEvent.pointerDown(options(container as HTMLElement)[0]!)
     expect(container.querySelectorAll('.selkit__tag')).toHaveLength(0)
   })
+
+  it('restoreOnBackspace 把刪除的 label 回填輸入框', () => {
+    const { container } = render(
+      <SelkitSelect options={OPTIONS} multiple value={['a', 'b']} restoreOnBackspace />,
+    )
+    fireEvent.keyDown(control(container as HTMLElement), { key: 'Backspace' })
+    expect(container.querySelectorAll('.selkit__tag')).toHaveLength(1)
+    expect(
+      (container.querySelector('.selkit__input') as HTMLInputElement).value,
+    ).toBe('Banana')
+  })
 })
 
 describe('aria-live 公告', () => {

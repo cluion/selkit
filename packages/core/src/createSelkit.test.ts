@@ -133,6 +133,45 @@ describe('多選', () => {
     expect(s.getState().selected).toEqual([])
   })
 
+  it('backspace 刪除最後一個 tag（預設不回填）', () => {
+    const s = createSelkit({ options: OPTIONS, multiple: true, value: ['a', 'b'] })
+    s.backspace()
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a'])
+    expect(s.getState().query).toBe('')
+  })
+
+  it('restoreOnBackspace 刪除最後一個 tag 並回填 label 至 query', () => {
+    const s = createSelkit({
+      options: OPTIONS,
+      multiple: true,
+      value: ['a', 'b'],
+      restoreOnBackspace: true,
+    })
+    s.backspace()
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a'])
+    expect(s.getState().query).toBe('Banana')
+    expect(s.getState().isOpen).toBe(true)
+  })
+
+  it('query 非空時 backspace 不動作（讓一般刪字生效）', () => {
+    const s = createSelkit({ options: OPTIONS, multiple: true, value: ['a'] })
+    s.setQuery('x')
+    s.backspace()
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a'])
+  })
+
+  it('無已選時 backspace 無作用', () => {
+    const s = createSelkit({ options: OPTIONS, multiple: true })
+    s.backspace()
+    expect(s.getState().selected).toEqual([])
+  })
+
+  it('單選 backspace 不動作', () => {
+    const s = createSelkit({ options: OPTIONS, value: 'a' })
+    s.backspace()
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['a'])
+  })
+
   it('maxSelections 達上限後不再加入', () => {
     const s = createSelkit({ options: OPTIONS, multiple: true, maxSelections: 1 })
     s.select('a')

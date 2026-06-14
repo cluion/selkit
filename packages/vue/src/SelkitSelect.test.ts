@@ -87,6 +87,22 @@ describe('多選', () => {
     await w.findAll('.selkit__option')[0]!.trigger('pointerdown')
     expect(w.findAll('.selkit__tag')).toHaveLength(0)
   })
+
+  it('restoreOnBackspace 把刪除的 label 回填輸入框', async () => {
+    const w = mount(SelkitSelect, {
+      props: {
+        options: OPTIONS,
+        multiple: true,
+        modelValue: ['a', 'b'],
+        restoreOnBackspace: true,
+      },
+    })
+    await w.find('.selkit__control').trigger('keydown', { key: 'Backspace' })
+    expect(w.findAll('.selkit__tag')).toHaveLength(1)
+    expect((w.find('.selkit__input').element as HTMLInputElement).value).toBe(
+      'Banana',
+    )
+  })
 })
 
 describe('aria-live 公告', () => {
