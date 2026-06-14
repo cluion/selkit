@@ -10,6 +10,24 @@ createSelkit({ options, multiple: true })
 
 綁定值在單選時是單值，多選時是陣列。
 
+多選模式下，點擊選項（或在其上按 Enter）會 **toggle**：點擊已選的選項會取消選取，
+而不只能透過 tag 移除。
+
+## checkbox 選項
+
+若要做「已選項仍顯示並打勾」的多選，啟用 `checkboxes`（DOM config 選項／Vue · React
+prop）。它會加上 `selkit--checkboxes` modifier class；內建主題會依 `aria-selected`
+在每個選項渲染打勾框，無需額外標記：
+
+```js
+createSelkit({ options, multiple: true, checkboxes: true })
+// React:  <SelkitSelect multiple checkboxes ... />
+// Vue:    <SelkitSelect multiple checkboxes ... />
+```
+
+僅多選生效（單選忽略），並建議搭配 `hideSelected` 關閉（預設）讓已選項留在清單。
+若不使用內建主題，可自行為 `.selkit--checkboxes .selkit__option` 設定打勾樣式。
+
 ## 選取上限
 
 限制一次最多可選幾項：

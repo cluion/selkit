@@ -11,6 +11,26 @@ createSelkit({ options, multiple: true })
 
 The bound value is a single value for single select, or an array for multiple.
 
+In multiple mode, clicking an option (or pressing Enter on it) **toggles** it — so
+clicking an already-selected option deselects it, not just removing it via its tag.
+
+## Checkbox options
+
+For a multi-select where chosen options stay visible with a tick, enable
+`checkboxes` (a DOM config option / Vue · React prop). It adds the
+`selkit--checkboxes` modifier class; the bundled themes render a checkbox indicator
+on each option, driven by `aria-selected` — no extra markup:
+
+```js
+createSelkit({ options, multiple: true, checkboxes: true })
+// React:  <SelkitSelect multiple checkboxes ... />
+// Vue:    <SelkitSelect multiple checkboxes ... />
+```
+
+It is multiple-only (ignored for single select) and pairs best with `hideSelected`
+off (the default) so selected options remain in the list. Bring your own checkbox
+look by styling `.selkit--checkboxes .selkit__option` if you don't use the themes.
+
 ## Max selections
 
 Cap how many items can be chosen at once:
