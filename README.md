@@ -20,6 +20,19 @@
 | `@selkit/react` | React adapter |
 | `@selkit/themes` | base / bs5 樣式（CSS 變數驅動） |
 
+## 安裝 (Install)
+
+```bash
+# 原生 JS
+pnpm add @selkit/dom @selkit/themes
+# Vue 3
+pnpm add @selkit/vue @selkit/themes
+# React
+pnpm add @selkit/react @selkit/themes
+```
+
+`@selkit/core` 會作為相依自動安裝；`@selkit/themes` 提供 base / bs5 樣式。
+
 ## 文件 (Documentation)
 
 完整指南、功能說明與 API 參考見文件站：
@@ -39,9 +52,9 @@ pnpm typecheck      # 型別檢查
 pnpm --filter @selkit/docs docs:dev   # 本地預覽文件站
 ```
 
-## 規劃文件
+## 貢獻 (Contributing)
 
-設計與路線圖見 [`plan/`](./plan/)。
+歡迎 issue 與 PR，流程見 [CONTRIBUTING.md](./CONTRIBUTING.md)。
 
 ## 授權
 
