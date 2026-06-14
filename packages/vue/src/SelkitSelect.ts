@@ -64,6 +64,8 @@ export const SelkitSelect = defineComponent({
     },
     multiple: { type: Boolean, default: false },
     checkboxes: { type: Boolean, default: false },
+    autogrow: { type: Boolean, default: false },
+    dropdownAutoWidth: { type: Boolean, default: false },
     placeholder: { type: String, default: '' },
     ariaLabel: { type: String, default: undefined },
     searchable: { type: Boolean, default: true },
@@ -386,6 +388,17 @@ export const SelkitSelect = defineComponent({
           'aria-autocomplete': 'list',
           'aria-label': props.ariaLabel ?? (props.placeholder || undefined),
           value: query.value,
+          ...(props.autogrow
+            ? {
+                size: Math.max(
+                  1,
+                  (
+                    query.value ||
+                    (s.selected.length === 0 ? props.placeholder : '')
+                  ).length,
+                ),
+              }
+            : {}),
           placeholder: s.selected.length === 0 ? props.placeholder : '',
           disabled: s.disabled,
           readonly: !controller.isSearchable(),
@@ -504,6 +517,8 @@ export const SelkitSelect = defineComponent({
       if (props.multiple && props.checkboxes) {
         rootClasses.push(cls('', 'checkboxes'))
       }
+      if (props.autogrow) rootClasses.push(cls('', 'autogrow'))
+      if (props.dropdownAutoWidth) rootClasses.push(cls('', 'auto-width'))
       if (s.isOpen) rootClasses.push(cls('', 'open'))
       if (s.disabled) rootClasses.push(cls('', 'disabled'))
 
@@ -522,13 +537,20 @@ export const SelkitSelect = defineComponent({
                 position: 'fixed',
                 top: `${dropdownPos.value.top}px`,
                 left: `${dropdownPos.value.left}px`,
-                width: `${dropdownPos.value.width}px`,
+                ...(props.dropdownAutoWidth
+                  ? {
+                      minWidth: `${dropdownPos.value.width}px`,
+                      width: 'max-content',
+                    }
+                  : { width: `${dropdownPos.value.width}px` }),
               }
             : {
                 position: 'absolute',
                 top: 'calc(100% + 4px)',
                 left: '0',
-                width: '100%',
+                ...(props.dropdownAutoWidth
+                  ? { minWidth: '100%', width: 'max-content' }
+                  : { width: '100%' }),
               },
           onPointerdown: (e: Event) => e.stopPropagation(),
           onScroll: (e: Event) => {

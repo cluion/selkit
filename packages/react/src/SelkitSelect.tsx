@@ -63,6 +63,10 @@ export interface SelkitSelectProps<T = unknown> {
   multiple?: boolean
   /** 多選時於選項顯示打勾（checkbox 樣式）點擊改為 toggle */
   checkboxes?: boolean
+  /** 輸入框寬度隨輸入字數增長（size 屬性近似）*/
+  autogrow?: boolean
+  /** 下拉寬度貼齊內容（至少與控制項同寬）*/
+  dropdownAutoWidth?: boolean
   placeholder?: string
   /** 搜尋輸入框的可及名稱（aria-label）未設則退回 placeholder */
   ariaLabel?: string
@@ -109,6 +113,8 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     onChange,
     multiple = false,
     checkboxes = false,
+    autogrow = false,
+    dropdownAutoWidth = false,
     placeholder = '',
     ariaLabel,
     searchable = true,
@@ -365,6 +371,8 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   const rootClass = [classPrefix]
   if (multiple) rootClass.push(cls('', 'multiple'))
   if (multiple && checkboxes) rootClass.push(cls('', 'checkboxes'))
+  if (autogrow) rootClass.push(cls('', 'autogrow'))
+  if (dropdownAutoWidth) rootClass.push(cls('', 'auto-width'))
   if (s.isOpen) rootClass.push(cls('', 'open'))
   if (s.disabled) rootClass.push(cls('', 'disabled'))
 
@@ -479,13 +487,17 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
                 position: 'fixed',
                 top: portalPos.top,
                 left: portalPos.left,
-                width: portalPos.width,
+                ...(dropdownAutoWidth
+                  ? { minWidth: portalPos.width, width: 'max-content' }
+                  : { width: portalPos.width }),
               }
             : {
                 position: 'absolute',
                 top: 'calc(100% + 4px)',
                 left: 0,
-                width: '100%',
+                ...(dropdownAutoWidth
+                  ? { minWidth: '100%', width: 'max-content' }
+                  : { width: '100%' }),
               }
         }
         onPointerDown={(e) => e.stopPropagation()}
@@ -584,6 +596,15 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
             aria-autocomplete="list"
             aria-label={ariaLabel ?? (placeholder || undefined)}
             value={query}
+            {...(autogrow
+              ? {
+                  size: Math.max(
+                    1,
+                    (query || (s.selected.length === 0 ? placeholder : ''))
+                      .length,
+                  ),
+                }
+              : {})}
             placeholder={s.selected.length === 0 ? placeholder : ''}
             disabled={s.disabled}
             readOnly={!controller.isSearchable()}

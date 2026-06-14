@@ -150,6 +150,27 @@ describe('搜尋', () => {
   })
 })
 
+describe('autogrow / dropdownAutoWidth', () => {
+  it('autogrow 設 root class 且 input size 隨字數', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS, autogrow: true, placeholder: 'Pick' },
+    })
+    expect(w.find('.selkit').classes()).toContain('selkit--autogrow')
+    await w.find('.selkit__input').setValue('abcd')
+    expect(w.find('.selkit__input').attributes('size')).toBe('4')
+  })
+
+  it('dropdownAutoWidth 設 root class 且下拉用 max-content', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS, dropdownAutoWidth: true },
+    })
+    expect(w.find('.selkit').classes()).toContain('selkit--auto-width')
+    await w.find('.selkit__control').trigger('pointerdown')
+    const dd = w.find('.selkit__dropdown').element as HTMLElement
+    expect(dd.style.width).toBe('max-content')
+  })
+})
+
 describe('sorter', () => {
   it('依 sorter 反向排序渲染選項', async () => {
     const w = mount(SelkitSelect, {

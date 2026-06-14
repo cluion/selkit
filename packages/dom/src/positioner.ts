@@ -51,6 +51,7 @@ export interface Positioner {
 export function attachPositioner(
   trigger: HTMLElement,
   dropdown: HTMLElement,
+  autoWidth = false,
 ): Positioner {
   const update = (): void => {
     const rect = trigger.getBoundingClientRect()
@@ -58,7 +59,13 @@ export function attachPositioner(
     dropdown.style.position = 'fixed'
     dropdown.style.top = `${pos.top}px`
     dropdown.style.left = `${pos.left}px`
-    dropdown.style.width = `${pos.width}px`
+    if (autoWidth) {
+      // 至少與控制項同寬 內容更寬時隨之增長
+      dropdown.style.minWidth = `${pos.width}px`
+      dropdown.style.width = 'max-content'
+    } else {
+      dropdown.style.width = `${pos.width}px`
+    }
     dropdown.dataset.placement = pos.placement
   }
 

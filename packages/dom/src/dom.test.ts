@@ -292,6 +292,43 @@ describe('可見的建立列 create row', () => {
   })
 })
 
+describe('autogrow 輸入框寬度', () => {
+  it('未啟用時不設 size', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS })
+    expect(($(inst.element, '.selkit__input') as HTMLInputElement).getAttribute('size')).toBeNull()
+  })
+
+  it('啟用時 size 隨輸入字數變化並加 root class', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS, autogrow: true })
+    expect(inst.element.classList.contains('selkit--autogrow')).toBe(true)
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    input.value = 'abcd'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(input.size).toBe(4)
+  })
+})
+
+describe('dropdownAutoWidth 下拉寬度', () => {
+  it('加 root class 並以 min-width 取代固定寬度', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      dropdownAutoWidth: true,
+    })
+    expect(inst.element.classList.contains('selkit--auto-width')).toBe(true)
+    inst.controller.open()
+    const dd = $(inst.element, '.selkit__dropdown')
+    expect(dd.style.minWidth).not.toBe('')
+    expect(dd.style.width).toBe('max-content')
+  })
+
+  it('未啟用時下拉以固定 px 寬度', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS })
+    inst.controller.open()
+    const dd = $(inst.element, '.selkit__dropdown')
+    expect(dd.style.width.endsWith('px')).toBe(true)
+  })
+})
+
 describe('sorter 自訂排序', () => {
   it('依 sorter 反向排序渲染選項', () => {
     const inst = createSelkitDom(host, {

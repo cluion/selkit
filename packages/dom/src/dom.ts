@@ -49,6 +49,10 @@ export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
   name?: string
   /** 多選時於選項顯示打勾（checkbox 樣式）選項點擊改為 toggle 不隱藏已選 */
   checkboxes?: boolean
+  /** 輸入框寬度隨輸入字數增長（以 size 屬性近似）取代預設的 flex 撐滿 */
+  autogrow?: boolean
+  /** 下拉寬度貼齊內容（至少與控制項同寬 可更寬）而非固定等寬 */
+  dropdownAutoWidth?: boolean
   /** 啟用虛擬捲動 大量選項時只渲染可視切片 僅在無分組的扁平清單生效 */
   virtualScroll?: boolean
   /** 虛擬捲動的單列固定高度 px 預設 36 須與實際樣式高度一致 */
@@ -160,6 +164,8 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #prefix: string
   readonly #multiple: boolean
   readonly #checkboxes: boolean
+  readonly #autogrow: boolean
+  readonly #dropdownAutoWidth: boolean
   readonly #clearable: boolean
   readonly #placeholder: string
   readonly #name: string | undefined
@@ -213,6 +219,8 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#prefix = cfg.classPrefix ?? 'selkit'
     this.#multiple = cfg.multiple ?? false
     this.#checkboxes = cfg.checkboxes ?? false
+    this.#autogrow = cfg.autogrow ?? false
+    this.#dropdownAutoWidth = cfg.dropdownAutoWidth ?? false
     this.#clearable = cfg.clearable ?? !this.#multiple
     this.#placeholder = cfg.placeholder ?? ''
     this.#name = cfg.name
@@ -228,6 +236,10 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     if (this.#multiple) this.element.classList.add(this.#cls('', 'multiple'))
     if (this.#multiple && this.#checkboxes) {
       this.element.classList.add(this.#cls('', 'checkboxes'))
+    }
+    if (this.#autogrow) this.element.classList.add(this.#cls('', 'autogrow'))
+    if (this.#dropdownAutoWidth) {
+      this.element.classList.add(this.#cls('', 'auto-width'))
     }
 
     this.#control = document.createElement('div')
@@ -555,6 +567,14 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
 
     this.#field.insertBefore(frag, this.#input)
     this.#input.placeholder = s.selected.length === 0 ? this.#placeholder : ''
+    this.#syncInputSize()
+  }
+
+  /** autogrow：以 size 屬性讓輸入框寬度貼齊內容（值或佔位文字）*/
+  #syncInputSize(): void {
+    if (!this.#autogrow) return
+    const basis = this.#input.value || this.#input.placeholder
+    this.#input.size = Math.max(1, basis.length)
   }
 
   #renderIndicators(s: Readonly<SelkitState<T>>): void {
@@ -720,7 +740,12 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     if (s.isOpen) {
       this.#dropdown.hidden = false
       if (this.#positioner) this.#positioner.update()
-      else this.#positioner = attachPositioner(this.#control, this.#dropdown)
+      else
+        this.#positioner = attachPositioner(
+          this.#control,
+          this.#dropdown,
+          this.#dropdownAutoWidth,
+        )
     } else {
       this.#dropdown.hidden = true
       this.#positioner?.destroy()

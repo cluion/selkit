@@ -87,6 +87,19 @@
   color: var(--selkit-muted);
 }
 
+/* autogrow：輸入框依 size 屬性貼齊內容寬度（不撐滿剩餘空間）*/
+.selkit--autogrow .selkit__input {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 1ch;
+}
+
+/* dropdownAutoWidth：選項不換行 讓下拉可量到最寬內容 */
+.selkit--auto-width .selkit__option,
+.selkit--auto-width .selkit__create {
+  white-space: nowrap;
+}
+
 /* ── tags (multiple) ──────────────────────────────────── */
 .selkit__tag {
   display: inline-flex;

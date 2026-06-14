@@ -190,6 +190,34 @@ describe('renderOption', () => {
   })
 })
 
+describe('autogrow / dropdownAutoWidth', () => {
+  it('autogrow 設 root class 且 input size 隨字數', () => {
+    const { container } = render(
+      <SelkitSelect options={OPTIONS} autogrow placeholder="Pick" />,
+    )
+    expect(
+      container.querySelector('.selkit')?.classList.contains('selkit--autogrow'),
+    ).toBe(true)
+    const input = container.querySelector('.selkit__input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'abcd' } })
+    expect(input.getAttribute('size')).toBe('4')
+  })
+
+  it('dropdownAutoWidth 設 root class 且下拉用 max-content', () => {
+    const { container } = render(
+      <SelkitSelect options={OPTIONS} dropdownAutoWidth />,
+    )
+    expect(
+      container
+        .querySelector('.selkit')
+        ?.classList.contains('selkit--auto-width'),
+    ).toBe(true)
+    fireEvent.pointerDown(control(container as HTMLElement))
+    const dd = container.querySelector('.selkit__dropdown') as HTMLElement
+    expect(dd.style.width).toBe('max-content')
+  })
+})
+
 describe('sorter', () => {
   it('依 sorter 反向排序渲染選項', () => {
     const { container } = render(
