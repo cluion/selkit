@@ -81,6 +81,18 @@
     </section>
 
     <section>
+      <label for="autogrow">autogrow（輸入框寬度隨字增長）</label>
+      <div id="autogrow"></div>
+      <div class="hint">多選；輸入時輸入框寬度貼齊文字而非撐滿。</div>
+    </section>
+
+    <section style="max-width: 220px">
+      <label for="autowidth">dropdownAutoWidth（下拉貼齊內容寬度）</label>
+      <div id="autowidth"></div>
+      <div class="hint">控制項窄；下拉仍展開到最長選項的寬度，不被截斷。</div>
+    </section>
+
+    <section>
       <label for="sorter">sorter（相關度：以輸入開頭者排前）</label>
       <div id="sorter"></div>
       <div class="hint">輸入 <code>a</code>：以 a 開頭的選項排到最前。</div>
@@ -243,6 +255,26 @@
         options: many(30),
         minInputLength: 2,
         placeholder: 'Type 2+ chars…',
+      }).controller.on('change', show)
+
+      // 7a0. autogrow：輸入框寬度隨字增長
+      createSelkitDom(document.getElementById('autogrow'), {
+        options: fruits,
+        multiple: true,
+        autogrow: true,
+        placeholder: 'Type…',
+      }).controller.on('change', show)
+
+      // 7a1. dropdownAutoWidth：下拉貼齊內容（長標籤）
+      const longOpts = [
+        { value: 1, label: 'Short' },
+        { value: 2, label: 'A considerably longer option label here' },
+        { value: 3, label: 'Another fairly long option to widen the menu' },
+      ]
+      createSelkitDom(document.getElementById('autowidth'), {
+        options: longOpts,
+        dropdownAutoWidth: true,
+        placeholder: 'Open me…',
       }).controller.on('change', show)
 
       // 7a. sorter：相關度排序（以輸入開頭者優先）

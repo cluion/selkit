@@ -116,7 +116,12 @@
               o.label.toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1
             return rank(a) - rank(b)
           }
-          return { fruits, berries, grouped, many, loadPage, last, onChange, zhMessages, makeTag, startsFirst }
+          const longOpts = [
+            { value: 1, label: 'Short' },
+            { value: 2, label: 'A considerably longer option label here' },
+            { value: 3, label: 'Another fairly long option to widen the menu' },
+          ]
+          return { fruits, berries, grouped, many, loadPage, last, onChange, zhMessages, makeTag, startsFirst, longOpts }
         },
         template: `
           <section>
@@ -181,6 +186,16 @@
             <SelkitSelect :options="fruits" multiple placeholder="Pick fruits…" @change="onChange">
               <template #selection="{ option }">🔖 {{ option.label }}</template>
             </SelkitSelect>
+          </section>
+
+          <section>
+            <label>autogrow（輸入框寬度隨字增長）</label>
+            <SelkitSelect :options="fruits" multiple autogrow placeholder="Type…" @change="onChange" />
+          </section>
+
+          <section style="max-width: 220px">
+            <label>dropdownAutoWidth（下拉貼齊內容寬度）</label>
+            <SelkitSelect :options="longOpts" dropdown-auto-width placeholder="Open me…" @change="onChange" />
           </section>
 
           <section>

@@ -118,6 +118,12 @@
         return rank(a) - rank(b)
       }
 
+      const longOpts = [
+        { value: 1, label: 'Short' },
+        { value: 2, label: 'A considerably longer option label here' },
+        { value: 3, label: 'Another fairly long option to widen the menu' },
+      ]
+
       function App() {
         const [last, setLast] = useState('（尚未變更）')
         const onChange = (value) => setLast(JSON.stringify(value))
@@ -182,6 +188,16 @@
             <section>
               <label>renderSelection（已選加 icon）</label>
               <${SelkitSelect} options=${fruits} multiple=${true} placeholder="Pick fruits…" renderSelection=${(opt) => `🔖 ${opt.label}`} onChange=${onChange} />
+            </section>
+
+            <section>
+              <label>autogrow（輸入框寬度隨字增長）</label>
+              <${SelkitSelect} options=${fruits} multiple=${true} autogrow=${true} placeholder="Type…" onChange=${onChange} />
+            </section>
+
+            <section style=${{ maxWidth: 220 }}>
+              <label>dropdownAutoWidth（下拉貼齊內容寬度）</label>
+              <${SelkitSelect} options=${longOpts} dropdownAutoWidth=${true} placeholder="Open me…" onChange=${onChange} />
             </section>
 
             <section>
