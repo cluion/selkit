@@ -1,5 +1,12 @@
 # @selkit/themes
 
+## 0.1.1
+
+### Patch Changes
+
+- Add a per-package README (install + quick start + docs link) so each package
+  has proper documentation on its npm page.
+
 ## 0.1.0
 
 ### Minor Changes
