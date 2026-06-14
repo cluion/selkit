@@ -85,6 +85,8 @@ The `selected` / `deselected` / `cleared` / `resultsCount` keys label the
 | `classPrefix` | `string` | `"selkit"` | BEM class prefix. |
 | `name` | `string` | — | Maintain hidden inputs for form submission. |
 | `checkboxes` | `boolean` | `false` | Multiple-select only: show a checkbox tick on each option (adds the `selkit--checkboxes` modifier; styling lives in the theme). Also a Vue/React prop. |
+| `autogrow` | `boolean` | `false` | Grow the search input to fit its text (via the `size` attribute) instead of stretching to fill. Adds the `selkit--autogrow` modifier. Also a Vue/React prop. |
+| `dropdownAutoWidth` | `boolean` | `false` | Size the dropdown to its content (at least as wide as the control, wider if needed) instead of matching the control width. Adds the `selkit--auto-width` modifier. Also a Vue/React prop. |
 | `virtualScroll` | `boolean` | `false` | Render only the visible slice. |
 | `itemHeight` | `number` | `36` | Fixed row height for virtual scroll. |
 | `dropdownParent` | `HTMLElement \| string` | — | Portal the dropdown into another element to escape clipping ancestors. Also a Vue/React prop. |

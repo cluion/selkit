@@ -83,6 +83,8 @@ interface SelkitMessages {
 | `classPrefix` | `string` | `"selkit"` | BEM class 前綴。 |
 | `name` | `string` | — | 維護 hidden input 以供表單送出。 |
 | `checkboxes` | `boolean` | `false` | 僅多選：在每個選項顯示打勾框（加上 `selkit--checkboxes` modifier，樣式在主題中）。Vue/React 也是同名 prop。 |
+| `autogrow` | `boolean` | `false` | 輸入框寬度隨文字增長（用 `size` 屬性）而非撐滿剩餘空間。加上 `selkit--autogrow` modifier。Vue/React 也是同名 prop。 |
+| `dropdownAutoWidth` | `boolean` | `false` | 下拉寬度貼齊內容（至少與控制項同寬，需要時更寬）而非固定等寬。加上 `selkit--auto-width` modifier。Vue/React 也是同名 prop。 |
 | `virtualScroll` | `boolean` | `false` | 只渲染可視切片。 |
 | `itemHeight` | `number` | `36` | 虛擬捲動的固定列高。 |
 | `dropdownParent` | `HTMLElement \| string` | — | 把下拉 portal 到其他容器以逃離裁切祖先。Vue/React 也是同名 prop。 |
