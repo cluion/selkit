@@ -210,3 +210,12 @@
   text-align: center;
   color: var(--selkit-muted);
 }
+
+/* 「建立新項」列：沿用 option 樣式 文字略淡以示與既有選項有別 */
+.selkit__create {
+  color: var(--selkit-muted);
+}
+
+.selkit__create.selkit__option--active {
+  color: inherit;
+}

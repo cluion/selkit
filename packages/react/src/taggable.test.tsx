@@ -29,6 +29,29 @@ describe('taggable prop 透傳', () => {
   })
 })
 
+describe('可見的建立列 create row', () => {
+  it('無相符時顯示建立列 點擊建立 tag', () => {
+    const { container } = render(
+      <SelkitSelect
+        options={OPTIONS}
+        multiple
+        taggable
+        createTag={(q) => ({ value: q, label: q })}
+      />,
+    )
+    fireEvent.pointerDown(
+      container.querySelector('.selkit__control') as HTMLElement,
+    )
+    const input = container.querySelector('.selkit__input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'Mango' } })
+    const createRow = container.querySelector('.selkit__create')
+    expect(createRow?.textContent).toBe('Add "Mango"')
+    fireEvent.pointerDown(createRow as HTMLElement)
+    const tags = Array.from(container.querySelectorAll('.selkit__tag'))
+    expect(tags.some((t) => t.textContent?.includes('Mango'))).toBe(true)
+  })
+})
+
 describe('tokenSeparators 透傳', () => {
   it('輸入含分隔符自動切成多個 tag 剩餘留在輸入框', () => {
     const { container } = render(

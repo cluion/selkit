@@ -37,6 +37,7 @@ const DEFAULT_MESSAGES: SelkitMessages = {
   noResults: 'No results',
   minInputLength: (remaining) =>
     `Please enter ${remaining} or more character${remaining === 1 ? '' : 's'}`,
+  create: (query) => `Add "${query}"`,
 }
 
 type Handler = (payload: unknown) => void
@@ -188,13 +189,17 @@ class Selkit<T> implements SelkitController<T> {
       return
     }
     const visibleOptions = this.#computeVisible(query)
-    const activeIndex = this.#state.isOpen ? this.#firstEnabled(visibleOptions) : -1
+    const hasCreate = this.#createLabel(query) !== null
+    const activeIndex = this.#state.isOpen
+      ? this.#firstActiveFor(visibleOptions, hasCreate)
+      : -1
     this.#patch({
       query,
       visibleOptions,
       noResults:
         !this.#belowMin(query) &&
         !this.#state.loading &&
+        !hasCreate &&
         visibleOptions.length === 0,
       activeIndex,
     })
@@ -211,38 +216,45 @@ class Selkit<T> implements SelkitController<T> {
 
   // ── highlight 移動（不 wrap、跳過 disabled）────────────────
   setActiveIndex(index: number): void {
-    const v = this.#state.visibleOptions
-    if (index < -1 || index >= v.length) return
-    if (index >= 0 && v[index]?.disabled) return
+    const count = this.#activeCount()
+    if (index < -1 || index >= count) return
+    if (index >= 0 && !this.#isActiveEnabled(index)) return
     this.#patch({ activeIndex: index })
     this.#fireHighlight(index)
   }
 
   moveActive(delta: number): void {
-    const v = this.#state.visibleOptions
-    if (v.length === 0) return
+    const count = this.#activeCount()
+    if (count === 0) return
     const dir = delta < 0 ? -1 : 1
     let cursor = this.#state.activeIndex
-    if (cursor < 0) cursor = dir > 0 ? -1 : v.length
+    if (cursor < 0) cursor = dir > 0 ? -1 : count
     let next = cursor
     for (;;) {
       next += dir
-      if (next < 0 || next >= v.length) return // 邊界：不 wrap 維持原位
-      if (!v[next]?.disabled) break
+      if (next < 0 || next >= count) return // 邊界：不 wrap 維持原位
+      if (this.#isActiveEnabled(next)) break
     }
     this.#patch({ activeIndex: next })
     this.#fireHighlight(next)
   }
 
   moveActiveToStart(): void {
-    const index = this.#firstEnabled(this.#state.visibleOptions)
+    const index = this.#firstActiveFor(
+      this.#state.visibleOptions,
+      this.#createLabel() !== null,
+    )
     if (index < 0) return
     this.#patch({ activeIndex: index })
     this.#fireHighlight(index)
   }
 
   moveActiveToEnd(): void {
-    const index = this.#lastEnabled(this.#state.visibleOptions)
+    // 有建立列時它在最末 否則為最後一個可選實選項
+    const index =
+      this.#createLabel() !== null
+        ? this.#state.visibleOptions.length
+        : this.#lastEnabled(this.#state.visibleOptions)
     if (index < 0) return
     this.#patch({ activeIndex: index })
     this.#fireHighlight(index)
@@ -255,7 +267,7 @@ class Selkit<T> implements SelkitController<T> {
     if (opt) {
       this.select(opt.value)
     } else if (this.#taggable) {
-      // 無相符選項時 Enter 直接建立 tag 三個 adapter 不需改即支援
+      // 落在建立列（index === visibleOptions.length）或無相符 Enter 皆建立 tag
       this.createTag()
     }
   }
@@ -465,6 +477,16 @@ class Selkit<T> implements SelkitController<T> {
       rows.push({ type: 'option', index, option: row.option })
     }
 
+    const createQuery = this.#createLabel()
+    if (createQuery !== null) {
+      rows.push({
+        type: 'create',
+        index: this.#state.visibleOptions.length,
+        query: createQuery,
+        label: this.#messages.create(createQuery),
+      })
+    }
+
     return { rows }
   }
 
@@ -596,6 +618,47 @@ class Selkit<T> implements SelkitController<T> {
       if (!opts[i]?.disabled) return i
     }
     return -1
+  }
+
+  /** 目前是否應顯示「建立新項」列 是則回傳 trim 後的 query 否則 null */
+  #createLabel(
+    query = this.#state.query,
+    selectedCount = this.#state.selected.length,
+  ): string | null {
+    if (!this.#taggable || !this.#createTag) return null
+    if (this.#belowMin(query)) return null
+    const q = query.trim()
+    if (q === '') return null
+    if (
+      this.#maxSelections !== undefined &&
+      selectedCount >= this.#maxSelections
+    ) {
+      return null
+    }
+    // 已有精確同名選項則由該選項本身呈現 不另顯示建立列
+    if (this.#flat.some((o) => o.label.toLowerCase() === q.toLowerCase())) {
+      return null
+    }
+    return q
+  }
+
+  /** 可導航項目數（實選項 + 視情況的建立列） */
+  #activeCount(): number {
+    return this.#state.visibleOptions.length + (this.#createLabel() ? 1 : 0)
+  }
+
+  /** index 是否為可 highlight 的項目（實選項跳過 disabled 建立列恆可） */
+  #isActiveEnabled(index: number): boolean {
+    const v = this.#state.visibleOptions
+    if (index === v.length) return this.#createLabel() !== null
+    return index >= 0 && index < v.length && !v[index]?.disabled
+  }
+
+  /** 首個可 highlight 的 index：首個可選實選項 皆不可選時退回建立列 否則 -1 */
+  #firstActiveFor(opts: SelkitOption<T>[], hasCreate: boolean): number {
+    const i = this.#firstEnabled(opts)
+    if (i >= 0) return i
+    return hasCreate ? opts.length : -1
   }
 
   #lastEnabled(opts: SelkitOption<T>[]): number {

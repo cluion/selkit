@@ -30,6 +30,7 @@ import { useSelkit } from './useSelkit'
 const LOAD_MORE_THRESHOLD = 32
 
 type OptionRow = Extract<SelkitViewRow, { type: 'option' }>
+type CreateRow = Extract<SelkitViewRow, { type: 'create' }>
 
 function sameValue(a: SelkitValue, b: SelkitValue): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -406,6 +407,27 @@ export const SelkitSelect = defineComponent({
         )
       }
 
+      const buildCreateRow = (row: CreateRow): VNode => {
+        const attrs = a11y.option(row.index)
+        const optClasses = [cls('option'), cls('create')]
+        if (row.index === s.activeIndex) optClasses.push(cls('option', 'active'))
+        return h(
+          'div',
+          {
+            key: 'selkit-create',
+            class: optClasses,
+            id: attrs.id,
+            role: 'option',
+            'aria-selected': 'false',
+            onPointerdown: (e: PointerEvent) => {
+              e.preventDefault()
+              controller.createTag()
+            },
+          },
+          row.label,
+        )
+      }
+
       const spacer = (key: string, height: number): VNode =>
         h('div', { key, 'aria-hidden': 'true', style: { height: `${height}px` } })
 
@@ -427,12 +449,18 @@ export const SelkitSelect = defineComponent({
         for (let i = range.startIndex; i < range.endIndex; i++) {
           const row = view.rows[i]
           if (row?.type === 'option') dropdownChildren.push(buildOption(row))
+          else if (row?.type === 'create')
+            dropdownChildren.push(buildCreateRow(row))
         }
         dropdownChildren.push(spacer('vbot', range.paddingBottom))
       } else {
         for (const row of view.rows) {
           if (row.type === 'group') {
             dropdownChildren.push(h('div', { class: cls('group') }, row.label))
+            continue
+          }
+          if (row.type === 'create') {
+            dropdownChildren.push(buildCreateRow(row))
             continue
           }
           dropdownChildren.push(buildOption(row))

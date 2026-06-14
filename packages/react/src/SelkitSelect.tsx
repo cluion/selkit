@@ -27,6 +27,7 @@ import { useSelkit } from './useSelkit'
 const LOAD_MORE_THRESHOLD = 32
 
 type OptionRow<T> = Extract<SelkitViewRow<T>, { type: 'option' }>
+type CreateRow = Extract<SelkitViewRow, { type: 'create' }>
 
 function sameValue(a: SelkitValue, b: SelkitValue): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -356,6 +357,27 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     )
   }
 
+  const buildCreateRow = (row: CreateRow): ReactNode => {
+    const attrs = a11y.option(row.index)
+    const optClass = [cls('option'), cls('create')]
+    if (row.index === s.activeIndex) optClass.push(cls('option', 'active'))
+    return (
+      <div
+        key="selkit-create"
+        className={optClass.join(' ')}
+        id={attrs.id}
+        role="option"
+        aria-selected={false}
+        onPointerDown={(e) => {
+          e.preventDefault()
+          controller.createTag()
+        }}
+      >
+        {row.label}
+      </div>
+    )
+  }
+
   const hasGroups = view.rows.some((r) => r.type === 'group')
   let dropdownContent: ReactNode
   if (view.rows.length === 0) {
@@ -374,6 +396,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     for (let i = range.startIndex; i < range.endIndex; i++) {
       const row = view.rows[i]
       if (row?.type === 'option') slice.push(buildOption(row))
+      else if (row?.type === 'create') slice.push(buildCreateRow(row))
     }
     dropdownContent = (
       <>
@@ -388,6 +411,8 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         <div className={cls('group')} key={`group-${row.label}`}>
           {row.label}
         </div>
+      ) : row.type === 'create' ? (
+        buildCreateRow(row)
       ) : (
         buildOption(row)
       ),

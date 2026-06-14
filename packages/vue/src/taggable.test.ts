@@ -25,6 +25,26 @@ describe('taggable prop 透傳', () => {
   })
 })
 
+describe('可見的建立列 create row', () => {
+  it('無相符時顯示建立列 點擊建立 tag', async () => {
+    const w = mount(SelkitSelect, {
+      props: {
+        options: OPTIONS,
+        multiple: true,
+        taggable: true,
+        createTag: (q: string) => ({ value: q, label: q }),
+      },
+    })
+    await w.find('.selkit__control').trigger('pointerdown')
+    await w.find('.selkit__input').setValue('Mango')
+    const createRow = w.find('.selkit__create')
+    expect(createRow.text()).toBe('Add "Mango"')
+    await createRow.trigger('pointerdown')
+    const tags = w.findAll('.selkit__tag').map((t) => t.text())
+    expect(tags.some((t) => t.includes('Mango'))).toBe(true)
+  })
+})
+
 describe('tokenSeparators 透傳', () => {
   it('輸入含分隔符自動切成多個 tag 剩餘留在輸入框', async () => {
     const w = mount(SelkitSelect, {

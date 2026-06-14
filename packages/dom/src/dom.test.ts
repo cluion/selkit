@@ -243,6 +243,55 @@ describe('tokenSeparators 自動切 tag', () => {
   })
 })
 
+describe('可見的建立列 create row', () => {
+  const tg = () =>
+    createSelkitDom(host, {
+      options: OPTIONS,
+      multiple: true,
+      taggable: true,
+      createTag: (q) => ({ value: q, label: q }),
+    })
+
+  it('無相符時顯示可點的建立列 點擊建立 tag 並清空輸入', () => {
+    const inst = tg()
+    pointerdown($(inst.element, '.selkit__control'))
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    input.value = 'Mango'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    const createRow = $(inst.element, '.selkit__create')
+    expect(createRow.textContent).toBe('Add "Mango"')
+    pointerdown(createRow)
+    expect(inst.controller.getState().selected.map((o) => o.value)).toContain(
+      'Mango',
+    )
+    expect(input.value).toBe('')
+  })
+
+  it('精確同名時不顯示建立列', () => {
+    const inst = tg()
+    pointerdown($(inst.element, '.selkit__control'))
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    input.value = 'Apple'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect($(inst.element, '.selkit__create')).toBeFalsy()
+  })
+
+  it('建立列文字可由 messages.create 自訂', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      multiple: true,
+      taggable: true,
+      createTag: (q) => ({ value: q, label: q }),
+      messages: { create: (q) => `新增「${q}」` },
+    })
+    pointerdown($(inst.element, '.selkit__control'))
+    const input = $(inst.element, '.selkit__input') as HTMLInputElement
+    input.value = 'Mango'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect($(inst.element, '.selkit__create').textContent).toBe('新增「Mango」')
+  })
+})
+
 describe('i18n 可自訂訊息', () => {
   it('無結果套用自訂 noResults', () => {
     const inst = createSelkitDom(host, {

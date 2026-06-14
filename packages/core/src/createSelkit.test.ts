@@ -560,6 +560,109 @@ describe('tokenSeparators 自動切 tag', () => {
   })
 })
 
+describe('可見的建立列 (create row)', () => {
+  const tg = (extra = {}) =>
+    createSelkit({
+      options: OPTIONS,
+      taggable: true,
+      createTag: (q: string) => ({ value: q, label: q }),
+      ...extra,
+    })
+
+  it('taggable + 無精確相符時 view 末尾有 create 列', () => {
+    const s = tg()
+    s.open()
+    s.setQuery('Mango')
+    const rows = s.getGroupedView().rows
+    const last = rows[rows.length - 1]
+    expect(last).toMatchObject({
+      type: 'create',
+      query: 'Mango',
+      label: 'Add "Mango"',
+    })
+  })
+
+  it('create 列 index 對齊 activedescendant（接在實選項之後）', () => {
+    const s = tg({ multiple: true })
+    s.open()
+    s.setQuery('a') // Apple / Banana / Date 三項
+    const createRow = s
+      .getGroupedView()
+      .rows.find((r) => r.type === 'create') as { index: number }
+    expect(createRow.index).toBe(3)
+  })
+
+  it('精確同名選項存在時不顯示 create 列', () => {
+    const s = tg()
+    s.open()
+    s.setQuery('Apple')
+    expect(s.getGroupedView().rows.some((r) => r.type === 'create')).toBe(false)
+  })
+
+  it('query 為空時不顯示', () => {
+    const s = tg()
+    s.open()
+    expect(s.getGroupedView().rows.some((r) => r.type === 'create')).toBe(false)
+  })
+
+  it('非 taggable 不顯示', () => {
+    const s = createSelkit({ options: OPTIONS })
+    s.open()
+    s.setQuery('Mango')
+    expect(s.getGroupedView().rows.some((r) => r.type === 'create')).toBe(false)
+  })
+
+  it('未達 minInputLength 不顯示', () => {
+    const s = tg({ minInputLength: 3 })
+    s.open()
+    s.setQuery('Ma')
+    expect(s.getGroupedView().rows.some((r) => r.type === 'create')).toBe(false)
+  })
+
+  it('無相符時 highlight 落在 create 列 selectActive 即建立', () => {
+    const s = tg({ multiple: true })
+    s.open()
+    s.setQuery('Mango')
+    expect(s.getState().activeIndex).toBe(0) // visibleOptions 為空 create 列在 0
+    s.selectActive()
+    expect(s.getState().selected.map((o) => o.value)).toContain('Mango')
+  })
+
+  it('鍵盤 End 可移到 create 列', () => {
+    const s = tg({ multiple: true })
+    s.open()
+    s.setQuery('a')
+    expect(s.getState().visibleOptions).toHaveLength(3)
+    s.moveActiveToEnd()
+    expect(s.getState().activeIndex).toBe(3)
+  })
+
+  it('create 訊息可自訂 (i18n)', () => {
+    const s = tg({ messages: { create: (q: string) => `新增「${q}」` } })
+    s.open()
+    s.setQuery('Mango')
+    const row = s.getGroupedView().rows.find((r) => r.type === 'create') as {
+      label: string
+    }
+    expect(row.label).toBe('新增「Mango」')
+  })
+
+  it('createTag 後 create 列消失', () => {
+    const s = tg({ multiple: true })
+    s.open()
+    s.setQuery('Mango')
+    s.createTag()
+    expect(s.getGroupedView().rows.some((r) => r.type === 'create')).toBe(false)
+  })
+
+  it('達 maxSelections 時不顯示 create 列', () => {
+    const s = tg({ multiple: true, maxSelections: 1, value: ['a'] })
+    s.open()
+    s.setQuery('Mango')
+    expect(s.getGroupedView().rows.some((r) => r.type === 'create')).toBe(false)
+  })
+})
+
 describe('diacritics 不敏感搜尋', () => {
   it('cafe 能搜到 café', () => {
     const s = createSelkit({

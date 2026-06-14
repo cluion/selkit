@@ -53,6 +53,8 @@ export interface SelkitMessages {
   noResults: string
   /** 查詢未達 minInputLength remaining 為還需輸入的字數  */
   minInputLength: (remaining: number) => string
+  /** taggable 時「建立新項」列的文字 query 為目前輸入  */
+  create: (query: string) => string
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -200,6 +202,8 @@ export interface SelkitA11y {
 export type SelkitViewRow<T = unknown> =
   | { type: 'group'; label: string; disabled?: boolean }
   | { type: 'option'; index: number; option: SelkitOption<T> }
+  /** taggable 的「建立新項」列 index 對齊 activeIndex（接在實選項之後）label 為已套用 i18n 的顯示文字 */
+  | { type: 'create'; index: number; query: string; label: string }
 
 export interface SelkitGroupedView<T = unknown> {
   /** 標頭與選項交錯序列；option 的 index 對齊 visibleOptions  */

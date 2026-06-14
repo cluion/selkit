@@ -186,6 +186,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   #positioner: Positioner | null = null
   readonly #unsubscribe: () => void
   readonly #offClose: () => void
+  readonly #offCreate: () => void
   readonly #onDocPointer: (e: Event) => void
 
   constructor(target: HTMLElement | string, config: SelkitDomConfig<T>) {
@@ -283,6 +284,11 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       }
     })
 
+    // 建立 tag 後清空輸入框（Enter 或點擊建立列皆會觸發）
+    this.#offCreate = this.controller.on('create', () => {
+      this.#input.value = ''
+    })
+
     this.#unsubscribe = this.controller.subscribe((s) => this.#render(s))
     this.#render(this.controller.getState())
   }
@@ -290,6 +296,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   destroy(): void {
     this.#unsubscribe()
     this.#offClose()
+    this.#offCreate()
     this.#positioner?.destroy()
     document.removeEventListener('pointerdown', this.#onDocPointer)
     this.controller.destroy()
@@ -354,6 +361,10 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       ) as HTMLElement | null
       if (!optEl || optEl.getAttribute('aria-disabled') === 'true') return
       e.preventDefault()
+      if (optEl.dataset.create === 'true') {
+        this.controller.createTag()
+        return
+      }
       const index = Number(optEl.dataset.index)
       const opt = this.controller.getState().visibleOptions[index]
       if (opt) this.controller.select(opt.value)
@@ -557,6 +568,8 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         const row = view.rows[i]
         if (row?.type === 'option') {
           this.#dropdown.append(this.#buildOption(row, a11y, s.activeIndex))
+        } else if (row?.type === 'create') {
+          this.#dropdown.append(this.#buildCreateRow(row, a11y, s.activeIndex))
         }
       }
       this.#dropdown.append(this.#spacer(range.paddingBottom))
@@ -572,8 +585,33 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         this.#dropdown.append(group)
         continue
       }
+      if (row.type === 'create') {
+        this.#dropdown.append(this.#buildCreateRow(row, a11y, s.activeIndex))
+        continue
+      }
       this.#dropdown.append(this.#buildOption(row, a11y, s.activeIndex))
     }
+  }
+
+  /** 「建立新項」列 共用 option 樣式與 a11y 但點擊走 createTag */
+  #buildCreateRow(
+    row: { type: 'create'; index: number; query: string; label: string },
+    a11y: SelkitA11y,
+    activeIndex: number,
+  ): HTMLElement {
+    const attrs = a11y.option(row.index)
+    const el = document.createElement('div')
+    el.className = `${this.#cls('option')} ${this.#cls('create')}`
+    el.id = attrs.id
+    el.dataset.index = String(row.index)
+    el.dataset.create = 'true'
+    el.setAttribute('role', 'option')
+    el.setAttribute('aria-selected', 'false')
+    if (row.index === activeIndex) {
+      el.classList.add(this.#cls('option', 'active'))
+    }
+    el.textContent = row.label
+    return el
   }
 
   /** 撐高佔位節點 維持虛擬捲動時的捲動總高度 */
