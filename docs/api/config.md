@@ -53,11 +53,15 @@ createSelkit({
 2. `minInputLength(remaining)` — when the query is shorter than `minInputLength`.
 3. `noResults` — otherwise (no matching options).
 
+`create(query)` is separate: it labels the visible "create new item" row shown in
+the list when `taggable` is on (see [Selection › Tagging](/features/selection#tagging)).
+
 ```ts
 interface SelkitMessages {
   loading: string
   noResults: string
   minInputLength: (remaining: number) => string
+  create: (query: string) => string // defaults to `Add "${query}"`
 }
 ```
 

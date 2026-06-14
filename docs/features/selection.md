@@ -51,6 +51,27 @@ Pressing Enter with no matching option creates and selects a new tag, firing a
 `create` event. If a tag with the same label already exists, the existing option
 is selected instead of duplicating it.
 
+### Visible "create" row
+
+When `taggable` is on and the query has no exact match, the dropdown shows a
+clickable **create row** (e.g. `Add "foo"`) as the last result — so users can
+create a tag with the mouse, not just by pressing Enter. It is keyboard-navigable
+(↑/↓/Home/End) and selecting it calls `createTag()`. The row is hidden when the
+query is empty, below `minInputLength`, exactly matches an option, or `maxSelections`
+is reached. Customize its text with the [`create` message](/api/config#i18n-messages):
+
+```js
+createSelkit({
+  multiple: true,
+  taggable: true,
+  createTag: (query) => ({ value: query.toLowerCase(), label: query }),
+  messages: { create: (query) => `Create “${query}”` },
+})
+```
+
+In the view from `getGroupedView()` the row appears as
+`{ type: 'create', index, query, label }`; adapters render it for you.
+
 ## Token separators
 
 In multiple-select mode, `tokenSeparators` turns typed or pasted text into tags as

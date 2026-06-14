@@ -51,11 +51,15 @@ createSelkit({
 2. `minInputLength(remaining)` — 查詢長度未達 `minInputLength`。
 3. `noResults` — 其餘情況（無相符選項）。
 
+`create(query)` 為獨立項：`taggable` 開啟時，清單中可見的「建立新項」列的文字
+（見 [選取 › Tagging](/zh/features/selection#tagging)）。
+
 ```ts
 interface SelkitMessages {
   loading: string
   noResults: string
   minInputLength: (remaining: number) => string
+  create: (query: string) => string // 預設 `Add "${query}"`
 }
 ```
 
