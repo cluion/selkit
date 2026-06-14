@@ -63,6 +63,7 @@ off() // 停止監聽
 | `clear()` | 清除所有選取。 |
 | `moveSelected(from, to)` | 重排已選項（供 tag 拖放）。 |
 | `createTag()` | 以目前查詢字串建立並選取 tag。 |
+| `backspace()` | 供 adapter 在 Backspace 呼叫：多選且查詢為空時刪除最後一個 tag（設了 `restoreOnBackspace` 則把其 label 回填 query）。 |
 
 ## 動態更新
 

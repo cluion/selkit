@@ -27,6 +27,7 @@ optional.
 | `taggable` | `boolean` | `false` | Allow creating options on the fly. |
 | `createTag` | `(query) => SelkitOption<T>` | — | Factory for new tags. |
 | `tokenSeparators` | `string[]` | `[]` | Auto-split typed/pasted input on these separators (e.g. `[',', ' ']`) into tags. Multiple-select only; creating new tags also needs `taggable`. Tokens matching an existing option are selected; the remainder stays in the input. |
+| `restoreOnBackspace` | `boolean` | `false` | Multiple-select only: when the input is empty, Backspace removes the last tag and restores its label to the input for editing (and opens the dropdown). |
 | `maxSelections` | `number` | — | Cap on selected items. |
 | `messages` | `Partial<SelkitMessages>` | English defaults | Override the empty-state messages (loading / no results / type-more). See [i18n](#i18n-messages). |
 

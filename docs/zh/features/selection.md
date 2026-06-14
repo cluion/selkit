@@ -13,6 +13,10 @@ createSelkit({ options, multiple: true })
 多選模式下，點擊選項（或在其上按 Enter）會 **toggle**：點擊已選的選項會取消選取，
 而不只能透過 tag 移除。
 
+開啟 `restoreOnBackspace` 後，輸入框為空時按 Backspace 會刪除最後一個 tag 並把其
+label 回填輸入框（同時開啟下拉），讓你直接編輯而不必重打。未開啟（預設）時 Backspace
+只會刪除該 tag。
+
 ## checkbox 選項
 
 若要做「已選項仍顯示並打勾」的多選，啟用 `checkboxes`（DOM config 選項／Vue · React

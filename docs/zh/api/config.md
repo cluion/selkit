@@ -26,6 +26,7 @@
 | `taggable` | `boolean` | `false` | 允許即時建立選項。 |
 | `createTag` | `(query) => SelkitOption<T>` | — | 新 tag 的 factory。 |
 | `tokenSeparators` | `string[]` | `[]` | 打字或貼上時依分隔符（如 `[',', ' ']`）自動切成多個 tag。僅多選生效；建立新 tag 另需 `taggable`。與既有選項同名的 token 會被選取，剩餘片段留在輸入框。 |
+| `restoreOnBackspace` | `boolean` | `false` | 僅多選：輸入框為空時按 Backspace 刪除最後一個 tag，並把其 label 回填輸入框供編輯（同時開啟下拉）。 |
 | `maxSelections` | `number` | — | 選取上限。 |
 | `messages` | `Partial<SelkitMessages>` | 英文預設 | 覆寫空狀態訊息（載入中／無結果／再輸入 N 字）。見 [i18n](#i18n-訊息)。 |
 

@@ -14,6 +14,10 @@ The bound value is a single value for single select, or an array for multiple.
 In multiple mode, clicking an option (or pressing Enter on it) **toggles** it — so
 clicking an already-selected option deselects it, not just removing it via its tag.
 
+With `restoreOnBackspace`, pressing Backspace while the input is empty removes the
+last tag and restores its label to the input (opening the dropdown) so you can edit
+it instead of retyping. Without it (the default), Backspace just removes the tag.
+
 ## Checkbox options
 
 For a multi-select where chosen options stay visible with a tick, enable

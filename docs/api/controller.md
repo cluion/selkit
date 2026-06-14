@@ -66,6 +66,7 @@ Loads and appends the next page. No-op without `loadOptions`, when `hasMore` is
 | `clear()` | Clear all selections. |
 | `moveSelected(from, to)` | Reorder selected items (for tag drag-and-drop). |
 | `createTag()` | Create and select a tag from the current query. |
+| `backspace()` | For adapters to call on Backspace: when multiple and the query is empty, removes the last tag (and restores its label to the query when `restoreOnBackspace` is set). |
 
 ## Dynamic updates
 
