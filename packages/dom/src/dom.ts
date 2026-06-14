@@ -242,6 +242,9 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#input.type = 'text'
     this.#input.autocomplete = 'off'
     this.#input.setAttribute('aria-autocomplete', 'list')
+    // 可及名稱：明確 ariaLabel 優先 否則退回 placeholder（placeholder 本身不算 label）
+    const ariaLabel = cfg.ariaLabel ?? this.#placeholder
+    if (ariaLabel) this.#input.setAttribute('aria-label', ariaLabel)
 
     this.#indicators = document.createElement('div')
     this.#indicators.className = this.#cls('indicators')

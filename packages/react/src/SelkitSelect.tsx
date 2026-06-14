@@ -63,6 +63,8 @@ export interface SelkitSelectProps<T = unknown> {
   /** 多選時於選項顯示打勾（checkbox 樣式）點擊改為 toggle */
   checkboxes?: boolean
   placeholder?: string
+  /** 搜尋輸入框的可及名稱（aria-label）未設則退回 placeholder */
+  ariaLabel?: string
   searchable?: boolean
   minResultsForSearch?: number
   fuzzy?: boolean
@@ -103,6 +105,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     multiple = false,
     checkboxes = false,
     placeholder = '',
+    ariaLabel,
     searchable = true,
     minResultsForSearch,
     fuzzy = false,
@@ -567,6 +570,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
             type="text"
             autoComplete="off"
             aria-autocomplete="list"
+            aria-label={ariaLabel ?? (placeholder || undefined)}
             value={query}
             placeholder={s.selected.length === 0 ? placeholder : ''}
             disabled={s.disabled}

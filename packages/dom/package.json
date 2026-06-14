@@ -14,7 +14,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
@@ -26,6 +28,7 @@
     "@selkit/core": "workspace:*"
   },
   "devDependencies": {
+    "axe-core": "^4.12.1",
     "jsdom": "^24.1.0",
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",

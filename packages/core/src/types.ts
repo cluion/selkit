@@ -88,6 +88,8 @@ export interface SelkitConfig<T = unknown> {
   /** 是否停用 預設 false  */
   disabled?: boolean
   placeholder?: string
+  /** 搜尋輸入框的可及名稱（aria-label）未設則退回 placeholder 供螢幕報讀辨識欄位  */
+  ariaLabel?: string
 
   /** 選取後是否自動關閉 單選預設 true 多選預設 false  */
   closeOnSelect?: boolean
