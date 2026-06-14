@@ -150,6 +150,24 @@ describe('搜尋', () => {
   })
 })
 
+describe('sorter', () => {
+  it('依 sorter 反向排序渲染選項', async () => {
+    const w = mount(SelkitSelect, {
+      props: {
+        options: OPTIONS,
+        sorter: (a: { label: string }, b: { label: string }) =>
+          b.label.localeCompare(a.label),
+      },
+    })
+    await w.find('.selkit__control').trigger('pointerdown')
+    expect(w.findAll('.selkit__option').map((o) => o.text())).toEqual([
+      'Cherry',
+      'Banana',
+      'Apple',
+    ])
+  })
+})
+
 describe('option slot', () => {
   it('可自訂選項內容', async () => {
     const w = mount(SelkitSelect, {

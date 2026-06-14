@@ -88,6 +88,78 @@ describe('搜尋過濾', () => {
   })
 })
 
+describe('sorter 自訂結果排序', () => {
+  it('依 label 字母排序整個清單（空查詢）', () => {
+    const s = createSelkit({
+      options: OPTIONS,
+      sorter: (a, b) => a.label.localeCompare(b.label),
+    })
+    // 原序 Apple, Banana, Cherry, Date → 字母序相同；用反向驗證
+    const r = createSelkit({
+      options: OPTIONS,
+      sorter: (a, b) => b.label.localeCompare(a.label),
+    })
+    expect(r.getState().visibleOptions.map((o) => o.value)).toEqual([
+      'd',
+      'c',
+      'b',
+      'a',
+    ])
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+    ])
+  })
+
+  it('相關度排序：label 以 query 開頭者優先', () => {
+    const opts = [
+      { value: 1, label: 'Pineapple' },
+      { value: 2, label: 'Apple' },
+      { value: 3, label: 'Crabapple' },
+    ]
+    const startsFirst = (a: { label: string }, b: { label: string }, q: string) => {
+      const sa = a.label.toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1
+      const sb = b.label.toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1
+      return sa - sb
+    }
+    const s = createSelkit({ options: opts, sorter: startsFirst })
+    s.setQuery('apple') // 全部都含 apple
+    // 以 apple 開頭的 Apple 應排最前
+    expect(s.getState().visibleOptions[0]!.value).toBe(2)
+  })
+
+  it('getGroupedView 反映排序順序（扁平）', () => {
+    const s = createSelkit({
+      options: OPTIONS,
+      sorter: (a, b) => b.label.localeCompare(a.label),
+    })
+    const optionRows = s
+      .getGroupedView()
+      .rows.filter((r) => r.type === 'option')
+    expect(optionRows.map((r) => (r as { option: { value: unknown } }).option.value)).toEqual(
+      ['d', 'c', 'b', 'a'],
+    )
+    // index 對齊排序後的 visibleOptions
+    expect(optionRows.map((r) => (r as { index: number }).index)).toEqual([
+      0, 1, 2, 3,
+    ])
+  })
+
+  it('分組時忽略 sorter（保留原組序）', () => {
+    const grouped = [
+      { label: 'G1', options: [{ value: 'a', label: 'Apple' }] },
+      { label: 'G2', options: [{ value: 'b', label: 'Banana' }] },
+    ]
+    const s = createSelkit({
+      options: grouped,
+      sorter: (a, b) => b.label.localeCompare(a.label),
+    })
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['a', 'b'])
+  })
+})
+
 describe('單選', () => {
   it('select 取代既有選取並觸發 change', () => {
     const s = createSelkit({ options: OPTIONS })

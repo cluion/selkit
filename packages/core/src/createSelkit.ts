@@ -17,6 +17,7 @@ import type {
   SelkitMessages,
   SelkitOption,
   SelkitState,
+  SorterFn,
   SelkitValue,
   SelkitViewRow,
   Unsubscribe,
@@ -54,6 +55,7 @@ class Selkit<T> implements SelkitController<T> {
   readonly #multiple: boolean
   readonly #closeOnSelect: boolean
   readonly #filter: FilterFn<T>
+  readonly #sorter: SorterFn<T> | undefined
   readonly #minInputLength: number
   readonly #searchable: boolean
   readonly #minResultsForSearch: number
@@ -92,6 +94,7 @@ class Selkit<T> implements SelkitController<T> {
     this.#filter =
       config.filter ??
       ((config.fuzzy ? fuzzyFilter : defaultFilter) as FilterFn<T>)
+    this.#sorter = config.sorter
     this.#minInputLength = config.minInputLength ?? 0
     this.#searchable = config.searchable ?? true
     this.#minResultsForSearch = config.minResultsForSearch ?? 0
@@ -481,6 +484,30 @@ class Selkit<T> implements SelkitController<T> {
   }
 
   getGroupedView(): SelkitGroupedView<T> {
+    const rows: SelkitViewRow<T>[] = this.#grouped()
+      ? this.#groupedRows()
+      : // 扁平清單：直接依 visibleOptions 順序（反映 sorter）index 即陣列位置
+        this.#state.visibleOptions.map((option, index) => ({
+          type: 'option' as const,
+          index,
+          option,
+        }))
+
+    const createQuery = this.#createLabel()
+    if (createQuery !== null) {
+      rows.push({
+        type: 'create',
+        index: this.#state.visibleOptions.length,
+        query: createQuery,
+        label: this.#messages.create(createQuery),
+      })
+    }
+
+    return { rows }
+  }
+
+  /** 分組視圖：依 #rows 原始順序交錯標頭與選項 option 的 index 對齊 visibleOptions */
+  #groupedRows(): SelkitViewRow<T>[] {
     const idxByValue = new Map<string | number, number>()
     this.#state.visibleOptions.forEach((o, i) => idxByValue.set(o.value, i))
 
@@ -510,18 +537,7 @@ class Selkit<T> implements SelkitController<T> {
       }
       rows.push({ type: 'option', index, option: row.option })
     }
-
-    const createQuery = this.#createLabel()
-    if (createQuery !== null) {
-      rows.push({
-        type: 'create',
-        index: this.#state.visibleOptions.length,
-        query: createQuery,
-        label: this.#messages.create(createQuery),
-      })
-    }
-
-    return { rows }
+    return rows
   }
 
   getEmptyMessage(): string {
@@ -569,9 +585,10 @@ class Selkit<T> implements SelkitController<T> {
       const base = this.#filterRemote
         ? flat.filter((o) => this.#filter(o, query))
         : flat.slice()
-      const visibleOptions = this.#hideSelected
+      const filtered = this.#hideSelected
         ? base.filter((o) => !this.#isSelected(o.value))
         : base
+      const visibleOptions = this.#sortPool(filtered, query)
       this.#patch({
         loading: false,
         loadingMore: false,
@@ -614,6 +631,18 @@ class Selkit<T> implements SelkitController<T> {
     return query.length < this.#minInputLength
   }
 
+  /** #rows 是否含分組（含則停用 sorter 並改走分組視圖） */
+  #grouped(): boolean {
+    return this.#rows.some((r) => r.kind === 'group')
+  }
+
+  /** 套用 sorter（僅扁平清單）回傳新陣列 未設或分組時原樣回傳 */
+  #sortPool(pool: SelkitOption<T>[], query: string): SelkitOption<T>[] {
+    const sorter = this.#sorter
+    if (!sorter || this.#grouped()) return pool
+    return [...pool].sort((a, b) => sorter(a, b, query))
+  }
+
   #computeVisible(
     query: string,
     selected: SelkitOption<T>[] = this.#state.selected,
@@ -624,8 +653,8 @@ class Selkit<T> implements SelkitController<T> {
       const chosen = new Set(selected.map((o) => o.value))
       pool = pool.filter((o) => !chosen.has(o.value))
     }
-    if (query === '') return pool.slice()
-    return pool.filter((o) => this.#filter(o, query))
+    if (query !== '') pool = pool.filter((o) => this.#filter(o, query))
+    return this.#sortPool(query === '' ? pool.slice() : pool, query)
   }
 
   /** 套用新的已選清單 hideSelected 時連帶重算可見選項與 highlight */

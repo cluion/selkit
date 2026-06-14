@@ -36,6 +36,13 @@ export type FilterFn<T = unknown> = (
   query: string,
 ) => boolean
 
+/** 自訂結果排序比較器 回傳 <0 / 0 / >0（同 Array.sort）query 為目前查詢 供相關度排序 */
+export type SorterFn<T = unknown> = (
+  a: SelkitOption<T>,
+  b: SelkitOption<T>,
+  query: string,
+) => number
+
 /** loadOptions 的分頁回傳 hasMore 指示是否還有下一頁  */
 export interface SelkitLoadResult<T = unknown> {
   items: SelkitItem<T>[]
@@ -96,6 +103,8 @@ export interface SelkitConfig<T = unknown> {
 
   /** 自訂過濾 預設大小寫不敏感的 label 子字串比對  */
   filter?: FilterFn<T>
+  /** 自訂結果排序（如相關度）僅扁平清單套用 分組時忽略  */
+  sorter?: SorterFn<T>
   /** 啟用 fuzzy 子序列比對 取代預設子字串比對 自訂 filter 時此項忽略  */
   fuzzy?: boolean
   /** 最少輸入字數 未達時不過濾也不觸發 loadOptions 預設 0  */

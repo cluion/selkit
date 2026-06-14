@@ -24,6 +24,7 @@ import type {
   SelkitOption,
   SelkitValue,
   SelkitViewRow,
+  SorterFn,
 } from '@selkit/core'
 import { useSelkit } from './useSelkit'
 
@@ -68,6 +69,10 @@ export const SelkitSelect = defineComponent({
     searchable: { type: Boolean, default: true },
     minResultsForSearch: { type: Number, default: undefined },
     fuzzy: { type: Boolean, default: false },
+    sorter: {
+      type: Function as PropType<SorterFn>,
+      default: undefined,
+    },
     minInputLength: { type: Number, default: undefined },
     hideSelected: { type: Boolean, default: false },
     virtualScroll: { type: Boolean, default: false },
@@ -122,6 +127,7 @@ export const SelkitSelect = defineComponent({
       disabled: props.disabled,
       taggable: props.taggable,
       fuzzy: props.fuzzy,
+      ...(props.sorter ? { sorter: props.sorter } : {}),
       hideSelected: props.hideSelected,
       ...(props.minInputLength !== undefined
         ? { minInputLength: props.minInputLength }

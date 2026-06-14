@@ -190,6 +190,23 @@ describe('renderOption', () => {
   })
 })
 
+describe('sorter', () => {
+  it('依 sorter 反向排序渲染選項', () => {
+    const { container } = render(
+      <SelkitSelect
+        options={OPTIONS}
+        sorter={(a, b) => b.label.localeCompare(a.label)}
+      />,
+    )
+    fireEvent.pointerDown(control(container as HTMLElement))
+    expect(options(container as HTMLElement).map((o) => o.textContent)).toEqual([
+      'Cherry',
+      'Banana',
+      'Apple',
+    ])
+  })
+})
+
 describe('renderSelection', () => {
   it('可自訂單值顯示', () => {
     const { container } = render(

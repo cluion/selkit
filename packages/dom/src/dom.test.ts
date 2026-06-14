@@ -292,6 +292,18 @@ describe('可見的建立列 create row', () => {
   })
 })
 
+describe('sorter 自訂排序', () => {
+  it('依 sorter 反向排序渲染選項', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      sorter: (a, b) => b.label.localeCompare(a.label),
+    })
+    pointerdown($(inst.element, '.selkit__control'))
+    const labels = $$(inst.element, '.selkit__option').map((o) => o.textContent)
+    expect(labels).toEqual(['Cherry', 'Banana', 'Apple'])
+  })
+})
+
 describe('i18n 可自訂訊息', () => {
   it('無結果套用自訂 noResults', () => {
     const inst = createSelkitDom(host, {

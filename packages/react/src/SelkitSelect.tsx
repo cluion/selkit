@@ -21,6 +21,7 @@ import type {
   SelkitOption,
   SelkitValue,
   SelkitViewRow,
+  SorterFn,
 } from '@selkit/core'
 import { useSelkit } from './useSelkit'
 
@@ -68,6 +69,8 @@ export interface SelkitSelectProps<T = unknown> {
   searchable?: boolean
   minResultsForSearch?: number
   fuzzy?: boolean
+  /** 自訂結果排序（如相關度）僅扁平清單 */
+  sorter?: SorterFn<T>
   minInputLength?: number
   hideSelected?: boolean
   virtualScroll?: boolean
@@ -111,6 +114,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     searchable = true,
     minResultsForSearch,
     fuzzy = false,
+    sorter,
     minInputLength,
     hideSelected = false,
     virtualScroll = false,
@@ -146,6 +150,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     taggable,
     fuzzy,
     hideSelected,
+    ...(sorter ? { sorter } : {}),
     ...(minInputLength !== undefined ? { minInputLength } : {}),
     ...(minResultsForSearch !== undefined ? { minResultsForSearch } : {}),
     ...(clearable !== undefined ? { clearable } : {}),
