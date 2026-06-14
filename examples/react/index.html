@@ -149,6 +149,11 @@
             </section>
 
             <section>
+              <label>checkbox 多選（選項打勾，可再點取消）</label>
+              <${SelkitSelect} options=${fruits} multiple=${true} checkboxes=${true} placeholder="Tick fruits…" onChange=${onChange} />
+            </section>
+
+            <section>
               <label>tokenSeparators（打/貼 a,b,c 自動切 tag）</label>
               <${SelkitSelect} options=${fruits} multiple=${true} taggable=${true} createTag=${(q) => ({ value: q.toLowerCase(), label: q })} tokenSeparators=${[',', ' ']} placeholder="Type or paste a,b,c…" onChange=${onChange} />
             </section>

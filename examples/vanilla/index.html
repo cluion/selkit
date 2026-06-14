@@ -87,6 +87,12 @@
     </section>
 
     <section>
+      <label for="checkboxes">checkbox 多選（選項打勾，可再點取消）</label>
+      <div id="checkboxes"></div>
+      <div class="hint">已選項留在清單並打勾；再點一次即取消。</div>
+    </section>
+
+    <section>
       <label for="tokens">tokenSeparators（打/貼 <code>a,b,c</code> 自動切 tag）</label>
       <div id="tokens"></div>
       <div class="hint">輸入或貼上以逗號／空白分隔的字串，逗號前的片段自動成為 tag。</div>
@@ -237,6 +243,14 @@
           noResults: '查無資料',
           minInputLength: (n) => `再輸入 ${n} 個字`,
         },
+      }).controller.on('change', show)
+
+      // 7b1. checkbox 多選：選項打勾 點擊 toggle
+      createSelkitDom(document.getElementById('checkboxes'), {
+        options: fruits,
+        multiple: true,
+        checkboxes: true,
+        placeholder: 'Tick fruits…',
       }).controller.on('change', show)
 
       // 7b2. tokenSeparators：逗號／空白自動切 tag
