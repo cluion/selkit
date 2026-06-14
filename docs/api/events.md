@@ -82,3 +82,8 @@ screen readers hear selection and result-count changes. Customize the wording wi
 the `selected` / `deselected` / `cleared` / `resultsCount`
 [messages](/api/config#i18n-messages). The behavior is on by default — no config
 needed.
+
+Give the search input an accessible name via [`ariaLabel`](/api/config#selkitconfig)
+(or a `placeholder`, which is used as a fallback) so screen readers can identify the
+field. The adapters are checked against [axe-core](https://github.com/dequelabs/axe-core)
+in the test suite.

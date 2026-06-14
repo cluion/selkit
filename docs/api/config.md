@@ -20,6 +20,7 @@ optional.
 | `closeOnSelect` | `boolean` | `true` single / `false` multiple | Close the dropdown after selecting. |
 | `disabled` | `boolean` | `false` | Disable the control. |
 | `placeholder` | `string` | — | Placeholder text. |
+| `ariaLabel` | `string` | — | Accessible name (`aria-label`) for the search input. Falls back to `placeholder`. Set one of them so screen readers (and axe) can identify the field. |
 | `loadOptions` | `(query, page) => Promise<SelkitItem<T>[] \| SelkitLoadResult<T>>` | — | Async / paginated loading. See [Async](/features/async). |
 | `debounce` | `number` | `250` | Debounce in ms for `loadOptions`. |
 | `filterRemote` | `boolean` | `false` | Apply the local filter to remote results. |

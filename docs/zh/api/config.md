@@ -19,6 +19,7 @@
 | `closeOnSelect` | `boolean` | 單選 `true` / 多選 `false` | 選取後關閉下拉。 |
 | `disabled` | `boolean` | `false` | 停用控制項。 |
 | `placeholder` | `string` | — | 佔位文字。 |
+| `ariaLabel` | `string` | — | 搜尋輸入框的可及名稱（`aria-label`），未設則退回 `placeholder`。請至少設其一，讓螢幕報讀（與 axe）能辨識欄位。 |
 | `loadOptions` | `(query, page) => Promise<SelkitItem<T>[] \| SelkitLoadResult<T>>` | — | 非同步 / 分頁載入。見[非同步](/zh/features/async)。 |
 | `debounce` | `number` | `250` | `loadOptions` 的 debounce（毫秒）。 |
 | `filterRemote` | `boolean` | `false` | 對遠端結果再套本地過濾。 |

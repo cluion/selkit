@@ -79,3 +79,7 @@ interface SelkitA11y {
 region，並把 [`announce`](#事件) 訊息寫入，讓螢幕報讀朗讀選取與結果數變化。文字可用
 `selected` / `deselected` / `cleared` / `resultsCount`
 [messages](/zh/api/config#i18n-訊息) 自訂。預設開啟，無需設定。
+
+請用 [`ariaLabel`](/zh/api/config#selkitconfig)（或 `placeholder`，會被當作後備）為搜尋
+輸入框設定可及名稱，讓螢幕報讀能辨識欄位。各 adapter 在測試中以
+[axe-core](https://github.com/dequelabs/axe-core) 檢查無障礙違規。

@@ -34,7 +34,7 @@
 ```bash
 pnpm install        # 安裝相依
 pnpm build          # 建置所有套件
-pnpm test           # 跑測試
+pnpm test           # 跑測試（含 axe-core 無障礙檢查）
 pnpm typecheck      # 型別檢查
 pnpm --filter @selkit/docs docs:dev   # 本地預覽文件站
 ```
