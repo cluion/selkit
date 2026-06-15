@@ -363,4 +363,25 @@ describe('虛擬捲動', () => {
     expect(count).toBeGreaterThan(0)
     expect(count).toBeLessThan(100)
   })
+
+  const bigGrouped: SelkitItem[] = [
+    { label: 'A', options: Array.from({ length: 50 }, (_, i) => ({ value: `a${i}`, label: `A ${i}` })) },
+    { label: 'B', options: Array.from({ length: 50 }, (_, i) => ({ value: `b${i}`, label: `B ${i}` })) },
+  ]
+
+  it('分組 + 虛擬：只渲染切片（含 group header）', () => {
+    const { container } = render(
+      <SelkitSelect
+        options={bigGrouped}
+        virtualScroll
+        itemHeight={36}
+        groupHeight={28}
+      />,
+    )
+    fireEvent.pointerDown(control(container as HTMLElement))
+    const count = options(container as HTMLElement).length
+    expect(count).toBeGreaterThan(0)
+    expect(count).toBeLessThan(100)
+    expect(container.querySelector('.selkit__group')).toBeTruthy()
+  })
 })

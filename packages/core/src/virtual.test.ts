@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { computeVirtualRange, computeScrollIntoView } from './virtual'
+import {
+  computeVirtualRange,
+  computeScrollIntoView,
+  computeVirtualWindow,
+  computeScrollIntoViewVariable,
+} from './virtual'
 
 describe('computeVirtualRange', () => {
   it('頂端起始 endIndex 含 overscan 下緩衝', () => {
@@ -114,5 +119,109 @@ describe('computeScrollIntoView', () => {
   it('index < 0 或 itemHeight <= 0 回傳 null', () => {
     expect(computeScrollIntoView({ ...base, index: -1 })).toBeNull()
     expect(computeScrollIntoView({ ...base, index: 3, itemHeight: 0 })).toBeNull()
+  })
+})
+
+describe('computeVirtualWindow（變高）', () => {
+  // 分組樣態：group(28) opt(36) opt(36) group(28) opt(36) opt(36)
+  // offsets = [0,28,64,100,128,164,200]
+  const heights = [28, 36, 36, 28, 36, 36]
+
+  it('頂端起始 只含可視切片（overscan 0）', () => {
+    const r = computeVirtualWindow({
+      heights,
+      scrollTop: 0,
+      viewportHeight: 100,
+      overscan: 0,
+    })
+    expect(r.startIndex).toBe(0)
+    expect(r.endIndex).toBe(3) // rows 0,1,2 底端 100 為界
+    expect(r.paddingTop).toBe(0)
+    expect(r.paddingBottom).toBe(100) // 200 - offsets[3]=100
+  })
+
+  it('捲到第二段 padding 用高度總和（非 count×itemHeight）', () => {
+    const r = computeVirtualWindow({
+      heights,
+      scrollTop: 100,
+      viewportHeight: 100,
+      overscan: 0,
+    })
+    expect(r.startIndex).toBe(3)
+    expect(r.endIndex).toBe(6)
+    expect(r.paddingTop).toBe(100) // offsets[3]
+    expect(r.paddingBottom).toBe(0)
+  })
+
+  it('overscan 前後各擴張列數', () => {
+    const r = computeVirtualWindow({
+      heights,
+      scrollTop: 100,
+      viewportHeight: 40,
+      overscan: 1,
+    })
+    // 可視 100~140 → first=3 last=5；overscan 1 → startIndex=2 endIndex=6
+    expect(r.startIndex).toBe(2)
+    expect(r.endIndex).toBe(6)
+  })
+
+  it('空 heights 回傳零', () => {
+    const r = computeVirtualWindow({
+      heights: [],
+      scrollTop: 0,
+      viewportHeight: 100,
+    })
+    expect(r).toEqual({
+      startIndex: 0,
+      endIndex: 0,
+      paddingTop: 0,
+      paddingBottom: 0,
+    })
+  })
+})
+
+describe('computeScrollIntoViewVariable（變高）', () => {
+  const heights = [28, 36, 36, 28, 36, 36] // offsets 0,28,64,100,128,164,200
+
+  it('已可見回傳 null', () => {
+    // 可視 0~100；row 2 頂端 64 高 36（64~100）剛好內含
+    expect(
+      computeScrollIntoViewVariable({
+        heights,
+        rowIndex: 2,
+        scrollTop: 0,
+        viewportHeight: 100,
+      }),
+    ).toBeNull()
+  })
+
+  it('在可視下方 對齊底端（用累積高度而非 index×h）', () => {
+    // row 4 頂端 128 高 36（128~164）在可視底 100 之下 → 164-100=64
+    expect(
+      computeScrollIntoViewVariable({
+        heights,
+        rowIndex: 4,
+        scrollTop: 0,
+        viewportHeight: 100,
+      }),
+    ).toBe(64)
+  })
+
+  it('在可視上方 對齊頂端', () => {
+    // scrollTop=140；row 1 頂端 28 < 140 → 回傳 28
+    expect(
+      computeScrollIntoViewVariable({
+        heights,
+        rowIndex: 1,
+        scrollTop: 140,
+        viewportHeight: 100,
+      }),
+    ).toBe(28)
+  })
+
+  it('rowIndex 超界回傳 null', () => {
+    const args = { heights, scrollTop: 0, viewportHeight: 100 }
+    expect(computeScrollIntoViewVariable({ ...args, rowIndex: -1 })).toBeNull()
+    expect(computeScrollIntoViewVariable({ ...args, rowIndex: 6 })).toBeNull()
   })
 })

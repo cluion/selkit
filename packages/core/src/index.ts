@@ -3,9 +3,16 @@
  */
 export type * from './types'
 export { createSelkit } from './createSelkit'
-export { computeVirtualRange, computeScrollIntoView } from './virtual'
+export {
+  computeVirtualRange,
+  computeScrollIntoView,
+  computeVirtualWindow,
+  computeScrollIntoViewVariable,
+} from './virtual'
 export type {
   VirtualRange,
   VirtualRangeInput,
   ScrollIntoViewInput,
+  VirtualWindowInput,
+  ScrollIntoViewVariableInput,
 } from './virtual'

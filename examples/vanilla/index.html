@@ -171,6 +171,12 @@
       <div class="hint">1000 筆選項，只渲染可視切片。</div>
     </section>
 
+    <section>
+      <label for="virtual-grouped">虛擬捲動 + 分組（group header 變高）</label>
+      <div id="virtual-grouped"></div>
+      <div class="hint">10 組 × 100 筆，分組標題與選項列高不同，仍只渲染切片。</div>
+    </section>
+
     <section dir="rtl">
       <label for="rtl">RTL（dir="rtl"）</label>
       <div id="rtl"></div>
@@ -420,6 +426,22 @@
         virtualScroll: true,
         itemHeight: 36,
         placeholder: '1000 options…',
+      }).controller.on('change', show)
+
+      // 11b. 虛擬捲動 + 分組：header 與 option 列高不同
+      const groupedMany = Array.from({ length: 10 }, (_, g) => ({
+        label: `Group ${g + 1}`,
+        options: Array.from({ length: 100 }, (_, i) => ({
+          value: `g${g}-${i}`,
+          label: `Group ${g + 1} · Item ${i}`,
+        })),
+      }))
+      createSelkitDom(document.getElementById('virtual-grouped'), {
+        options: groupedMany,
+        virtualScroll: true,
+        itemHeight: 36,
+        groupHeight: 28,
+        placeholder: '10 groups × 100…',
       }).controller.on('change', show)
 
       // 12. RTL：容器 dir="rtl" 即自動適配

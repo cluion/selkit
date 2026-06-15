@@ -10,7 +10,9 @@
  */
 import {
   computeScrollIntoView,
+  computeScrollIntoViewVariable,
   computeVirtualRange,
+  computeVirtualWindow,
   createSelkit,
 } from '@selkit/core'
 import type {
@@ -30,11 +32,15 @@ import { attachPositioner, type Positioner } from './positioner'
 const LOAD_MORE_THRESHOLD = 32
 /** 虛擬捲動的預設單列高度 px 對齊 base theme 的選項高度 */
 const DEFAULT_ITEM_HEIGHT = 36
+/** 虛擬捲動的預設分組標題列高度 px 對齊 base theme 的 group header */
+const DEFAULT_GROUP_HEIGHT = 28
 /** sr-only：視覺隱藏但螢幕報讀可讀 內聯以免未載入主題時外露 */
 const SR_ONLY_CSS =
   'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0'
 
 type OptionRow<T> = Extract<SelkitViewRow<T>, { type: 'option' }>
+type GroupRow = Extract<SelkitViewRow, { type: 'group' }>
+type CreateRow = Extract<SelkitViewRow, { type: 'create' }>
 
 /** 解析 dropdownParent 為元素 接受元素或選擇器字串 找不到則拋錯 */
 function resolveParent(
@@ -62,6 +68,8 @@ export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
   virtualScroll?: boolean
   /** 虛擬捲動的單列固定高度 px 預設 36 須與實際樣式高度一致 */
   itemHeight?: number
+  /** 虛擬捲動下分組標題列的固定高度 px 預設 28 須與實際樣式高度一致 */
+  groupHeight?: number
   /** 把下拉浮層掛到指定容器（元素或選擇器）逃離 overflow/transform 祖先的裁切 常用 document.body */
   dropdownParent?: HTMLElement | string
   /** 自訂已選顯示內容（tag 或單值） 回傳字串走 textContent 防 XSS 需 markup（icon 等）請回傳 Node */
@@ -193,6 +201,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #name: string | undefined
   readonly #virtual: boolean
   readonly #itemHeight: number
+  readonly #groupHeight: number
   readonly #dropdownParent: HTMLElement | null
   readonly #templateSelection:
     | ((
@@ -255,6 +264,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#name = cfg.name
     this.#virtual = cfg.virtualScroll ?? false
     this.#itemHeight = cfg.itemHeight ?? DEFAULT_ITEM_HEIGHT
+    this.#groupHeight = cfg.groupHeight ?? DEFAULT_GROUP_HEIGHT
     this.#dropdownParent = resolveParent(cfg.dropdownParent)
     this.#templateSelection = cfg.templateSelection
     this.#templateOption = cfg.templateOption
@@ -559,9 +569,8 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     if (s.activeIndex === this.#lastActive || s.activeIndex < 0) return
     this.#lastActive = s.activeIndex
 
-    const hasGroups = this.controller
-      .getGroupedView()
-      .rows.some((r) => r.type === 'group')
+    const rows = this.controller.getGroupedView().rows
+    const hasGroups = rows.some((r) => r.type === 'group')
     if (this.#virtual && !hasGroups) {
       // 該列可能尚未渲染 無法靠 DOM 用固定列高算出目標 scrollTop
       const next = computeScrollIntoView({
@@ -573,6 +582,23 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       if (next !== null) {
         this.#dropdown.scrollTop = next
         this.#renderOptions(s) // 依新捲動位置重算切片 讓作用列進入 DOM
+      }
+      return
+    }
+    if (this.#virtual && hasGroups) {
+      // 變高：找作用列在 rows 的位置 由累積高度算目標 scrollTop
+      const rowIndex = rows.findIndex(
+        (r) => r.type !== 'group' && r.index === s.activeIndex,
+      )
+      const next = computeScrollIntoViewVariable({
+        heights: this.#rowHeights(rows),
+        rowIndex,
+        scrollTop: this.#dropdown.scrollTop,
+        viewportHeight: this.#dropdown.clientHeight,
+      })
+      if (next !== null) {
+        this.#dropdown.scrollTop = next
+        this.#renderOptions(s)
       }
       return
     }
@@ -706,49 +732,84 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     }
 
     const hasGroups = view.rows.some((r) => r.type === 'group')
-    // 虛擬捲動僅在無分組的扁平清單啟用 分組列高不一會破壞固定高度計算
     if (this.#virtual && !hasGroups) {
+      // 扁平均高快路徑（O(1) 計算 不配置 heights 陣列）
       const range = computeVirtualRange({
         scrollTop: this.#dropdown.scrollTop,
         viewportHeight: this.#dropdown.clientHeight,
         itemHeight: this.#itemHeight,
         itemCount: view.rows.length,
       })
-      this.#dropdown.append(this.#spacer(range.paddingTop))
-      for (let i = range.startIndex; i < range.endIndex; i++) {
-        const row = view.rows[i]
-        if (row?.type === 'option') {
-          this.#dropdown.append(this.#buildOption(row, a11y, s.activeIndex))
-        } else if (row?.type === 'create') {
-          this.#dropdown.append(this.#buildCreateRow(row, a11y, s.activeIndex))
-        }
-      }
-      this.#dropdown.append(this.#spacer(range.paddingBottom))
+      this.#renderVirtualSlice(view.rows, range, a11y, s.activeIndex)
+      return
+    }
+    if (this.#virtual && hasGroups) {
+      // 分組變高路徑：header 與 option 高度不同 以 heights 陣列算窗格
+      const win = computeVirtualWindow({
+        heights: this.#rowHeights(view.rows),
+        scrollTop: this.#dropdown.scrollTop,
+        viewportHeight: this.#dropdown.clientHeight,
+      })
+      this.#renderVirtualSlice(view.rows, win, a11y, s.activeIndex)
       return
     }
 
-    for (const row of view.rows) {
-      if (row.type === 'group') {
-        const group = document.createElement('div')
-        group.className = this.#cls('group')
-        if (row.disabled) group.classList.add(this.#cls('group', 'disabled'))
-        if (this.#templateGroup) {
-          this.#applyTemplate(
-            group,
-            this.#templateGroup({ label: row.label, disabled: !!row.disabled }),
-          )
-        } else {
-          group.textContent = row.label
-        }
-        this.#dropdown.append(group)
-        continue
-      }
-      if (row.type === 'create') {
-        this.#dropdown.append(this.#buildCreateRow(row, a11y, s.activeIndex))
-        continue
-      }
-      this.#dropdown.append(this.#buildOption(row, a11y, s.activeIndex))
+    for (const row of view.rows) this.#renderRow(row, a11y, s.activeIndex)
+  }
+
+  /** 每列高度：分組標題用 groupHeight 其餘（option/create）用 itemHeight */
+  #rowHeights(rows: readonly SelkitViewRow<T>[]): number[] {
+    return rows.map((r) =>
+      r.type === 'group' ? this.#groupHeight : this.#itemHeight,
+    )
+  }
+
+  /** 渲染虛擬切片：上下佔位 + range 內各列 共用扁平與分組兩路徑 */
+  #renderVirtualSlice(
+    rows: readonly SelkitViewRow<T>[],
+    range: { startIndex: number; endIndex: number; paddingTop: number; paddingBottom: number },
+    a11y: SelkitA11y,
+    activeIndex: number,
+  ): void {
+    this.#dropdown.append(this.#spacer(range.paddingTop))
+    for (let i = range.startIndex; i < range.endIndex; i++) {
+      const row = rows[i]
+      if (row) this.#renderRow(row, a11y, activeIndex)
     }
+    this.#dropdown.append(this.#spacer(range.paddingBottom))
+  }
+
+  /** 依列型別渲染並掛入下拉 group / create / option */
+  #renderRow(
+    row: SelkitViewRow<T>,
+    a11y: SelkitA11y,
+    activeIndex: number,
+  ): void {
+    if (row.type === 'group') {
+      this.#dropdown.append(this.#buildGroupRow(row))
+      return
+    }
+    if (row.type === 'create') {
+      this.#dropdown.append(this.#buildCreateRow(row, a11y, activeIndex))
+      return
+    }
+    this.#dropdown.append(this.#buildOption(row, a11y, activeIndex))
+  }
+
+  /** 分組標題列 套用 templateGroup（無則用 label）*/
+  #buildGroupRow(row: GroupRow): HTMLElement {
+    const group = document.createElement('div')
+    group.className = this.#cls('group')
+    if (row.disabled) group.classList.add(this.#cls('group', 'disabled'))
+    if (this.#templateGroup) {
+      this.#applyTemplate(
+        group,
+        this.#templateGroup({ label: row.label, disabled: !!row.disabled }),
+      )
+    } else {
+      group.textContent = row.label
+    }
+    return group
   }
 
   /** 「建立新項」列 共用 option 樣式與 a11y 但點擊走 createTag */

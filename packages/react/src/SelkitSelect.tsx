@@ -13,7 +13,12 @@ import type {
   PointerEvent as ReactPointerEvent,
   ReactNode,
 } from 'react'
-import { computeScrollIntoView, computeVirtualRange } from '@selkit/core'
+import {
+  computeScrollIntoView,
+  computeScrollIntoViewVariable,
+  computeVirtualRange,
+  computeVirtualWindow,
+} from '@selkit/core'
 import type {
   SelkitEmptyReason,
   SelkitItem,
@@ -31,6 +36,7 @@ const LOAD_MORE_THRESHOLD = 32
 
 type OptionRow<T> = Extract<SelkitViewRow<T>, { type: 'option' }>
 type CreateRow = Extract<SelkitViewRow, { type: 'create' }>
+type GroupRow = Extract<SelkitViewRow, { type: 'group' }>
 
 /** sr-only：視覺隱藏但螢幕報讀可讀 內聯以免未載入主題時外露 */
 const SR_ONLY: CSSProperties = {
@@ -80,6 +86,8 @@ export interface SelkitSelectProps<T = unknown> {
   hideSelected?: boolean
   virtualScroll?: boolean
   itemHeight?: number
+  /** 虛擬捲動下分組標題列的固定高度 px 預設 28 須與實際樣式高度一致 */
+  groupHeight?: number
   dropdownParent?: string | HTMLElement
   clearable?: boolean
   disabled?: boolean
@@ -143,6 +151,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     hideSelected = false,
     virtualScroll = false,
     itemHeight = 36,
+    groupHeight = 28,
     dropdownParent,
     clearable,
     disabled = false,
@@ -308,9 +317,8 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     if (!state.isOpen || state.activeIndex < 0) return
     const dropdown = dropdownRef.current
     if (!dropdown) return
-    const grouped = controller
-      .getGroupedView()
-      .rows.some((r) => r.type === 'group')
+    const rows = controller.getGroupedView().rows
+    const grouped = rows.some((r) => r.type === 'group')
     if (virtualScroll && !grouped) {
       const next = computeScrollIntoView({
         index: state.activeIndex,
@@ -321,6 +329,22 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
       if (next !== null) {
         dropdown.scrollTop = next
         setScrollTop(next) // 重算切片讓作用列進 DOM
+      }
+      return
+    }
+    if (virtualScroll && grouped) {
+      const rowIndex = rows.findIndex(
+        (r) => r.type !== 'group' && r.index === state.activeIndex,
+      )
+      const next = computeScrollIntoViewVariable({
+        heights: rows.map((r) => (r.type === 'group' ? groupHeight : itemHeight)),
+        rowIndex,
+        scrollTop: dropdown.scrollTop,
+        viewportHeight: dropdown.clientHeight,
+      })
+      if (next !== null) {
+        dropdown.scrollTop = next
+        setScrollTop(next)
       }
       return
     }
@@ -481,6 +505,25 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     )
   }
 
+  const buildGroup = (row: GroupRow): ReactNode => (
+    <div className={cls('group')} key={`group-${row.label}`}>
+      {renderGroup
+        ? renderGroup({ label: row.label, disabled: !!row.disabled })
+        : row.label}
+    </div>
+  )
+
+  const buildRow = (row: SelkitViewRow<T>): ReactNode =>
+    row.type === 'group'
+      ? buildGroup(row)
+      : row.type === 'create'
+        ? buildCreateRow(row)
+        : buildOption(row)
+
+  // 每列高度：分組標題用 groupHeight 其餘用 itemHeight
+  const rowHeights = (rows: readonly SelkitViewRow<T>[]): number[] =>
+    rows.map((r) => (r.type === 'group' ? groupHeight : itemHeight))
+
   const hasGroups = view.rows.some((r) => r.type === 'group')
   let dropdownContent: ReactNode
   if (view.rows.length === 0) {
@@ -496,19 +539,25 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
           : emptyMessage}
       </div>
     )
-  } else if (virtualScroll && !hasGroups) {
-    // 虛擬捲動僅在無分組的扁平清單啟用
-    const range = computeVirtualRange({
-      scrollTop,
-      viewportHeight: dropdownRef.current?.clientHeight ?? 0,
-      itemHeight,
-      itemCount: view.rows.length,
-    })
+  } else if (virtualScroll) {
+    // 扁平走均高 O(1)；分組走變高（header 與 option 高度不同）
+    const viewportHeight = dropdownRef.current?.clientHeight ?? 0
+    const range = hasGroups
+      ? computeVirtualWindow({
+          heights: rowHeights(view.rows),
+          scrollTop,
+          viewportHeight,
+        })
+      : computeVirtualRange({
+          scrollTop,
+          viewportHeight,
+          itemHeight,
+          itemCount: view.rows.length,
+        })
     const slice: ReactNode[] = []
     for (let i = range.startIndex; i < range.endIndex; i++) {
       const row = view.rows[i]
-      if (row?.type === 'option') slice.push(buildOption(row))
-      else if (row?.type === 'create') slice.push(buildCreateRow(row))
+      if (row) slice.push(buildRow(row))
     }
     dropdownContent = (
       <>
@@ -518,19 +567,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
       </>
     )
   } else {
-    dropdownContent = view.rows.map((row) =>
-      row.type === 'group' ? (
-        <div className={cls('group')} key={`group-${row.label}`}>
-          {renderGroup
-            ? renderGroup({ label: row.label, disabled: !!row.disabled })
-            : row.label}
-        </div>
-      ) : row.type === 'create' ? (
-        buildCreateRow(row)
-      ) : (
-        buildOption(row)
-      ),
-    )
+    dropdownContent = view.rows.map((row) => buildRow(row))
   }
 
   // portal 模式把下拉用 createPortal 送到 dropdownParent 並補 prefix class 讓 CSS 變數解析

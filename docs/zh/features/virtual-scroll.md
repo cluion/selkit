@@ -28,10 +28,42 @@ createSelkitDom('#big', {
 
 `itemHeight` 預設 `36`，對齊 base theme 的選項高度。請依你的主題實際渲染高度設定。
 
+## 分組清單
+
+虛擬捲動也支援 `optgroup` 式的分組。由於 group header 高度與 option 不同，需另外提供
+`groupHeight`：
+
+::: code-group
+
+```js [原生]
+createSelkitDom('#big', {
+  options: groupedOptions,
+  virtualScroll: true,
+  itemHeight: 36,  // option 列高
+  groupHeight: 28, // group 標題列高
+})
+```
+
+```vue [Vue]
+<SelkitSelect :options="groupedOptions" virtual-scroll :item-height="36" :group-height="28" />
+```
+
+```jsx [React]
+<SelkitSelect options={groupedOptions} virtualScroll itemHeight={36} groupHeight={28} />
+```
+
+:::
+
+`groupHeight` 預設 `28`（base theme 的標題高度）。與 `itemHeight` 一樣，請依你的主題實際
+渲染高度設定，佔位計算才會準確。
+
+group header **不會** sticky —— 捲進某組中段時，該組標題會跟著捲出。極端（10 萬+）清單
+建議維持扁平；分組虛擬鎖定數千列以內。
+
 ## 運作方式
 
-共用、不碰 DOM 的核心輔助函式 `computeVirtualRange` 會把捲動位置、視窗高度與列高，
-對應成該渲染的切片以及上下佔位高度：
+扁平清單用不碰 DOM 的核心輔助函式 `computeVirtualRange`，把捲動位置、視窗高度與單一列高
+對應成該渲染的切片與上下佔位（`O(1)`）：
 
 ```ts
 import { computeVirtualRange } from '@selkit/core'
@@ -46,10 +78,20 @@ computeVirtualRange({
 // → { startIndex, endIndex, paddingTop, paddingBottom }
 ```
 
-每個 adapter 追蹤下拉浮層的 `scrollTop`，呼叫此輔助函式，並把回傳的切片渲染在兩個保留
-捲軸尺寸的佔位元素之間。同一套計算驅動三個 adapter，因此各處行為一致。
+分組清單因列高不一，改用 `computeVirtualWindow`，吃每列高度陣列（標題列用 `groupHeight`，
+其餘用 `itemHeight`），以累積偏移回傳相同形狀：
 
-## 限制
+```ts
+import { computeVirtualWindow } from '@selkit/core'
 
-虛擬捲動目前針對**扁平選項清單**。當存在分組時，adapter 會退回完整渲染，因為佔位計算
-需要一致的固定列高。
+computeVirtualWindow({
+  heights: [28, 36, 36, 28, 36], // group, opt, opt, group, opt
+  scrollTop: 100,
+  viewportHeight: 260,
+  overscan: 4,
+})
+// → { startIndex, endIndex, paddingTop, paddingBottom }
+```
+
+每個 adapter 追蹤下拉浮層的 `scrollTop`，呼叫對應的輔助函式，並把回傳的切片（含 group
+header）渲染在兩個保留捲軸尺寸的佔位元素之間。同一套計算驅動三個 adapter，行為一致。

@@ -690,19 +690,61 @@ describe('虛擬捲動 virtualScroll', () => {
     expect(opts.length).toBeLessThan(100)
   })
 
-  it('有分組時退回完整渲染 不虛擬化', () => {
-    const grouped: SelkitItem[] = [
-      {
-        label: 'G',
-        options: Array.from({ length: 50 }, (_, i) => ({
-          value: i,
-          label: `Item ${i}`,
-        })),
-      },
-    ]
-    const inst = createSelkitDom(host, { options: grouped, virtualScroll: true })
+  const bigGrouped: SelkitItem[] = [
+    {
+      label: 'A',
+      options: Array.from({ length: 50 }, (_, i) => ({
+        value: `a${i}`,
+        label: `A ${i}`,
+      })),
+    },
+    {
+      label: 'B',
+      options: Array.from({ length: 50 }, (_, i) => ({
+        value: `b${i}`,
+        label: `B ${i}`,
+      })),
+    },
+  ]
+
+  it('分組 + 虛擬：只渲染切片（含 group header）', () => {
+    const inst = createSelkitDom(host, {
+      options: bigGrouped,
+      virtualScroll: true,
+      itemHeight: 36,
+      groupHeight: 28,
+    })
     inst.controller.open()
-    expect($$(inst.element, '.selkit__option')).toHaveLength(50)
+    const opts = $$(inst.element, '.selkit__option')
+    expect(opts.length).toBeGreaterThan(0)
+    expect(opts.length).toBeLessThan(100) // 沒有整份渲染
+    expect($(inst.element, '.selkit__group')).toBeTruthy() // 切片含標題
+  })
+
+  it('分組 + 虛擬：導航到視窗外的作用列會調整 scrollTop（用變高累積）', () => {
+    const inst = createSelkitDom(host, {
+      options: bigGrouped,
+      virtualScroll: true,
+      itemHeight: 36,
+      groupHeight: 28,
+    })
+    const dropdown = $(inst.element, '.selkit__dropdown')
+    let scrollTop = 0
+    Object.defineProperty(dropdown, 'scrollTop', {
+      configurable: true,
+      get: () => scrollTop,
+      set: (v: number) => {
+        scrollTop = v
+      },
+    })
+    Object.defineProperty(dropdown, 'clientHeight', {
+      configurable: true,
+      value: 100,
+    })
+    pointerdown($(inst.element, '.selkit__control'))
+    expect(scrollTop).toBe(0) // 開啟時作用列在頂端可視內
+    keydown($(inst.element, '.selkit__control'), 'End') // 跳到最後一個 option（視窗外）
+    expect(scrollTop).toBeGreaterThan(0)
   })
 })
 

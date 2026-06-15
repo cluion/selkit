@@ -16,7 +16,12 @@ import {
   type StyleValue,
   type VNode,
 } from 'vue'
-import { computeScrollIntoView, computeVirtualRange } from '@selkit/core'
+import {
+  computeScrollIntoView,
+  computeScrollIntoViewVariable,
+  computeVirtualRange,
+  computeVirtualWindow,
+} from '@selkit/core'
 import type {
   SelkitItem,
   SelkitLoadResult,
@@ -33,6 +38,7 @@ const LOAD_MORE_THRESHOLD = 32
 
 type OptionRow = Extract<SelkitViewRow, { type: 'option' }>
 type CreateRow = Extract<SelkitViewRow, { type: 'create' }>
+type GroupRow = Extract<SelkitViewRow, { type: 'group' }>
 
 /** sr-only：視覺隱藏但螢幕報讀可讀 內聯以免未載入主題時外露 */
 const SR_ONLY: StyleValue = {
@@ -79,6 +85,8 @@ export const SelkitSelect = defineComponent({
     hideSelected: { type: Boolean, default: false },
     virtualScroll: { type: Boolean, default: false },
     itemHeight: { type: Number, default: 36 },
+    /** 虛擬捲動下分組標題列的固定高度 px 預設 28 須與實際樣式高度一致 */
+    groupHeight: { type: Number, default: 28 },
     dropdownParent: {
       type: [String, Object] as PropType<string | HTMLElement>,
       default: undefined,
@@ -243,9 +251,8 @@ export const SelkitSelect = defineComponent({
         if (!isOpen || activeIndex < 0) return
         const dropdown = dropdownRef.value
         if (!dropdown) return
-        const grouped = controller
-          .getGroupedView()
-          .rows.some((r) => r.type === 'group')
+        const rows = controller.getGroupedView().rows
+        const grouped = rows.some((r) => r.type === 'group')
         if (props.virtualScroll && !grouped) {
           const next = computeScrollIntoView({
             index: activeIndex,
@@ -256,6 +263,24 @@ export const SelkitSelect = defineComponent({
           if (next !== null) {
             dropdown.scrollTop = next
             scrollTop.value = next // 重算切片讓作用列進 DOM
+          }
+          return
+        }
+        if (props.virtualScroll && grouped) {
+          const rowIndex = rows.findIndex(
+            (r) => r.type !== 'group' && r.index === activeIndex,
+          )
+          const next = computeScrollIntoViewVariable({
+            heights: rows.map((r) =>
+              r.type === 'group' ? props.groupHeight : props.itemHeight,
+            ),
+            rowIndex,
+            scrollTop: dropdown.scrollTop,
+            viewportHeight: dropdown.clientHeight,
+          })
+          if (next !== null) {
+            dropdown.scrollTop = next
+            scrollTop.value = next
           }
           return
         }
@@ -513,6 +538,26 @@ export const SelkitSelect = defineComponent({
         )
       }
 
+      const buildGroup = (row: GroupRow): VNode =>
+        h(
+          'div',
+          { key: `group-${row.label}`, class: cls('group') },
+          slots.group
+            ? slots.group({ label: row.label, disabled: !!row.disabled })
+            : row.label,
+        )
+
+      const buildRow = (row: SelkitViewRow): VNode =>
+        row.type === 'group'
+          ? buildGroup(row)
+          : row.type === 'create'
+            ? buildCreateRow(row)
+            : buildOption(row)
+
+      // 每列高度：分組標題用 groupHeight 其餘用 itemHeight
+      const rowHeights = (rows: readonly SelkitViewRow[]): number[] =>
+        rows.map((r) => (r.type === 'group' ? props.groupHeight : props.itemHeight))
+
       const spacer = (key: string, height: number): VNode =>
         h('div', { key, 'aria-hidden': 'true', style: { height: `${height}px` } })
 
@@ -533,42 +578,29 @@ export const SelkitSelect = defineComponent({
               : emptyMessage,
           ),
         )
-      } else if (props.virtualScroll && !hasGroups) {
-        // 虛擬捲動僅在無分組的扁平清單啟用
-        const range = computeVirtualRange({
-          scrollTop: scrollTop.value,
-          viewportHeight: dropdownRef.value?.clientHeight ?? 0,
-          itemHeight: props.itemHeight,
-          itemCount: view.rows.length,
-        })
+      } else if (props.virtualScroll) {
+        // 扁平走均高 O(1)；分組走變高（header 與 option 高度不同）
+        const viewportHeight = dropdownRef.value?.clientHeight ?? 0
+        const range = hasGroups
+          ? computeVirtualWindow({
+              heights: rowHeights(view.rows),
+              scrollTop: scrollTop.value,
+              viewportHeight,
+            })
+          : computeVirtualRange({
+              scrollTop: scrollTop.value,
+              viewportHeight,
+              itemHeight: props.itemHeight,
+              itemCount: view.rows.length,
+            })
         dropdownChildren.push(spacer('vtop', range.paddingTop))
         for (let i = range.startIndex; i < range.endIndex; i++) {
           const row = view.rows[i]
-          if (row?.type === 'option') dropdownChildren.push(buildOption(row))
-          else if (row?.type === 'create')
-            dropdownChildren.push(buildCreateRow(row))
+          if (row) dropdownChildren.push(buildRow(row))
         }
         dropdownChildren.push(spacer('vbot', range.paddingBottom))
       } else {
-        for (const row of view.rows) {
-          if (row.type === 'group') {
-            dropdownChildren.push(
-              h(
-                'div',
-                { class: cls('group') },
-                slots.group
-                  ? slots.group({ label: row.label, disabled: !!row.disabled })
-                  : row.label,
-              ),
-            )
-            continue
-          }
-          if (row.type === 'create') {
-            dropdownChildren.push(buildCreateRow(row))
-            continue
-          }
-          dropdownChildren.push(buildOption(row))
-        }
+        for (const row of view.rows) dropdownChildren.push(buildRow(row))
       }
 
       const rootClasses = [prefix]

@@ -96,6 +96,14 @@
           label: `Option ${i + 1}`,
         }))
 
+      const groupedMany = Array.from({ length: 10 }, (_, g) => ({
+        label: `Group ${g + 1}`,
+        options: Array.from({ length: 100 }, (_, i) => ({
+          value: `g${g}-${i}`,
+          label: `Group ${g + 1} · Item ${i}`,
+        })),
+      }))
+
       const loadPage = async (query, page) => {
         const size = 20
         const start = (page - 1) * size
@@ -238,6 +246,11 @@
             <section>
               <label>虛擬捲動 virtual scroll（1000 筆）</label>
               <${SelkitSelect} options=${many(1000)} virtualScroll=${true} itemHeight=${36} placeholder="1000 options…" onChange=${onChange} />
+            </section>
+
+            <section>
+              <label>虛擬捲動 + 分組（10 組 × 100，header 變高）</label>
+              <${SelkitSelect} options=${groupedMany} virtualScroll=${true} itemHeight=${36} groupHeight=${28} placeholder="10 groups × 100…" onChange=${onChange} />
             </section>
 
             <section dir="rtl">
