@@ -8,7 +8,11 @@
  * 表單整合：host 是 <select> 時走增強模式（讀 option 並同步值回原生 select）
  * 否則給了 config.name 就自動維護 hidden input 讓傳統表單 submit 帶值
  */
-import { computeVirtualRange, createSelkit } from '@selkit/core'
+import {
+  computeScrollIntoView,
+  computeVirtualRange,
+  createSelkit,
+} from '@selkit/core'
 import type {
   SelkitA11y,
   SelkitConfig,
@@ -218,6 +222,8 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   #hiddenContainer: HTMLDivElement | null = null
   #selectPrevDisplay = ''
   #dragFrom = -1
+  /** 上次已捲入可視的 activeIndex 僅在變動時才捲 避免跟使用者手動捲動打架 */
+  #lastActive = -1
 
   #positioner: Positioner | null = null
   readonly #unsubscribe: () => void
@@ -538,6 +544,42 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#syncForm()
     this.element.classList.toggle(this.#cls('', 'open'), s.isOpen)
     this.element.classList.toggle(this.#cls('', 'disabled'), s.disabled)
+    this.#scrollActiveIntoView(s)
+  }
+
+  /**
+   * 鍵盤導航/開啟時讓作用中選項保持可見（aria-activedescendant 完整度）
+   * 僅在 activeIndex 變動時動作 手動捲動觸發的重繪不會跟著捲
+   */
+  #scrollActiveIntoView(s: Readonly<SelkitState<T>>): void {
+    if (!s.isOpen) {
+      this.#lastActive = -1
+      return
+    }
+    if (s.activeIndex === this.#lastActive || s.activeIndex < 0) return
+    this.#lastActive = s.activeIndex
+
+    const hasGroups = this.controller
+      .getGroupedView()
+      .rows.some((r) => r.type === 'group')
+    if (this.#virtual && !hasGroups) {
+      // 該列可能尚未渲染 無法靠 DOM 用固定列高算出目標 scrollTop
+      const next = computeScrollIntoView({
+        index: s.activeIndex,
+        scrollTop: this.#dropdown.scrollTop,
+        viewportHeight: this.#dropdown.clientHeight,
+        itemHeight: this.#itemHeight,
+      })
+      if (next !== null) {
+        this.#dropdown.scrollTop = next
+        this.#renderOptions(s) // 依新捲動位置重算切片 讓作用列進入 DOM
+      }
+      return
+    }
+    const active = this.#dropdown.querySelector<HTMLElement>(
+      `.${this.#cls('option', 'active')}`,
+    )
+    active?.scrollIntoView?.({ block: 'nearest' })
   }
 
   /** 套用模板輸出：字串走 textContent（防 XSS）Node 直接掛入 */

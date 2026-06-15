@@ -13,7 +13,7 @@ import type {
   PointerEvent as ReactPointerEvent,
   ReactNode,
 } from 'react'
-import { computeVirtualRange } from '@selkit/core'
+import { computeScrollIntoView, computeVirtualRange } from '@selkit/core'
 import type {
   SelkitEmptyReason,
   SelkitItem,
@@ -301,6 +301,35 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
       window.removeEventListener('resize', update)
     }
   }, [portalTarget, state.isOpen])
+
+  // 作用中選項保持可見（aria-activedescendant 完整度）
+  // deps 僅 isOpen/activeIndex：手動捲動更新的是 scrollTop state 不會誤觸
+  useEffect(() => {
+    if (!state.isOpen || state.activeIndex < 0) return
+    const dropdown = dropdownRef.current
+    if (!dropdown) return
+    const grouped = controller
+      .getGroupedView()
+      .rows.some((r) => r.type === 'group')
+    if (virtualScroll && !grouped) {
+      const next = computeScrollIntoView({
+        index: state.activeIndex,
+        scrollTop: dropdown.scrollTop,
+        viewportHeight: dropdown.clientHeight,
+        itemHeight,
+      })
+      if (next !== null) {
+        dropdown.scrollTop = next
+        setScrollTop(next) // 重算切片讓作用列進 DOM
+      }
+      return
+    }
+    const active = dropdown.querySelector<HTMLElement>(
+      `.${cls('option', 'active')}`,
+    )
+    active?.scrollIntoView?.({ block: 'nearest' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.isOpen, state.activeIndex])
 
   const onControlPointerDown = (e: ReactPointerEvent<HTMLDivElement>): void => {
     const target = e.target as HTMLElement

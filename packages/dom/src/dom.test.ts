@@ -292,6 +292,64 @@ describe('可換元件 template* 自訂結構零件', () => {
   })
 })
 
+describe('作用中選項捲入視窗 scrollIntoView', () => {
+  const many = Array.from({ length: 100 }, (_, i) => ({
+    value: i,
+    label: `Item ${i}`,
+  }))
+
+  it('鍵盤導航時對作用中選項呼叫 scrollIntoView({ block: nearest })', () => {
+    const spy = vi.fn()
+    // jsdom 未實作 scrollIntoView 補上以便偵測呼叫
+    ;(Element.prototype as unknown as { scrollIntoView: unknown }).scrollIntoView = spy
+    const inst = createSelkitDom(host, { options: OPTIONS })
+    pointerdown($(inst.element, '.selkit__control'))
+    spy.mockClear()
+    keydown($(inst.element, '.selkit__control'), 'ArrowDown')
+    expect(spy).toHaveBeenCalledWith({ block: 'nearest' })
+  })
+
+  it('手動捲動下拉不會觸發 scrollIntoView（不跟使用者打架）', () => {
+    const spy = vi.fn()
+    ;(Element.prototype as unknown as { scrollIntoView: unknown }).scrollIntoView = spy
+    const inst = createSelkitDom(host, { options: OPTIONS })
+    pointerdown($(inst.element, '.selkit__control'))
+    keydown($(inst.element, '.selkit__control'), 'ArrowDown')
+    spy.mockClear()
+    $(inst.element, '.selkit__dropdown').dispatchEvent(new Event('scroll'))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('虛擬捲動：導航到視窗外的作用列會調整 scrollTop', () => {
+    const inst = createSelkitDom(host, {
+      options: many,
+      virtualScroll: true,
+      itemHeight: 20,
+    })
+    const dropdown = $(inst.element, '.selkit__dropdown')
+    // jsdom 無 layout 會夾 scrollTop 且 clientHeight=0；自行接管以觀察計算結果
+    let scrollTop = 0
+    Object.defineProperty(dropdown, 'scrollTop', {
+      configurable: true,
+      get: () => scrollTop,
+      set: (v: number) => {
+        scrollTop = v
+      },
+    })
+    Object.defineProperty(dropdown, 'clientHeight', {
+      configurable: true,
+      value: 100,
+    })
+
+    pointerdown($(inst.element, '.selkit__control'))
+    // 開啟時作用列為 index 0，落在可視區（0~100）內 → 不捲
+    expect(scrollTop).toBe(0)
+    keydown($(inst.element, '.selkit__control'), 'End') // 跳到 index 99（視窗外）
+    // index 99：itemBottom=2000 超出可視底 → 對齊底 2000-100 = 1900
+    expect(scrollTop).toBe(1900)
+  })
+})
+
 describe('搜尋', () => {
   it('輸入過濾選項並開啟', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })

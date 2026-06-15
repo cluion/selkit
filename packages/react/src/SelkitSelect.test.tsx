@@ -330,6 +330,18 @@ describe('可換元件 render* 自訂結構零件', () => {
   })
 })
 
+describe('作用中選項捲入視窗 scrollIntoView', () => {
+  it('鍵盤導航時對作用中選項呼叫 scrollIntoView', () => {
+    const spy = vi.fn()
+    ;(Element.prototype as unknown as { scrollIntoView: unknown }).scrollIntoView = spy
+    const { container } = render(<SelkitSelect options={OPTIONS} />)
+    fireEvent.pointerDown(control(container as HTMLElement))
+    spy.mockClear()
+    fireEvent.keyDown(control(container as HTMLElement), { key: 'ArrowDown' })
+    expect(spy).toHaveBeenCalledWith({ block: 'nearest' })
+  })
+})
+
 describe('虛擬捲動', () => {
   const many: SelkitItem[] = Array.from({ length: 100 }, (_, i) => ({
     value: i,

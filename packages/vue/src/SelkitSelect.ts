@@ -16,7 +16,7 @@ import {
   type StyleValue,
   type VNode,
 } from 'vue'
-import { computeVirtualRange } from '@selkit/core'
+import { computeScrollIntoView, computeVirtualRange } from '@selkit/core'
 import type {
   SelkitItem,
   SelkitLoadResult,
@@ -233,6 +233,38 @@ export const SelkitSelect = defineComponent({
     watch(
       () => props.disabled,
       (d) => controller.setDisabled(d),
+    )
+
+    // 作用中選項保持可見（aria-activedescendant 完整度）
+    // 只看 isOpen/activeIndex：手動捲動更新的是 scrollTop 不會誤觸；flush post 待 DOM 更新後再捲
+    watch(
+      () => [state.value.isOpen, state.value.activeIndex] as const,
+      ([isOpen, activeIndex]) => {
+        if (!isOpen || activeIndex < 0) return
+        const dropdown = dropdownRef.value
+        if (!dropdown) return
+        const grouped = controller
+          .getGroupedView()
+          .rows.some((r) => r.type === 'group')
+        if (props.virtualScroll && !grouped) {
+          const next = computeScrollIntoView({
+            index: activeIndex,
+            scrollTop: dropdown.scrollTop,
+            viewportHeight: dropdown.clientHeight,
+            itemHeight: props.itemHeight,
+          })
+          if (next !== null) {
+            dropdown.scrollTop = next
+            scrollTop.value = next // 重算切片讓作用列進 DOM
+          }
+          return
+        }
+        const active = dropdown.querySelector<HTMLElement>(
+          `.${cls('option', 'active')}`,
+        )
+        active?.scrollIntoView?.({ block: 'nearest' })
+      },
+      { flush: 'post' },
     )
 
     const onDocPointer = (e: Event): void => {

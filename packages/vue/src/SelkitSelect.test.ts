@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { SelkitSelect } from './SelkitSelect'
 import type { SelkitItem, SelkitOption } from '@selkit/core'
@@ -281,6 +281,19 @@ describe('可換元件 slot 自訂結構零件', () => {
     const input = w.find('.selkit__input')
     await input.setValue('zzz')
     expect(w.find('.selkit__empty').text()).toBe('no-results:No results')
+  })
+})
+
+describe('作用中選項捲入視窗 scrollIntoView', () => {
+  it('鍵盤導航時對作用中選項呼叫 scrollIntoView', async () => {
+    const spy = vi.fn()
+    ;(Element.prototype as unknown as { scrollIntoView: unknown }).scrollIntoView = spy
+    const w = mount(SelkitSelect, { props: { options: OPTIONS }, attachTo: document.body })
+    await w.find('.selkit__control').trigger('pointerdown')
+    spy.mockClear()
+    await w.find('.selkit__control').trigger('keydown', { key: 'ArrowDown' })
+    expect(spy).toHaveBeenCalledWith({ block: 'nearest' })
+    w.unmount()
   })
 })
 

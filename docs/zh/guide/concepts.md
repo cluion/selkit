@@ -83,3 +83,12 @@ Controller 提供衍生輔助，讓 adapter 保持單純：
 
 下拉浮層由內建於 `@selkit/dom` 的輕量、零依賴定位器負責定位。這守住了「無執行期依賴」
 的承諾；不會硬性相依任何定位函式庫。
+
+## 讓作用中選項保持可見
+
+用鍵盤移動高亮（Arrow／Home／End）或開啟下拉時，作用中選項會自動捲入可視區
+（`block: 'nearest'`——移動最小、只在跑出視窗外時才捲）。這讓 `aria-activedescendant`
+指向的選項保持可見，正是 combobox 模式的要求。它**只在 active 索引變動時**觸發，所以不會
+跟手動捲動打架。虛擬捲動下該列可能尚未渲染，因此改用固定 `itemHeight` 透過核心輔助函式
+`computeScrollIntoView`（[`computeVirtualRange`](/zh/features/virtual-scroll) 的姊妹函式）
+算出偏移，再依新位置重繪。

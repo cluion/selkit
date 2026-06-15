@@ -93,3 +93,15 @@ The controller exposes derived helpers so adapters stay dumb:
 The dropdown is positioned by a lightweight, zero-dependency positioner that
 ships inside `@selkit/dom`. This preserves the "no runtime dependencies" promise;
 there is no hard dependency on a positioning library.
+
+## Keeping the active option visible
+
+As you move the highlight with the keyboard (Arrow / Home / End) or open the
+dropdown, the active option is scrolled into view automatically (`block: 'nearest'`
+— minimal movement, only when off-screen). This keeps the `aria-activedescendant`
+target visible, which the combobox pattern requires. It triggers only when the
+active index changes, so it never fights a manual scroll. Under virtual scrolling
+the target row may not be rendered yet, so the offset is computed from the fixed
+`itemHeight` via the core helper `computeScrollIntoView` (sibling of
+[`computeVirtualRange`](/features/virtual-scroll)) and the list re-renders at the
+new position.

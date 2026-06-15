@@ -56,3 +56,33 @@ export function computeVirtualRange(input: VirtualRangeInput): VirtualRange {
     paddingBottom: (itemCount - endIndex) * itemHeight,
   }
 }
+
+export interface ScrollIntoViewInput {
+  /** 要捲入可視的列索引（固定列高下 offset = index × itemHeight） */
+  index: number
+  /** 捲動容器目前的 scrollTop */
+  scrollTop: number
+  /** 捲動容器可視高度 */
+  viewportHeight: number
+  /** 單列固定高度 */
+  itemHeight: number
+}
+
+/**
+ * 算出讓第 index 列剛好可見所需的 scrollTop（block: 'nearest' 語意 最小移動）
+ * 已在可視範圍內回傳 null（不動） 否則回傳對齊頂或底的新 scrollTop
+ * 供虛擬捲動下「作用中選項捲入視窗」使用（該列可能尚未渲染 無法靠 DOM）
+ */
+export function computeScrollIntoView(input: ScrollIntoViewInput): number | null {
+  const { index, scrollTop, viewportHeight, itemHeight } = input
+  if (itemHeight <= 0 || index < 0) return null
+
+  const itemTop = index * itemHeight
+  const itemBottom = itemTop + itemHeight
+
+  if (itemTop < scrollTop) return itemTop // 在可視區上方 對齊頂端
+  if (itemBottom > scrollTop + viewportHeight) {
+    return itemBottom - viewportHeight // 在可視區下方 對齊底端
+  }
+  return null // 已可見 不動
+}
