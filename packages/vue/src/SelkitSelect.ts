@@ -119,14 +119,24 @@ export const SelkitSelect = defineComponent({
         (
           query: string,
           page: number,
+          opts: { signal: AbortSignal },
         ) => Promise<SelkitItem[] | SelkitLoadResult>
       >,
       default: undefined,
     },
     debounce: { type: Number, default: undefined },
+    /** 快取 loadOptions 首頁結果（query 為鍵）避免重打 API */
+    cache: { type: Boolean, default: false },
+    /** 快取存活毫秒 超過視為過期 未設則不過期 */
+    cacheTTL: { type: Number, default: undefined },
     taggable: { type: Boolean, default: false },
     createTag: {
       type: Function as PropType<(query: string) => SelkitOption>,
+      default: undefined,
+    },
+    /** tag 驗證鉤子 回傳 false 則不建立（靜默拒絕） */
+    isValidToken: {
+      type: Function as PropType<(query: string) => boolean>,
       default: undefined,
     },
     tokenSeparators: {
@@ -168,7 +178,10 @@ export const SelkitSelect = defineComponent({
       ...(props.clearable !== undefined ? { clearable: props.clearable } : {}),
       ...(props.loadOptions ? { loadOptions: props.loadOptions } : {}),
       ...(props.debounce !== undefined ? { debounce: props.debounce } : {}),
+      ...(props.cache ? { cache: true } : {}),
+      ...(props.cacheTTL !== undefined ? { cacheTTL: props.cacheTTL } : {}),
       ...(props.createTag ? { createTag: props.createTag } : {}),
+      ...(props.isValidToken ? { isValidToken: props.isValidToken } : {}),
       ...(props.tokenSeparators
         ? { tokenSeparators: props.tokenSeparators }
         : {}),

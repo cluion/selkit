@@ -493,7 +493,11 @@ describe('非同步 loadOptions', () => {
     expect(s.getState().query).toBe('xy')
     expect(loadOptions).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(100)
-    expect(loadOptions).toHaveBeenCalledWith('xy', 1)
+    expect(loadOptions).toHaveBeenCalledWith(
+      'xy',
+      1,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
     expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['x', 'y'])
     expect(s.getState().loading).toBe(false)
     vi.useRealTimers()
@@ -554,6 +558,152 @@ describe('非同步 loadOptions', () => {
     expect(onError).toHaveBeenCalledWith({ error: err })
     expect(s.getState().loading).toBe(false)
     vi.useRealTimers()
+  })
+})
+
+describe('非同步 abort 取消', () => {
+  it('新搜尋取消前一個進行中請求的 signal 且不誤觸 load:error', async () => {
+    vi.useFakeTimers()
+    const signals: AbortSignal[] = []
+    const loadOptions = vi.fn(
+      (q: string, _p: number, opts: { signal: AbortSignal }) => {
+        signals.push(opts.signal)
+        // 第一次（slow）永不解析模擬慢請求 第二次（fast）才回結果
+        return new Promise<SelkitItem[]>((resolve) => {
+          if (q === 'fast') resolve([{ value: 'new', label: 'New' }])
+        })
+      },
+    )
+    const onError = vi.fn()
+    const s = createSelkit({ loadOptions, debounce: 0 })
+    s.on('load:error', onError)
+    s.setQuery('slow')
+    await vi.advanceTimersByTimeAsync(0)
+    s.setQuery('fast')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(signals[0]!.aborted).toBe(true) // 前一個被取消
+    expect(signals[1]!.aborted).toBe(false) // 最新的仍有效
+    expect(onError).not.toHaveBeenCalled() // 自家取消不算錯誤
+    vi.useRealTimers()
+  })
+
+  it('未達 minInputLength 時取消進行中的請求', async () => {
+    vi.useFakeTimers()
+    const signals: AbortSignal[] = []
+    const loadOptions = vi.fn(
+      (_q: string, _p: number, opts: { signal: AbortSignal }) => {
+        signals.push(opts.signal)
+        return new Promise<SelkitItem[]>(() => {}) // 永不解析
+      },
+    )
+    const s = createSelkit({ loadOptions, debounce: 0, minInputLength: 2 })
+    s.setQuery('abc')
+    await vi.advanceTimersByTimeAsync(0)
+    s.setQuery('a') // 退回未達字數
+    expect(signals[0]!.aborted).toBe(true)
+    vi.useRealTimers()
+  })
+})
+
+describe('遠端結果快取 cache', () => {
+  it('開啟時同 query 命中快取不重打 API', async () => {
+    vi.useFakeTimers()
+    const loadOptions = vi.fn(async (q: string) => [{ value: q, label: q }])
+    const s = createSelkit({ loadOptions, debounce: 0, cache: true })
+    s.setQuery('xy')
+    await vi.advanceTimersByTimeAsync(0)
+    s.setQuery('ab')
+    await vi.advanceTimersByTimeAsync(0)
+    s.setQuery('xy') // 命中快取
+    await vi.advanceTimersByTimeAsync(0)
+    expect(loadOptions.mock.calls.filter((c) => c[0] === 'xy')).toHaveLength(1)
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['xy'])
+    vi.useRealTimers()
+  })
+
+  it('cacheTTL 過期後重打', async () => {
+    vi.useFakeTimers()
+    const loadOptions = vi.fn(async (q: string) => [{ value: q, label: q }])
+    const s = createSelkit({ loadOptions, debounce: 0, cache: true, cacheTTL: 1000 })
+    s.setQuery('xy')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(loadOptions).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(2000) // 超過 TTL
+    s.setQuery('xy')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(loadOptions).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
+  })
+
+  it('setOptions 清空快取', async () => {
+    vi.useFakeTimers()
+    const loadOptions = vi.fn(async (q: string) => [{ value: q, label: q }])
+    const s = createSelkit({ loadOptions, debounce: 0, cache: true })
+    s.setQuery('xy')
+    await vi.advanceTimersByTimeAsync(0)
+    s.setOptions([{ value: 'z', label: 'Z' }])
+    s.setQuery('xy')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(loadOptions).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
+  })
+
+  it('cache 關閉時每次都重打', async () => {
+    vi.useFakeTimers()
+    const loadOptions = vi.fn(async (q: string) => [{ value: q, label: q }])
+    const s = createSelkit({ loadOptions, debounce: 0 })
+    s.setQuery('xy')
+    await vi.advanceTimersByTimeAsync(0)
+    s.setQuery('ab')
+    await vi.advanceTimersByTimeAsync(0)
+    s.setQuery('xy')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(loadOptions.mock.calls.filter((c) => c[0] === 'xy')).toHaveLength(2)
+    vi.useRealTimers()
+  })
+})
+
+describe('isValidToken tag 驗證', () => {
+  const opts: SelkitItem[] = [{ value: 'a', label: 'Apple' }]
+  const cfg = {
+    options: opts,
+    multiple: true,
+    taggable: true,
+    createTag: (q: string) => ({ value: q, label: q }),
+    isValidToken: (q: string) => q.length >= 3,
+  }
+
+  it('無效 query 不顯示建立列且 createTag 不建立', () => {
+    const onCreate = vi.fn()
+    const s = createSelkit(cfg)
+    s.on('create', onCreate)
+    s.open()
+    s.setQuery('ab') // 長度 2 無效
+    expect(s.getGroupedView().rows.some((r) => r.type === 'create')).toBe(false)
+    s.createTag()
+    expect(onCreate).not.toHaveBeenCalled()
+    expect(s.getState().selected).toHaveLength(0)
+  })
+
+  it('有效 query 顯示建立列且可建立', () => {
+    const s = createSelkit(cfg)
+    s.open()
+    s.setQuery('abc')
+    expect(s.getGroupedView().rows.some((r) => r.type === 'create')).toBe(true)
+    s.createTag()
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['abc'])
+  })
+
+  it('tokenSeparator 對無效 token 略過、有效 token 建立', () => {
+    const s = createSelkit({
+      multiple: true,
+      taggable: true,
+      tokenSeparators: [','],
+      createTag: (q: string) => ({ value: q, label: q }),
+      isValidToken: (q: string) => q.length >= 3,
+    })
+    s.setQuery('ab,abcd,') // ab 無效略過 abcd 有效建立
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['abcd'])
   })
 })
 

@@ -73,3 +73,25 @@ describe('tokenSeparators 透傳', () => {
     expect(input.value).toBe('ba')
   })
 })
+
+describe('isValidToken 透傳', () => {
+  it('無效 query 不顯示建立列', () => {
+    const { container } = render(
+      <SelkitSelect
+        options={OPTIONS}
+        multiple
+        taggable
+        createTag={(q) => ({ value: q, label: q })}
+        isValidToken={(q) => q.length >= 3}
+      />,
+    )
+    fireEvent.pointerDown(
+      container.querySelector('.selkit__control') as HTMLElement,
+    )
+    const input = container.querySelector('.selkit__input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'ab' } }) // 無效
+    expect(container.querySelector('.selkit__create')).toBeNull()
+    fireEvent.change(input, { target: { value: 'abc' } }) // 有效
+    expect(container.querySelector('.selkit__create')).not.toBeNull()
+  })
+})

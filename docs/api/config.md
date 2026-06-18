@@ -22,11 +22,14 @@ optional.
 | `disabled` | `boolean` | `false` | Disable the control. |
 | `placeholder` | `string` | — | Placeholder text. |
 | `ariaLabel` | `string` | — | Accessible name (`aria-label`) for the search input. Falls back to `placeholder`. Set one of them so screen readers (and axe) can identify the field. |
-| `loadOptions` | `(query, page) => Promise<SelkitItem<T>[] \| SelkitLoadResult<T>>` | — | Async / paginated loading. See [Async](/features/async). |
+| `loadOptions` | `(query, page, { signal }) => Promise<SelkitItem<T>[] \| SelkitLoadResult<T>>` | — | Async / paginated loading. The `signal` is aborted when superseded. See [Async](/features/async). |
 | `debounce` | `number` | `250` | Debounce in ms for `loadOptions`. |
 | `filterRemote` | `boolean` | `false` | Apply the local filter to remote results. |
+| `cache` | `boolean` | `false` | Memoize the first page of `loadOptions` results by query. First page only; cleared by `setOptions`. See [Async › Caching](/features/async#caching-results). |
+| `cacheTTL` | `number` | — | Milliseconds before a cache entry is stale. Omit = never expires. Only with `cache: true`. |
 | `taggable` | `boolean` | `false` | Allow creating options on the fly. |
 | `createTag` | `(query) => SelkitOption<T>` | — | Factory for new tags. |
+| `isValidToken` | `(query) => boolean` | — | Gate tag creation. Returning `false` silently hides the create row and blocks Enter / token separators. See [Tagging › Validating](/features/selection#validating-tags). |
 | `tokenSeparators` | `string[]` | `[]` | Auto-split typed/pasted input on these separators (e.g. `[',', ' ']`) into tags. Multiple-select only; creating new tags also needs `taggable`. Tokens matching an existing option are selected; the remainder stays in the input. |
 | `restoreOnBackspace` | `boolean` | `false` | Multiple-select only: when the input is empty, Backspace removes the last tag and restores its label to the input for editing (and opens the dropdown). |
 | `maxSelections` | `number` | — | Cap on selected items. |

@@ -64,3 +64,22 @@ describe('tokenSeparators 透傳', () => {
     expect((input.element as HTMLInputElement).value).toBe('ba')
   })
 })
+
+describe('isValidToken 透傳', () => {
+  it('無效 query 不顯示建立列', async () => {
+    const w = mount(SelkitSelect, {
+      props: {
+        options: OPTIONS,
+        multiple: true,
+        taggable: true,
+        createTag: (q: string) => ({ value: q, label: q }),
+        isValidToken: (q: string) => q.length >= 3,
+      },
+    })
+    await w.find('.selkit__control').trigger('pointerdown')
+    await w.find('.selkit__input').setValue('ab') // 長度 2 無效
+    expect(w.find('.selkit__create').exists()).toBe(false)
+    await w.find('.selkit__input').setValue('abc') // 有效
+    expect(w.find('.selkit__create').exists()).toBe(true)
+  })
+})

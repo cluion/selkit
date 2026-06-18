@@ -111,10 +111,17 @@ export interface SelkitSelectProps<T = unknown> {
   loadOptions?: (
     query: string,
     page: number,
+    opts: { signal: AbortSignal },
   ) => Promise<SelkitItem<T>[] | SelkitLoadResult<T>>
   debounce?: number
+  /** 快取 loadOptions 首頁結果（query 為鍵）避免重打 API */
+  cache?: boolean
+  /** 快取存活毫秒 超過視為過期 未設則不過期 */
+  cacheTTL?: number
   taggable?: boolean
   createTag?: (query: string) => SelkitOption<T>
+  /** tag 驗證鉤子 回傳 false 則不建立（靜默拒絕） */
+  isValidToken?: (query: string) => boolean
   tokenSeparators?: string[]
   /** 多選輸入框為空按 Backspace 刪最後一個 tag 並回填其文字到輸入框 */
   restoreOnBackspace?: boolean
@@ -175,8 +182,11 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     classPrefix = 'selkit',
     loadOptions,
     debounce,
+    cache = false,
+    cacheTTL,
     taggable = false,
     createTag,
+    isValidToken,
     tokenSeparators,
     restoreOnBackspace,
     maxSelections,
@@ -211,7 +221,10 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     ...(clearable !== undefined ? { clearable } : {}),
     ...(loadOptions ? { loadOptions } : {}),
     ...(debounce !== undefined ? { debounce } : {}),
+    ...(cache ? { cache: true } : {}),
+    ...(cacheTTL !== undefined ? { cacheTTL } : {}),
     ...(createTag ? { createTag } : {}),
+    ...(isValidToken ? { isValidToken } : {}),
     ...(tokenSeparators ? { tokenSeparators } : {}),
     ...(restoreOnBackspace ? { restoreOnBackspace } : {}),
     ...(maxSelections !== undefined ? { maxSelections } : {}),

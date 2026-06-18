@@ -68,12 +68,16 @@ class Selkit<T> implements SelkitController<T> {
     | ((
         query: string,
         page: number,
+        opts: { signal: AbortSignal },
       ) => Promise<SelkitItem<T>[] | SelkitLoadResult<T>>)
     | undefined
   readonly #debounce: number
   readonly #filterRemote: boolean
+  readonly #cacheEnabled: boolean
+  readonly #cacheTTL: number | undefined
   readonly #taggable: boolean
   readonly #createTag: ((query: string) => SelkitOption<T>) | undefined
+  readonly #isValidToken: ((query: string) => boolean) | undefined
   readonly #tokenSeparators: string[]
   readonly #restoreOnBackspace: boolean
 
@@ -83,6 +87,12 @@ class Selkit<T> implements SelkitController<T> {
 
   #debounceTimer: ReturnType<typeof setTimeout> | null = null
   #loadSeq = 0
+  #loadController: AbortController | null = null
+  /** 遠端首頁結果快取 鍵為 query 字串 time 為寫入時間（Date.now）供 TTL 判斷 */
+  readonly #cacheStore = new Map<
+    string,
+    { items: SelkitItem<T>[]; hasMore: boolean; time: number }
+  >()
 
   readonly #listeners = new Set<SelkitListener<T>>()
   readonly #handlers = new Map<keyof SelkitEvents<T>, Set<Handler>>()
@@ -106,8 +116,11 @@ class Selkit<T> implements SelkitController<T> {
     this.#loadOptions = config.loadOptions
     this.#debounce = config.debounce ?? 250
     this.#filterRemote = config.filterRemote ?? false
+    this.#cacheEnabled = config.cache ?? false
+    this.#cacheTTL = config.cacheTTL
     this.#taggable = config.taggable ?? false
     this.#createTag = config.createTag
+    this.#isValidToken = config.isValidToken
     this.#tokenSeparators = config.tokenSeparators ?? []
     this.#restoreOnBackspace = config.restoreOnBackspace ?? false
 
@@ -192,9 +205,8 @@ class Selkit<T> implements SelkitController<T> {
       this.#patch({ query })
       this.#fire('search', { query })
       if (this.#belowMin(query)) {
-        // 未達字數 取消待載入並清空 不視為無相符
-        if (this.#debounceTimer !== null) clearTimeout(this.#debounceTimer)
-        this.#debounceTimer = null
+        // 未達字數 取消待載入與進行中的請求並清空 不視為無相符
+        this.#cancelLoad()
         this.#patch({ visibleOptions: [], noResults: false, loading: false })
         return
       }
@@ -357,6 +369,8 @@ class Selkit<T> implements SelkitController<T> {
       if (!existing.disabled) this.select(existing.value)
       return
     }
+    // 驗證鉤子拒絕則不建立（靜默）
+    if (this.#isValidToken && !this.#isValidToken(query)) return
     const option = this.#createTag(query)
     this.#flat = [...this.#flat, option]
     this.#rows = [...this.#rows, { kind: 'option', option, groupLabel: null }]
@@ -416,6 +430,8 @@ class Selkit<T> implements SelkitController<T> {
       return
     }
     if (!this.#taggable || !this.#createTag) return
+    // 驗證鉤子拒絕則略過此 token（靜默）
+    if (this.#isValidToken && !this.#isValidToken(token)) return
     const option = this.#createTag(token)
     this.#flat = [...this.#flat, option]
     this.#rows = [...this.#rows, { kind: 'option', option, groupLabel: null }]
@@ -425,6 +441,8 @@ class Selkit<T> implements SelkitController<T> {
 
   // ── 動態更新 ──────────────────────────────────────────────
   setOptions(options: SelkitItem<T>[]): void {
+    // 選項換掉 遠端快取視為過期 清空
+    this.#cacheStore.clear()
     const { rows, flat } = normalize(options)
     this.#rows = rows
     this.#flat = flat
@@ -558,7 +576,8 @@ class Selkit<T> implements SelkitController<T> {
   }
 
   destroy(): void {
-    if (this.#debounceTimer !== null) clearTimeout(this.#debounceTimer)
+    this.#cancelLoad()
+    this.#cacheStore.clear()
     this.#destroyed = true
     this.#listeners.clear()
     this.#handlers.clear()
@@ -573,53 +592,112 @@ class Selkit<T> implements SelkitController<T> {
     }, this.#debounce)
   }
 
+  /** 取消待載入與進行中的請求 並令過期回應失效（debounce 清除 + abort + seq++）  */
+  #cancelLoad(): void {
+    if (this.#debounceTimer !== null) clearTimeout(this.#debounceTimer)
+    this.#debounceTimer = null
+    this.#loadController?.abort()
+    this.#loadController = null
+    this.#loadSeq++
+  }
+
+  /** 讀快取首頁 過期或停用則回 null  */
+  #cacheGet(
+    query: string,
+  ): { items: SelkitItem<T>[]; hasMore: boolean } | null {
+    if (!this.#cacheEnabled) return null
+    const entry = this.#cacheStore.get(query)
+    if (!entry) return null
+    if (this.#cacheTTL !== undefined && Date.now() - entry.time > this.#cacheTTL) {
+      this.#cacheStore.delete(query)
+      return null
+    }
+    return entry
+  }
+
   async #runLoad(query: string, page: number, append: boolean): Promise<void> {
+    // 首頁快取命中：直接套用 不打遠端、不發 load 事件（無實際請求）
+    if (!append && page === 1) {
+      const hit = this.#cacheGet(query)
+      if (hit) {
+        this.#applyLoaded(query, page, false, hit.items, hit.hasMore)
+        return
+      }
+    }
     const seq = ++this.#loadSeq
+    // 取消上一個進行中的請求（真正中斷 fetch 不只是忽略結果）
+    this.#loadController?.abort()
+    const controller = new AbortController()
+    this.#loadController = controller
     this.#patch(
       append ? { loadingMore: true } : { loading: true, noResults: false },
     )
     this.#fire('load:start', { query })
     try {
-      const raw = await this.#loadOptions!(query, page)
+      const raw = await this.#loadOptions!(query, page, {
+        signal: controller.signal,
+      })
       // 過期回應或已銷毀則忽略 避免蓋掉較新的結果
       if (seq !== this.#loadSeq || this.#destroyed) return
       const { items, hasMore } = normalizeLoadResult(raw)
-      const next = normalize(items)
-      // 追加模式接在現有結果後 否則取代
-      const flat = append ? [...this.#flat, ...next.flat] : next.flat
-      const rows = append ? [...this.#rows, ...next.rows] : next.rows
-      this.#rows = rows
-      this.#flat = flat
-      const base = this.#filterRemote
-        ? flat.filter((o) => this.#filter(o, query))
-        : flat.slice()
-      const filtered = this.#hideSelected
-        ? base.filter((o) => !this.#isSelected(o.value))
-        : base
-      const visibleOptions = this.#sortPool(filtered, query)
-      this.#patch({
-        loading: false,
-        loadingMore: false,
-        page,
-        hasMore,
-        visibleOptions,
-        noResults: visibleOptions.length === 0,
-        // 追加時保留目前 highlight 不打斷捲動 否則重設
-        activeIndex: append
-          ? this.#state.activeIndex
-          : this.#state.isOpen
-            ? this.#firstEnabled(visibleOptions)
-            : -1,
-      })
-      this.#fire('load:end', { options: items })
-      // 首次載入（非追加）且開啟時公告結果數
-      if (!append && this.#state.isOpen) {
-        this.#announce(this.#messages.resultsCount(visibleOptions.length))
+      // 首頁結果寫入快取（分頁不快取）
+      if (!append && page === 1 && this.#cacheEnabled) {
+        this.#cacheStore.set(query, { items, hasMore, time: Date.now() })
       }
+      this.#applyLoaded(query, page, append, items, hasMore)
+      this.#fire('load:end', { options: items })
     } catch (error) {
       if (seq !== this.#loadSeq || this.#destroyed) return
+      // 自家取消（abort）不視為錯誤 靜默忽略
+      if (
+        controller.signal.aborted ||
+        (error instanceof Error && error.name === 'AbortError')
+      ) {
+        return
+      }
       this.#patch({ loading: false, loadingMore: false })
       this.#fire('load:error', { error })
+    }
+  }
+
+  /** 套用一批載入結果到 state（fetch 成功與快取命中共用）不發 load:start/end  */
+  #applyLoaded(
+    query: string,
+    page: number,
+    append: boolean,
+    items: SelkitItem<T>[],
+    hasMore: boolean,
+  ): void {
+    const next = normalize(items)
+    // 追加模式接在現有結果後 否則取代
+    const flat = append ? [...this.#flat, ...next.flat] : next.flat
+    const rows = append ? [...this.#rows, ...next.rows] : next.rows
+    this.#rows = rows
+    this.#flat = flat
+    const base = this.#filterRemote
+      ? flat.filter((o) => this.#filter(o, query))
+      : flat.slice()
+    const filtered = this.#hideSelected
+      ? base.filter((o) => !this.#isSelected(o.value))
+      : base
+    const visibleOptions = this.#sortPool(filtered, query)
+    this.#patch({
+      loading: false,
+      loadingMore: false,
+      page,
+      hasMore,
+      visibleOptions,
+      noResults: visibleOptions.length === 0,
+      // 追加時保留目前 highlight 不打斷捲動 否則重設
+      activeIndex: append
+        ? this.#state.activeIndex
+        : this.#state.isOpen
+          ? this.#firstEnabled(visibleOptions)
+          : -1,
+    })
+    // 首次載入（非追加）且開啟時公告結果數
+    if (!append && this.#state.isOpen) {
+      this.#announce(this.#messages.resultsCount(visibleOptions.length))
     }
   }
 
@@ -714,6 +792,8 @@ class Selkit<T> implements SelkitController<T> {
     if (this.#flat.some((o) => o.label.toLowerCase() === q.toLowerCase())) {
       return null
     }
+    // 驗證鉤子拒絕則不顯示建立列（靜默）
+    if (this.#isValidToken && !this.#isValidToken(q)) return null
     return q
   }
 

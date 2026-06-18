@@ -110,20 +110,27 @@ export interface SelkitConfig<T = unknown> {
   /** 最少輸入字數 未達時不過濾也不觸發 loadOptions 預設 0  */
   minInputLength?: number
 
-  /** 非同步載入（AJAX） 提供時 搜尋會觸發此函式 page 從 1 起 回傳陣列或 { items, hasMore } 以支援分頁/無限捲動  */
+  /** 非同步載入（AJAX） 提供時 搜尋會觸發此函式 page 從 1 起 回傳陣列或 { items, hasMore } 以支援分頁/無限捲動 第三參數帶 signal 供 fetch 取消過期請求  */
   loadOptions?: (
     query: string,
     page: number,
+    opts: { signal: AbortSignal },
   ) => Promise<SelkitItem<T>[] | SelkitLoadResult<T>>
   /** loadOptions 的 debounce 毫秒 預設 250  */
   debounce?: number
   /** 是否對遠端回傳結果再套本地 filter 預設 false（遠端已過濾）  */
   filterRemote?: boolean
+  /** 快取 loadOptions 的首頁結果 以 query 字串為鍵 避免重複搜尋同字串重打 API 預設 false 分頁（loadMore）不快取  */
+  cache?: boolean
+  /** 快取存活毫秒 超過則視為過期重打 未設則不過期 僅在 cache 為 true 時生效  */
+  cacheTTL?: number
 
   /** tagging：允許動態新增不存在的選項  */
   taggable?: boolean
   /** 由查詢字串建立新選項  */
   createTag?: (query: string) => SelkitOption<T>
+  /** tag 驗證鉤子 回傳 false 時不顯示建立列、Enter/分隔符也不建立（靜默拒絕）僅 taggable 生效  */
+  isValidToken?: (query: string) => boolean
 
   /** 分隔符（如 [',', ' ']）打字或貼上含分隔符時自動切出 token 逐一選取/建立 僅多選生效 建立新 tag 另需 taggable */
   tokenSeparators?: string[]

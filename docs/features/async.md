@@ -3,13 +3,14 @@
 ## Loading options
 
 Provide `loadOptions` to fetch options as the user searches. It receives the
-query and a 1-based page number, and runs through a debounce with stale-response
-protection so only the latest result wins:
+query, a 1-based page number, and an options object with an `AbortSignal`, and
+runs through a debounce with stale-response protection so only the latest result
+wins:
 
 ```js
 createSelkit({
-  loadOptions: async (query, page) => {
-    const res = await fetch(`/api/search?q=${query}&page=${page}`)
+  loadOptions: async (query, page, { signal }) => {
+    const res = await fetch(`/api/search?q=${query}&page=${page}`, { signal })
     return res.json() // SelkitItem[] or { items, hasMore }
   },
   debounce: 250, // ms, default 250
@@ -18,6 +19,33 @@ createSelkit({
 
 While a request is in flight, `state.loading` is `true`. On completion the core
 fires `load:end`; on failure it fires `load:error` and clears `loading`.
+
+### Aborting in-flight requests
+
+The `signal` passed to `loadOptions` is aborted when a newer search supersedes
+the request, when the query drops below `minInputLength`, or on `destroy()`. Pass
+it to `fetch` (as above) to actually cancel the network request instead of just
+ignoring its result. An aborted request never fires `load:error` — the
+cancellation is silent. Forwarding the signal is optional: omit it and Selkit
+still discards the stale response, it just won't cancel the wire.
+
+### Caching results
+
+Enable `cache` to memoize the first page of results by query string, so
+re-running a search the user already typed (e.g. backspacing into a prior query)
+serves from memory instead of hitting the API again:
+
+```js
+createSelkit({
+  loadOptions,
+  cache: true,
+  cacheTTL: 30_000, // optional; ms before an entry is considered stale. Omit = never expires
+})
+```
+
+Only the first page is cached — `loadMore()` always hits the server. A cache hit
+updates state without firing `load:start` / `load:end` (there is no request).
+The cache is cleared by `setOptions()` and `destroy()`.
 
 ### Local vs. remote filtering
 

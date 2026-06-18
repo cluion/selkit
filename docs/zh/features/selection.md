@@ -69,12 +69,27 @@ createSelkit({
 在沒有相符選項時按 Enter 會建立並選取新 tag，並觸發 `create` 事件。若已存在同名 label
 的選項，則改為選取既有選項，不會重複建立。
 
+### 驗證 tag
+
+傳入 `isValidToken` 來控管什麼能成為 tag。回傳 `false` 即靜默拒絕——Enter 或分隔符都不會
+建立 tag，建立列也會隱藏——行為與未達 `minInputLength` 時一致：
+
+```js
+createSelkit({
+  multiple: true,
+  taggable: true,
+  createTag: (query) => ({ value: query.toLowerCase(), label: query }),
+  // 例如只允許看起來合法的 email
+  isValidToken: (query) => /.+@.+\..+/.test(query),
+})
+```
+
 ### 可見的「建立」列
 
 開啟 `taggable` 且查詢無精確相符時，下拉會在最後顯示一列可點的**建立列**
 （例如 `Add "foo"`）— 使用者可用滑鼠建立 tag，而不只是按 Enter。該列可用鍵盤導航
 （↑/↓/Home/End），選取它即呼叫 `createTag()`。當查詢為空、未達 `minInputLength`、
-與某選項精確同名、或已達 `maxSelections` 時不顯示。文字可用
+與某選項精確同名、已達 `maxSelections`、或 `isValidToken` 拒絕該查詢時不顯示。文字可用
 [`create` 訊息](/zh/api/config#i18n-訊息)自訂：
 
 ```js

@@ -21,11 +21,14 @@
 | `disabled` | `boolean` | `false` | 停用控制項。 |
 | `placeholder` | `string` | — | 佔位文字。 |
 | `ariaLabel` | `string` | — | 搜尋輸入框的可及名稱（`aria-label`），未設則退回 `placeholder`。請至少設其一，讓螢幕報讀（與 axe）能辨識欄位。 |
-| `loadOptions` | `(query, page) => Promise<SelkitItem<T>[] \| SelkitLoadResult<T>>` | — | 非同步 / 分頁載入。見[非同步](/zh/features/async)。 |
+| `loadOptions` | `(query, page, { signal }) => Promise<SelkitItem<T>[] \| SelkitLoadResult<T>>` | — | 非同步 / 分頁載入。`signal` 在被取代時 abort。見[非同步](/zh/features/async)。 |
 | `debounce` | `number` | `250` | `loadOptions` 的 debounce（毫秒）。 |
 | `filterRemote` | `boolean` | `false` | 對遠端結果再套本地過濾。 |
+| `cache` | `boolean` | `false` | 以 query 為鍵記憶 `loadOptions` 首頁結果。僅首頁；`setOptions` 會清空。見[非同步 › 快取](/zh/features/async#快取結果)。 |
+| `cacheTTL` | `number` | — | 快取項目過期的毫秒數。不填＝不過期。僅在 `cache: true` 時生效。 |
 | `taggable` | `boolean` | `false` | 允許即時建立選項。 |
 | `createTag` | `(query) => SelkitOption<T>` | — | 新 tag 的 factory。 |
+| `isValidToken` | `(query) => boolean` | — | 控管 tag 建立。回傳 `false` 時靜默隱藏建立列並阻擋 Enter / 分隔符。見[標籤 › 驗證](/zh/features/selection#驗證-tag)。 |
 | `tokenSeparators` | `string[]` | `[]` | 打字或貼上時依分隔符（如 `[',', ' ']`）自動切成多個 tag。僅多選生效；建立新 tag 另需 `taggable`。與既有選項同名的 token 會被選取，剩餘片段留在輸入框。 |
 | `restoreOnBackspace` | `boolean` | `false` | 僅多選：輸入框為空時按 Backspace 刪除最後一個 tag，並把其 label 回填輸入框供編輯（同時開啟下拉）。 |
 | `maxSelections` | `number` | — | 選取上限。 |

@@ -841,6 +841,10 @@ describe('無限捲動 loadMore', () => {
     await vi.waitFor(() =>
       expect(inst.controller.getState().visibleOptions).toHaveLength(2),
     )
-    expect(loadOptions).toHaveBeenLastCalledWith('o', 2)
+    expect(loadOptions).toHaveBeenLastCalledWith(
+      'o',
+      2,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
   })
 })
