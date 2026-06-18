@@ -21,6 +21,7 @@
 | `@selkit/vue` | Vue 3 adapter |
 | `@selkit/react` | React adapter |
 | `@selkit/themes` | base / bs5 樣式（CSS 變數驅動） |
+| `@selkit/floating` | 選裝的進階定位器 —— 用 floating-ui 做 flip / shift / size 防遮擋 |
 
 ## 安裝 (Install)
 
@@ -31,9 +32,13 @@ pnpm add @selkit/dom @selkit/themes
 pnpm add @selkit/vue @selkit/themes
 # React
 pnpm add @selkit/react @selkit/themes
+
+# 選裝 —— 進階定位（flip / shift / size）
+pnpm add @selkit/floating
 ```
 
 `@selkit/core` 會作為相依自動安裝；`@selkit/themes` 提供 base / bs5 樣式。
+`@selkit/floating` 為選裝 —— 需要防遮擋的下拉定位時再裝（見[定位](https://cluion.github.io/selkit/zh/features/positioning)）。
 
 ## 文件 (Documentation)
 

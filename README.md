@@ -23,6 +23,7 @@ Tom Select.
 | `@selkit/vue` | Vue 3 adapter |
 | `@selkit/react` | React adapter |
 | `@selkit/themes` | base / bs5 styles (CSS-variable driven) |
+| `@selkit/floating` | Optional advanced positioner — flip / shift / size collision handling via floating-ui |
 
 ## Install
 
@@ -33,10 +34,15 @@ pnpm add @selkit/dom @selkit/themes
 pnpm add @selkit/vue @selkit/themes
 # React
 pnpm add @selkit/react @selkit/themes
+
+# Optional — advanced positioning (flip / shift / size)
+pnpm add @selkit/floating
 ```
 
 `@selkit/core` is installed automatically as a dependency; `@selkit/themes`
-provides the base / bs5 styles.
+provides the base / bs5 styles. `@selkit/floating` is optional — install it only
+when you need collision-aware dropdown positioning (see
+[Positioning](https://cluion.github.io/selkit/features/positioning)).
 
 ## Documentation
 
