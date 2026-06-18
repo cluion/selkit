@@ -27,11 +27,7 @@
   "dependencies": {
     "@floating-ui/dom": "^1.6.0"
   },
-  "peerDependencies": {
-    "@selkit/dom": "workspace:*"
-  },
   "devDependencies": {
-    "@selkit/dom": "workspace:*",
     "jsdom": "^24.1.0",
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",

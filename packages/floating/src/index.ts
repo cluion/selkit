@@ -8,4 +8,6 @@ export {
   type FloatingOptions,
   type FloatingResult,
   type Placement,
+  type Positioner,
+  type PositionerOptions,
 } from './floating'

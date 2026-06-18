@@ -16,9 +16,21 @@ import {
   size,
   type Placement,
 } from '@floating-ui/dom'
-import type { Positioner, PositionerOptions } from '@selkit/dom'
 
 export type { Placement }
+
+/**
+ * 與 @selkit/dom 的 Positioner / PositionerOptions 結構相容
+ * floating 因此對 @selkit/dom 零依賴：執行期只需 @floating-ui/dom 型別亦不耦合
+ */
+export interface Positioner {
+  update(): void
+  destroy(): void
+}
+export interface PositionerOptions {
+  autoWidth?: boolean
+  gap?: number
+}
 
 /** position() / createFloatingPositioner() 的設定 在 PositionerOptions 之上補進階定位選項 */
 export interface FloatingOptions extends PositionerOptions {
