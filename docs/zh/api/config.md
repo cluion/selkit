@@ -88,6 +88,7 @@ interface SelkitMessages {
 | `virtualScroll` | `boolean` | `false` | 只渲染可視切片。 |
 | `itemHeight` | `number` | `36` | 虛擬捲動的固定列高。 |
 | `dropdownParent` | `HTMLElement \| string` | — | 把下拉 portal 到其他容器以逃離裁切祖先。Vue/React 也是同名 prop。 |
+| `positioner` | `PositionerFactory` | 內建 | 替換下拉定位器。傳入 [`@selkit/floating`](https://www.npmjs.com/package/@selkit/floating) 的 `createFloatingPositioner` 即啟用 `flip`／`shift`／`size` 防遮擋。Vue/React 也是同名 prop。見[定位](/zh/features/positioning)。 |
 | `templateOption` | `(option, meta) => string \| Node` | — | 自訂下拉選項內容。字串走 textContent；要 markup（icon）請回傳 `Node`。`meta` 為 `{ index, active, selected }`。僅限 DOM — Vue/React 見 `renderOption`／`option` slot。 |
 | `templateSelection` | `(option, meta) => string \| Node` | — | 自訂已選 tag／單值內容。字串走 textContent；要 markup（icon）請回傳 `Node`。`meta` 為 `{ index, multiple }`。僅限 DOM — Vue/React 見 `renderSelection`／`selection` slot。 |
 

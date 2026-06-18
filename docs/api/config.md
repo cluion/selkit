@@ -90,6 +90,7 @@ The `selected` / `deselected` / `cleared` / `resultsCount` keys label the
 | `virtualScroll` | `boolean` | `false` | Render only the visible slice. |
 | `itemHeight` | `number` | `36` | Fixed row height for virtual scroll. |
 | `dropdownParent` | `HTMLElement \| string` | — | Portal the dropdown into another element to escape clipping ancestors. Also a Vue/React prop. |
+| `positioner` | `PositionerFactory` | built-in | Swap the dropdown positioner. Pass `createFloatingPositioner` from [`@selkit/floating`](https://www.npmjs.com/package/@selkit/floating) for `flip` / `shift` / `size` collision handling. Also a Vue/React prop. See [Positioning](/features/positioning). |
 | `templateOption` | `(option, meta) => string \| Node` | — | Customize a dropdown option's content. Strings are set as text; return a `Node` for markup (icons). `meta` is `{ index, active, selected }`. DOM-only — see `renderOption` / `option` slot for Vue/React. |
 | `templateSelection` | `(option, meta) => string \| Node` | — | Customize the selected tag / single-value content. Strings are set as text; return a `Node` for markup (icons). `meta` is `{ index, multiple }`. DOM-only — see `renderSelection` / `selection` slot for Vue/React. |
 
