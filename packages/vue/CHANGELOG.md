@@ -1,5 +1,22 @@
 # @selkit/vue
 
+## 0.6.0
+
+### Minor Changes
+
+- Async UX enhancements — request cancellation, result caching, and tag validation.
+
+  - **AbortController**: `loadOptions` now receives a third argument `{ signal }`, aborted when a newer search supersedes it, the query drops below `minInputLength`, or on `destroy()`. Forward it to `fetch` to cancel in-flight requests. Self-aborts are silent (no `load:error`). Backward compatible — functions that ignore the argument keep working.
+  - **Result cache**: opt-in `cache` memoizes the first page of `loadOptions` results by query, with optional `cacheTTL` (ms). First page only — `loadMore()` always hits the server; cleared by `setOptions()` / `destroy()`.
+  - **`isValidToken`**: opt-in `(query) => boolean` gates tag creation; returning `false` silently hides the create row and blocks Enter / token separators.
+
+  All three are wired through the `@selkit/dom`, `@selkit/vue` and `@selkit/react` adapters.
+
+### Patch Changes
+
+- Updated dependencies
+  - @selkit/core@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes
