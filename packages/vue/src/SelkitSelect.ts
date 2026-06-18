@@ -7,6 +7,7 @@
 import {
   defineComponent,
   h,
+  nextTick,
   onMounted,
   onUnmounted,
   ref,
@@ -39,6 +40,20 @@ const LOAD_MORE_THRESHOLD = 32
 type OptionRow = Extract<SelkitViewRow, { type: 'option' }>
 type CreateRow = Extract<SelkitViewRow, { type: 'create' }>
 type GroupRow = Extract<SelkitViewRow, { type: 'group' }>
+
+/**
+ * 與 @selkit/floating 的 createFloatingPositioner 相容的定位器（結構型別）
+ * 用結構型別宣告 避免對 @selkit/dom / @selkit/floating 產生編譯期耦合
+ */
+export interface SelkitPositioner {
+  update(): void
+  destroy(): void
+}
+export type SelkitPositionerFactory = (
+  reference: HTMLElement,
+  floating: HTMLElement,
+  opts?: { autoWidth?: boolean },
+) => SelkitPositioner
 
 /** sr-only：視覺隱藏但螢幕報讀可讀 內聯以免未載入主題時外露 */
 const SR_ONLY: StyleValue = {
@@ -89,6 +104,11 @@ export const SelkitSelect = defineComponent({
     groupHeight: { type: Number, default: 28 },
     dropdownParent: {
       type: [String, Object] as PropType<string | HTMLElement>,
+      default: undefined,
+    },
+    /** 自訂定位器工廠 預設用內建 fixed 定位 傳入 @selkit/floating 的 createFloatingPositioner 即啟用 flip/shift/size 進階定位 */
+    positioner: {
+      type: Function as PropType<SelkitPositionerFactory>,
       default: undefined,
     },
     clearable: { type: Boolean, default: undefined },
@@ -168,6 +188,7 @@ export const SelkitSelect = defineComponent({
     let dragFrom = -1
 
     // portal 模式下用 fixed 座標定位 量測 root rect 並隨 scroll/resize 更新
+    // 提供 positioner 時改由它完全接管定位（命令式 + autoUpdate）此處 fallback 不啟用
     const dropdownPos = ref({ top: 0, left: 0, width: 0 })
     const updatePos = (): void => {
       const el = rootRef.value
@@ -175,23 +196,43 @@ export const SelkitSelect = defineComponent({
       const r = el.getBoundingClientRect()
       dropdownPos.value = { top: r.bottom + 4, left: r.left, width: r.width }
     }
+    let positionerInst: SelkitPositioner | null = null
+    const teardownPositioner = (): void => {
+      positionerInst?.destroy()
+      positionerInst = null
+    }
+    const teardownFallback = (): void => {
+      window.removeEventListener('scroll', updatePos, true)
+      window.removeEventListener('resize', updatePos)
+    }
     watch(
       () => state.value.isOpen,
-      (open) => {
-        if (!props.dropdownParent) return
+      async (open) => {
         if (open) {
-          updatePos()
-          window.addEventListener('scroll', updatePos, true)
-          window.addEventListener('resize', updatePos)
+          if (props.positioner) {
+            // 等下拉渲染進 DOM 後再交給 positioner（含 teleport 完成）
+            await nextTick()
+            const ref = rootRef.value
+            const fl = dropdownRef.value
+            if (ref && fl) {
+              positionerInst = props.positioner(ref, fl, {
+                autoWidth: props.dropdownAutoWidth,
+              })
+            }
+          } else if (props.dropdownParent) {
+            updatePos()
+            window.addEventListener('scroll', updatePos, true)
+            window.addEventListener('resize', updatePos)
+          }
         } else {
-          window.removeEventListener('scroll', updatePos, true)
-          window.removeEventListener('resize', updatePos)
+          teardownPositioner()
+          teardownFallback()
         }
       },
     )
     onUnmounted(() => {
-      window.removeEventListener('scroll', updatePos, true)
-      window.removeEventListener('resize', updatePos)
+      teardownPositioner()
+      teardownFallback()
     })
     let syncing = false
 
@@ -623,26 +664,29 @@ export const SelkitSelect = defineComponent({
           id: a11y.listbox.id,
           role: 'listbox',
           ...(props.multiple ? { 'aria-multiselectable': 'true' } : {}),
-          style: portaled
-            ? {
-                position: 'fixed',
-                top: `${dropdownPos.value.top}px`,
-                left: `${dropdownPos.value.left}px`,
-                ...(props.dropdownAutoWidth
-                  ? {
-                      minWidth: `${dropdownPos.value.width}px`,
-                      width: 'max-content',
-                    }
-                  : { width: `${dropdownPos.value.width}px` }),
-              }
-            : {
-                position: 'absolute',
-                top: 'calc(100% + 4px)',
-                left: '0',
-                ...(props.dropdownAutoWidth
-                  ? { minWidth: '100%', width: 'max-content' }
-                  : { width: '100%' }),
-              },
+          // 提供 positioner 時不綁定任何位置樣式 完全交給它命令式接管
+          style: props.positioner
+            ? undefined
+            : portaled
+              ? {
+                  position: 'fixed',
+                  top: `${dropdownPos.value.top}px`,
+                  left: `${dropdownPos.value.left}px`,
+                  ...(props.dropdownAutoWidth
+                    ? {
+                        minWidth: `${dropdownPos.value.width}px`,
+                        width: 'max-content',
+                      }
+                    : { width: `${dropdownPos.value.width}px` }),
+                }
+              : {
+                  position: 'absolute',
+                  top: 'calc(100% + 4px)',
+                  left: '0',
+                  ...(props.dropdownAutoWidth
+                    ? { minWidth: '100%', width: 'max-content' }
+                    : { width: '100%' }),
+                },
           onPointerdown: (e: Event) => e.stopPropagation(),
           onScroll: (e: Event) => {
             const el = e.currentTarget as HTMLElement

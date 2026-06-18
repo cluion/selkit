@@ -4,6 +4,8 @@
 export {
   SelkitSelect,
   type SelkitChangePayload,
+  type SelkitPositioner,
+  type SelkitPositionerFactory,
   type SelkitSelectProps,
 } from './SelkitSelect'
 export { useSelkit, type UseSelkitReturn } from './useSelkit'

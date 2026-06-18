@@ -38,6 +38,20 @@ type OptionRow<T> = Extract<SelkitViewRow<T>, { type: 'option' }>
 type CreateRow = Extract<SelkitViewRow, { type: 'create' }>
 type GroupRow = Extract<SelkitViewRow, { type: 'group' }>
 
+/**
+ * 與 @selkit/floating 的 createFloatingPositioner 相容的定位器（結構型別）
+ * 用結構型別宣告 避免對 @selkit/dom / @selkit/floating 產生編譯期耦合
+ */
+export interface SelkitPositioner {
+  update(): void
+  destroy(): void
+}
+export type SelkitPositionerFactory = (
+  reference: HTMLElement,
+  floating: HTMLElement,
+  opts?: { autoWidth?: boolean },
+) => SelkitPositioner
+
 /** sr-only：視覺隱藏但螢幕報讀可讀 內聯以免未載入主題時外露 */
 const SR_ONLY: CSSProperties = {
   position: 'absolute',
@@ -89,6 +103,8 @@ export interface SelkitSelectProps<T = unknown> {
   /** 虛擬捲動下分組標題列的固定高度 px 預設 28 須與實際樣式高度一致 */
   groupHeight?: number
   dropdownParent?: string | HTMLElement
+  /** 自訂定位器工廠 預設用內建 fixed 定位 傳入 @selkit/floating 的 createFloatingPositioner 即啟用 flip/shift/size 進階定位 */
+  positioner?: SelkitPositionerFactory
   clearable?: boolean
   disabled?: boolean
   classPrefix?: string
@@ -153,6 +169,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     itemHeight = 36,
     groupHeight = 28,
     dropdownParent,
+    positioner,
     clearable,
     disabled = false,
     classPrefix = 'selkit',
@@ -294,8 +311,9 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   }, [controller])
 
   // portal 模式下用 fixed 座標定位 量測 root rect 並隨 scroll/resize 更新
+  // 提供 positioner 時改由它接管（見下方 effect）此 fallback 不啟用
   useEffect(() => {
-    if (!portalTarget || !state.isOpen) return
+    if (positioner || !portalTarget || !state.isOpen) return
     const update = (): void => {
       const el = rootRef.current
       if (!el) return
@@ -309,7 +327,17 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
       window.removeEventListener('scroll', update, true)
       window.removeEventListener('resize', update)
     }
-  }, [portalTarget, state.isOpen])
+  }, [positioner, portalTarget, state.isOpen])
+
+  // 提供 positioner 時把下拉定位完全交給它（命令式 + autoUpdate）開啟時掛上、關閉時拆除
+  useEffect(() => {
+    if (!positioner || !state.isOpen) return
+    const reference = rootRef.current
+    const floating = dropdownRef.current
+    if (!reference || !floating) return
+    const inst = positioner(reference, floating, { autoWidth: dropdownAutoWidth })
+    return () => inst.destroy()
+  }, [positioner, state.isOpen, dropdownAutoWidth])
 
   // 作用中選項保持可見（aria-activedescendant 完整度）
   // deps 僅 isOpen/activeIndex：手動捲動更新的是 scrollTop state 不會誤觸
@@ -582,23 +610,26 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         role="listbox"
         aria-multiselectable={multiple || undefined}
         style={
-          portalTarget
-            ? {
-                position: 'fixed',
-                top: portalPos.top,
-                left: portalPos.left,
-                ...(dropdownAutoWidth
-                  ? { minWidth: portalPos.width, width: 'max-content' }
-                  : { width: portalPos.width }),
-              }
-            : {
-                position: 'absolute',
-                top: 'calc(100% + 4px)',
-                left: 0,
-                ...(dropdownAutoWidth
-                  ? { minWidth: '100%', width: 'max-content' }
-                  : { width: '100%' }),
-              }
+          // 提供 positioner 時不綁定任何位置樣式 完全交給它命令式接管
+          positioner
+            ? undefined
+            : portalTarget
+              ? {
+                  position: 'fixed',
+                  top: portalPos.top,
+                  left: portalPos.left,
+                  ...(dropdownAutoWidth
+                    ? { minWidth: portalPos.width, width: 'max-content' }
+                    : { width: portalPos.width }),
+                }
+              : {
+                  position: 'absolute',
+                  top: 'calc(100% + 4px)',
+                  left: 0,
+                  ...(dropdownAutoWidth
+                    ? { minWidth: '100%', width: 'max-content' }
+                    : { width: '100%' }),
+                }
         }
         onPointerDown={(e) => e.stopPropagation()}
         onScroll={(e) => {
