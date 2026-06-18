@@ -22,6 +22,7 @@ const sidebarEn = [
       { text: 'Virtual Scroll', link: '/features/virtual-scroll' },
       { text: 'Positioning', link: '/features/positioning' },
       { text: 'Forms', link: '/features/forms' },
+      { text: 'CSP', link: '/features/csp' },
     ],
   },
   {
@@ -56,6 +57,7 @@ const sidebarZh = [
       { text: '虛擬捲動', link: '/zh/features/virtual-scroll' },
       { text: '定位', link: '/zh/features/positioning' },
       { text: '表單', link: '/zh/features/forms' },
+      { text: 'CSP', link: '/zh/features/csp' },
     ],
   },
   {
