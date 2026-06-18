@@ -26,7 +26,11 @@ import type {
   SelkitValue,
   SelkitViewRow,
 } from '@selkit/core'
-import { attachPositioner, type Positioner } from './positioner'
+import {
+  attachPositioner,
+  type Positioner,
+  type PositionerFactory,
+} from './positioner'
 
 /** 捲動距底多少 px 內即預載下一頁 */
 const LOAD_MORE_THRESHOLD = 32
@@ -41,6 +45,10 @@ const SR_ONLY_CSS =
 type OptionRow<T> = Extract<SelkitViewRow<T>, { type: 'option' }>
 type GroupRow = Extract<SelkitViewRow, { type: 'group' }>
 type CreateRow = Extract<SelkitViewRow, { type: 'create' }>
+
+/** 內建定位器工廠 包裝零依賴的 attachPositioner 為 PositionerFactory 形狀 */
+const builtinPositioner: PositionerFactory = (trigger, dropdown, opts) =>
+  attachPositioner(trigger, dropdown, opts?.autoWidth ?? false)
 
 /** 解析 dropdownParent 為元素 接受元素或選擇器字串 找不到則拋錯 */
 function resolveParent(
@@ -72,6 +80,8 @@ export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
   groupHeight?: number
   /** 把下拉浮層掛到指定容器（元素或選擇器）逃離 overflow/transform 祖先的裁切 常用 document.body */
   dropdownParent?: HTMLElement | string
+  /** 自訂定位器工廠 預設為內建零依賴定位器（垂直翻轉）傳入 @selkit/floating 的 createFloatingPositioner 即啟用 flip/shift/size 進階定位 */
+  positioner?: PositionerFactory
   /** 自訂已選顯示內容（tag 或單值） 回傳字串走 textContent 防 XSS 需 markup（icon 等）請回傳 Node */
   templateSelection?: (
     option: SelkitOption<T>,
@@ -203,6 +213,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #itemHeight: number
   readonly #groupHeight: number
   readonly #dropdownParent: HTMLElement | null
+  readonly #positionerFactory: PositionerFactory
   readonly #templateSelection:
     | ((
         option: SelkitOption<T>,
@@ -266,6 +277,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#itemHeight = cfg.itemHeight ?? DEFAULT_ITEM_HEIGHT
     this.#groupHeight = cfg.groupHeight ?? DEFAULT_GROUP_HEIGHT
     this.#dropdownParent = resolveParent(cfg.dropdownParent)
+    this.#positionerFactory = cfg.positioner ?? builtinPositioner
     this.#templateSelection = cfg.templateSelection
     this.#templateOption = cfg.templateOption
     this.#templateArrow = cfg.templateArrow
@@ -906,11 +918,9 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       this.#dropdown.hidden = false
       if (this.#positioner) this.#positioner.update()
       else
-        this.#positioner = attachPositioner(
-          this.#control,
-          this.#dropdown,
-          this.#dropdownAutoWidth,
-        )
+        this.#positioner = this.#positionerFactory(this.#control, this.#dropdown, {
+          autoWidth: this.#dropdownAutoWidth,
+        })
     } else {
       this.#dropdown.hidden = true
       this.#positioner?.destroy()

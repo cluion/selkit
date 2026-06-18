@@ -13,6 +13,8 @@ export {
   computePosition,
   type Placement,
   type Positioner,
+  type PositionerFactory,
+  type PositionerOptions,
   type PositionResult,
   type Rect,
 } from './positioner'

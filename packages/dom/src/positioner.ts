@@ -47,6 +47,24 @@ export interface Positioner {
   destroy(): void
 }
 
+/** 定位器工廠收到的選項 由 @selkit/dom 在開啟下拉時傳入 */
+export interface PositionerOptions {
+  /** 下拉寬度貼齊內容（至少與控制項同寬）而非固定等寬 */
+  autoWidth?: boolean
+  /** trigger 與下拉之間的間距 px 預設 4 */
+  gap?: number
+}
+
+/**
+ * 定位器工廠 可插拔點：@selkit/dom 預設用內建 attachPositioner
+ * 傳入自訂工廠（如 @selkit/floating 的 createFloatingPositioner）即換成進階定位
+ */
+export type PositionerFactory = (
+  trigger: HTMLElement,
+  dropdown: HTMLElement,
+  opts?: PositionerOptions,
+) => Positioner
+
 /** 將 dropdown 定位到 trigger 旁 並隨 scroll/resize 更新  */
 export function attachPositioner(
   trigger: HTMLElement,

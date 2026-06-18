@@ -1,0 +1,52 @@
+{
+  "name": "@selkit/floating",
+  "version": "0.4.0",
+  "description": "Optional advanced dropdown positioner for Selkit — flip / shift / size collision handling powered by @floating-ui/dom.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@floating-ui/dom": "^1.6.0"
+  },
+  "peerDependencies": {
+    "@selkit/dom": "workspace:*"
+  },
+  "devDependencies": {
+    "@selkit/dom": "workspace:*",
+    "jsdom": "^24.1.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^3.2.6"
+  },
+  "homepage": "https://cluion.github.io/selkit/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cluion/selkit.git",
+    "directory": "packages/floating"
+  },
+  "bugs": {
+    "url": "https://github.com/cluion/selkit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
