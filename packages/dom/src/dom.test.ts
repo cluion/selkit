@@ -848,3 +848,23 @@ describe('無限捲動 loadMore', () => {
     )
   })
 })
+
+describe('resolveSelected — 回顯渲染', () => {
+  const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0))
+
+  it('初始 value 以 resolveSelected 回顯 label 並切換 --resolving class', async () => {
+    const inst = createSelkitDom(host, {
+      options: [],
+      value: 'x',
+      resolveSelected: async () => [{ value: 'x', label: 'Label-x' }],
+    })
+    const root = inst.element
+    // resolving 中：fallback label + --resolving class
+    expect(root.className).toContain('selkit--resolving')
+    expect($(root, '.selkit__single-value').textContent).toBe('x')
+    await flush()
+    // 完成：正確 label + class 移除
+    expect(root.className).not.toContain('selkit--resolving')
+    expect($(root, '.selkit__single-value').textContent).toBe('Label-x')
+  })
+})

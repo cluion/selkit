@@ -87,3 +87,32 @@ createSelkit({
   },
 })
 ```
+
+## 回顯已選值的標籤
+
+當下拉由 `loadOptions` 支撐（選項來自伺服器）、卻在一開始就設定了 `value`
+時，對應的選項可能還沒載入 — 於是它的標籤未知。傳入 `resolveSelected` 來查詢：
+它接收**不存在於** `options` 的那些值，回傳完整選項（或其 Promise）。Selkit
+會把回傳結果填進已選項目的標籤：
+
+```js
+createSelkit({
+  loadOptions, // 選項於搜尋時載入
+  value: 'banana-id', // 預先設定；其選項尚未載入
+  resolveSelected: async (values) => {
+    const res = await fetch(`/api/options?ids=${values.join(',')}`)
+    return res.json() // SelkitOption[] — 每個請求值各一筆
+  },
+})
+```
+
+執行期間 `state.resolving` 為 `true`，控制項先以各 value 作為暫用標籤顯示；
+回傳後由真正標籤取代。Vue · React 配接器以 prop 暴露 `resolveSelected`，DOM
+API 則在 config 接收。
+
+注意：
+
+- 只有 `options` 中缺失的值會被傳入 — 已存在的值保持不變。
+- 解析結果只填入已選標籤，**不會**併入下拉的選項池。
+- 查詢失敗時維持暫用標籤，並觸發 `load:error`。
+- 僅於初始化時執行一次，不追蹤後續的 `value` 變動。

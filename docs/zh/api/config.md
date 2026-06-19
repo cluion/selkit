@@ -26,6 +26,7 @@
 | `filterRemote` | `boolean` | `false` | 對遠端結果再套本地過濾。 |
 | `cache` | `boolean` | `false` | 以 query 為鍵記憶 `loadOptions` 首頁結果。僅首頁；`setOptions` 會清空。見[非同步 › 快取](/zh/features/async#快取結果)。 |
 | `cacheTTL` | `number` | — | 快取項目過期的毫秒數。不填＝不過期。僅在 `cache: true` 時生效。 |
+| `resolveSelected` | `(values) => SelkitOption<T>[] \| Promise<SelkitOption<T>[]>` | — | 為初始 `value`（其選項尚未載入）查詢完整選項，讓標籤得以顯示。同步或非同步；僅於初始化執行一次；解析結果只填入已選標籤（不併入選項池）。見[非同步 › 回顯](/zh/features/async#回顧已選值的標籤)。 |
 | `taggable` | `boolean` | `false` | 允許即時建立選項。 |
 | `createTag` | `(query) => SelkitOption<T>` | — | 新 tag 的 factory。 |
 | `isValidToken` | `(query) => boolean` | — | 控管 tag 建立。回傳 `false` 時靜默隱藏建立列並阻擋 Enter / 分隔符。見[標籤 › 驗證](/zh/features/selection#驗證-tag)。 |

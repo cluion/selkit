@@ -97,3 +97,36 @@ createSelkit({
   },
 })
 ```
+
+## Prefilling selected labels
+
+When the select is backed by `loadOptions` (options arrive from the server) but a
+`value` is set up front, the matching option may not be loaded yet — so its label
+is unknown. Pass `resolveSelected` to look it up: it receives the values that are
+**not** present in `options`, and returns the full options (or a promise of them).
+Selkit fills in the selected labels:
+
+```js
+createSelkit({
+  loadOptions, // options are loaded on search
+  value: 'banana-id', // set up front; its option isn't loaded yet
+  resolveSelected: async (values) => {
+    const res = await fetch(`/api/options?ids=${values.join(',')}`)
+    return res.json() // SelkitOption[] — one per requested value
+  },
+})
+```
+
+While it runs, `state.resolving` is `true` and the control shows each value as a
+stand-in label; once resolved the real labels take their place. The Vue · React
+adapters expose `resolveSelected` as a prop, and the DOM API takes it in the
+config.
+
+Notes:
+
+- Only values missing from `options` are passed in — values already present are
+  left untouched.
+- Resolved options only fill the selected labels; they are **not** added to the
+  dropdown's option pool.
+- If the lookup throws, the stand-in labels are kept and `load:error` fires.
+- It runs once at initialization and does not track later `value` changes.

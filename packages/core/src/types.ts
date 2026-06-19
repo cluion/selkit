@@ -125,6 +125,16 @@ export interface SelkitConfig<T = unknown> {
   /** 快取存活毫秒 超過則視為過期重打 未設則不過期 僅在 cache 為 true 時生效  */
   cacheTTL?: number
 
+  /**
+   * 回顯初始值的 option 當 value 對應的選項不在 options（也未被 loadOptions 載入）時使用
+   * 建構時對「flat 中找不到的 value」呼叫一次 回傳完整 SelkitOption[] 以補上 selected 的 label
+   * 回傳陣列或 Promise 皆可（同步/非同步統一） 只補齊 missing 的 value 不併入可見選項池
+   * 解析期間 selected 先以 value 為 label 的 fallback 佔位；失敗時維持 fallback 並發 load:error
+   */
+  resolveSelected?: (
+    values: Array<string | number>,
+  ) => SelkitOption<T>[] | Promise<SelkitOption<T>[]>
+
   /** tagging：允許動態新增不存在的選項  */
   taggable?: boolean
   /** 由查詢字串建立新選項  */
@@ -172,6 +182,8 @@ export interface SelkitState<T = unknown> {
   hasMore: boolean
   /** 載入下一頁中 與首次 loading 區別  */
   loadingMore: boolean
+  /** 回顯初始值 label 載入中（resolveSelected 進行時 與搜尋 loading 區別）  */
+  resolving: boolean
 }
 
 // ─────────────────────────────────────────────────────────────

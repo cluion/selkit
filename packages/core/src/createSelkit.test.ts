@@ -1294,3 +1294,159 @@ describe('getEmptyReason 與 getEmptyMessage 同優先序', () => {
     expect(s.getEmptyReason()).toBe('loading')
   })
 })
+
+describe('resolveSelected — 初始值回顯', () => {
+  /** 清空 microtask 佇列 讓 fire-and-forget 的 #runResolve 跑完  */
+  const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0))
+
+  it('未設 resolveSelected 時 missing value 不納入 selected（向後相容）', () => {
+    const s = createSelkit({ options: [], value: 'x' })
+    expect(s.getState().selected).toEqual([])
+    expect(s.getState().resolving).toBe(false)
+  })
+
+  it('value 皆在 options 中則不呼叫 resolveSelected（短路）', () => {
+    const resolveSelected = vi.fn(() => [])
+    const s = createSelkit({ options: OPTIONS, value: 'b', resolveSelected })
+    expect(resolveSelected).not.toHaveBeenCalled()
+    expect(s.getState().resolving).toBe(false)
+  })
+
+  it('同步 hook：先以 fallback 佔位、回傳後補正 label、不進 flat、不發 change', async () => {
+    const onChange = vi.fn()
+    const resolveSelected = vi.fn((vals: Array<string | number>) =>
+      vals.map((v) => ({ value: v, label: `Label-${v}` })),
+    )
+    const s = createSelkit({ options: [], value: 'x', resolveSelected })
+    s.on('change', onChange)
+
+    expect(resolveSelected).toHaveBeenCalledWith(['x'])
+    expect(s.getState().resolving).toBe(true)
+    expect(s.getState().selected[0]).toEqual({ value: 'x', label: 'x' }) // fallback
+
+    await flush()
+    expect(s.getState().resolving).toBe(false)
+    expect(s.getState().selected[0]).toEqual({ value: 'x', label: 'Label-x' })
+    expect(s.getState().visibleOptions).toEqual([]) // 不進可見選項池
+    expect(onChange).not.toHaveBeenCalled() // value 未變 不發 change
+  })
+
+  it('非同步 hook：resolving 期間顯示 fallback、回傳後補正', async () => {
+    const s = createSelkit({
+      options: [],
+      value: 'y',
+      resolveSelected: async () => [{ value: 'y', label: 'Yacht' }],
+    })
+    expect(s.getState().resolving).toBe(true)
+    expect(s.getState().selected[0]!.label).toBe('y') // fallback
+    await flush()
+    expect(s.getState().resolving).toBe(false)
+    expect(s.getState().selected[0]!.label).toBe('Yacht')
+  })
+
+  it('混合 static 與 async value：只查 missing、靜態 option 不被覆蓋', async () => {
+    const resolveSelected = vi.fn((vals: Array<string | number>) =>
+      vals.map((v) => ({ value: v, label: `Remote-${v}` })),
+    )
+    const s = createSelkit({
+      options: OPTIONS,
+      value: ['b', 'z'],
+      multiple: true,
+      resolveSelected,
+    })
+    expect(resolveSelected).toHaveBeenCalledWith(['z']) // 只查 missing
+    await flush()
+    const sel = s.getState().selected
+    expect(sel.map((o) => o.value)).toEqual(['b', 'z'])
+    expect(sel[0]).toEqual({ value: 'b', label: 'Banana' }) // 靜態原樣
+    expect(sel[1]!.label).toBe('Remote-z') // missing 補上
+  })
+
+  it('hook 漏回的 value 維持 fallback label', async () => {
+    const s = createSelkit({
+      options: [],
+      value: ['a', 'b'],
+      multiple: true,
+      resolveSelected: async () => [{ value: 'a', label: 'Alpha' }], // 漏 b
+    })
+    await flush()
+    const sel = s.getState().selected
+    expect(sel[0]!.label).toBe('Alpha')
+    expect(sel[1]).toEqual({ value: 'b', label: 'b' }) // 維持 fallback
+  })
+
+  it('hook 回傳非 selected 的 option 不影響 selected', async () => {
+    const s = createSelkit({
+      options: [],
+      value: 'z',
+      resolveSelected: async () => [
+        { value: 'z', label: 'Zebra' },
+        { value: 'extra', label: 'Extra' }, // 不在 selected 應忽略
+      ],
+    })
+    await flush()
+    expect(s.getState().selected).toEqual([{ value: 'z', label: 'Zebra' }])
+  })
+
+  it('hook 失敗時維持 fallback、發 load:error、resolving 復原', async () => {
+    const onError = vi.fn()
+    const s = createSelkit({
+      options: [],
+      value: 'x',
+      resolveSelected: async () => {
+        throw new Error('boom')
+      },
+    })
+    s.on('load:error', onError)
+    await flush()
+    expect(s.getState().resolving).toBe(false)
+    expect(s.getState().selected[0]).toEqual({ value: 'x', label: 'x' })
+    expect(onError).toHaveBeenCalledOnce()
+  })
+
+  it('destroy 後回傳的結果被丟棄、不覆蓋 selected', async () => {
+    let release!: (v: { value: string; label: string }[]) => void
+    const s = createSelkit({
+      options: [],
+      value: 'x',
+      resolveSelected: () =>
+        new Promise<{ value: string; label: string }[]>((r) => {
+          release = r
+        }),
+    })
+    expect(s.getState().selected[0]!.label).toBe('x') // destroy 前 fallback
+    s.destroy()
+    release([{ value: 'x', label: 'NO' }])
+    await flush()
+    expect(s.getState().selected[0]!.label).toBe('x') // 仍 fallback 未被覆蓋
+  })
+
+  it('多選：一次 batch 查詢、保留 value 順序', async () => {
+    const resolveSelected = vi.fn((vals: Array<string | number>) =>
+      vals.map((v) => ({ value: v, label: `L-${v}` })),
+    )
+    const s = createSelkit({
+      options: [],
+      value: ['c', 'a', 'b'],
+      multiple: true,
+      resolveSelected,
+    })
+    expect(resolveSelected).toHaveBeenCalledWith(['c', 'a', 'b'])
+    await flush()
+    expect(s.getState().selected.map((o) => o.label)).toEqual([
+      'L-c',
+      'L-a',
+      'L-b',
+    ])
+  })
+
+  it('resolve 的 option 不出現在可見選項池', async () => {
+    const s = createSelkit({
+      options: OPTIONS,
+      value: 'z',
+      resolveSelected: async () => [{ value: 'z', label: 'Zebra' }],
+    })
+    await flush()
+    expect(s.getState().visibleOptions.map((o) => o.value)).not.toContain('z')
+  })
+})

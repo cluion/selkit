@@ -566,6 +566,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#syncForm()
     this.element.classList.toggle(this.#cls('', 'open'), s.isOpen)
     this.element.classList.toggle(this.#cls('', 'disabled'), s.disabled)
+    this.element.classList.toggle(this.#cls('', 'resolving'), s.resolving)
     this.#scrollActiveIntoView(s)
   }
 

@@ -80,6 +80,11 @@ class Selkit<T> implements SelkitController<T> {
   readonly #isValidToken: ((query: string) => boolean) | undefined
   readonly #tokenSeparators: string[]
   readonly #restoreOnBackspace: boolean
+  readonly #resolveSelected:
+    | ((
+        values: Array<string | number>,
+      ) => SelkitOption<T>[] | Promise<SelkitOption<T>[]>)
+    | undefined
 
   #rows: NormRow<T>[]
   #flat: SelkitOption<T>[]
@@ -88,6 +93,7 @@ class Selkit<T> implements SelkitController<T> {
   #debounceTimer: ReturnType<typeof setTimeout> | null = null
   #loadSeq = 0
   #loadController: AbortController | null = null
+  #resolveSeq = 0
   /** 遠端首頁結果快取 鍵為 query 字串 time 為寫入時間（Date.now）供 TTL 判斷 */
   readonly #cacheStore = new Map<
     string,
@@ -123,12 +129,13 @@ class Selkit<T> implements SelkitController<T> {
     this.#isValidToken = config.isValidToken
     this.#tokenSeparators = config.tokenSeparators ?? []
     this.#restoreOnBackspace = config.restoreOnBackspace ?? false
+    this.#resolveSelected = config.resolveSelected
 
     const { rows, flat } = normalize(config.options ?? [])
     this.#rows = rows
     this.#flat = flat
 
-    const selected = this.#resolveInitial(config.value)
+    const { selected, missing } = this.#resolveInitial(config.value)
     const initialVisible = this.#computeVisible('', selected)
     this.#state = {
       isOpen: false,
@@ -142,7 +149,9 @@ class Selkit<T> implements SelkitController<T> {
       page: 0,
       hasMore: false,
       loadingMore: false,
+      resolving: missing.length > 0,
     }
+    if (missing.length > 0) void this.#runResolve(missing)
   }
 
   // ── 狀態存取 ──────────────────────────────────────────────
@@ -577,6 +586,7 @@ class Selkit<T> implements SelkitController<T> {
 
   destroy(): void {
     this.#cancelLoad()
+    this.#resolveSeq++ // 令進行中的 resolveSelected 結果失效
     this.#cacheStore.clear()
     this.#destroyed = true
     this.#listeners.clear()
@@ -702,15 +712,60 @@ class Selkit<T> implements SelkitController<T> {
   }
 
   // ── 內部輔助 ──────────────────────────────────────────────
-  #resolveInitial(value: SelkitValue | undefined): SelkitOption<T>[] {
-    if (value === undefined || value === null) return []
+  /**
+   * 解析初始 value 為 selected 並一併回傳 flat 中找不到的 missing values
+   * 有設 resolveSelected 時 missing 先以 value 為 label 的 fallback 佔位 讓控制項立即有東西可顯示
+   * 待 resolveSelected 回傳後再由 #runResolve 補上正確 label
+   */
+  #resolveInitial(value: SelkitValue | undefined): {
+    selected: SelkitOption<T>[]
+    missing: Array<string | number>
+  } {
+    if (value === undefined || value === null) {
+      return { selected: [], missing: [] }
+    }
     const values = Array.isArray(value) ? value : [value]
-    const result: SelkitOption<T>[] = []
+    const selected: SelkitOption<T>[] = []
+    const missing: Array<string | number> = []
     for (const v of values) {
       const opt = this.#flat.find((o) => o.value === v)
-      if (opt) result.push(opt)
+      if (opt) {
+        selected.push(opt)
+      } else {
+        missing.push(v)
+        if (this.#resolveSelected) selected.push({ value: v, label: String(v) })
+      }
     }
-    return this.#multiple ? result : result.slice(0, 1)
+    if (this.#multiple) return { selected, missing }
+    return { selected: selected.slice(0, 1), missing: missing.slice(0, 1) }
+  }
+
+  /**
+   * 對 missing values 呼叫 resolveSelected 補上 label
+   * 以序號防過期（destroy 或新一輪令舊結果失效）只替換 missing 且 hook 有回的 option
+   * 不動既有的靜態 option 也不發 change（value 未變 僅 label 由 fallback 轉正）
+   * 失敗時維持 fallback 並發 load:error
+   */
+  async #runResolve(missing: Array<string | number>): Promise<void> {
+    const seq = ++this.#resolveSeq
+    const missingSet = new Set(missing)
+    try {
+      const raw = await this.#resolveSelected!(missing)
+      // 過期（destroy 或新一輪）則丟棄 避免覆蓋較新狀態
+      if (seq !== this.#resolveSeq || this.#destroyed) return
+      const byValue = new Map<string | number, SelkitOption<T>>()
+      for (const o of raw) byValue.set(o.value, o)
+      const selected = this.#state.selected.map((o) =>
+        missingSet.has(o.value) && byValue.has(o.value)
+          ? (byValue.get(o.value) as SelkitOption<T>)
+          : o,
+      )
+      this.#patch({ selected, resolving: false })
+    } catch (error) {
+      if (seq !== this.#resolveSeq || this.#destroyed) return
+      this.#patch({ resolving: false })
+      this.#fire('load:error', { error })
+    }
   }
 
   #belowMin(query: string): boolean {

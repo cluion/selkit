@@ -27,6 +27,7 @@ optional.
 | `filterRemote` | `boolean` | `false` | Apply the local filter to remote results. |
 | `cache` | `boolean` | `false` | Memoize the first page of `loadOptions` results by query. First page only; cleared by `setOptions`. See [Async › Caching](/features/async#caching-results). |
 | `cacheTTL` | `number` | — | Milliseconds before a cache entry is stale. Omit = never expires. Only with `cache: true`. |
+| `resolveSelected` | `(values) => SelkitOption<T>[] \| Promise<SelkitOption<T>[]>` | — | Look up full options for initial `value`s whose options aren't loaded yet, so their labels can render. Sync or async; runs once at init; resolved options only fill selected labels (not the option pool). See [Async › Prefilling](/features/async#prefilling-selected-labels). |
 | `taggable` | `boolean` | `false` | Allow creating options on the fly. |
 | `createTag` | `(query) => SelkitOption<T>` | — | Factory for new tags. |
 | `isValidToken` | `(query) => boolean` | — | Gate tag creation. Returning `false` silently hides the create row and blocks Enter / token separators. See [Tagging › Validating](/features/selection#validating-tags). |

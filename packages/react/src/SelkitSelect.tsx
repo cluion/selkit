@@ -118,6 +118,10 @@ export interface SelkitSelectProps<T = unknown> {
   cache?: boolean
   /** 快取存活毫秒 超過視為過期 未設則不過期 */
   cacheTTL?: number
+  /** 回顯初始值：value 對應選項不在 options/loadOptions 結構中時，用此 hook 補上 label（同步或非同步）*/
+  resolveSelected?: (
+    values: Array<string | number>,
+  ) => SelkitOption<T>[] | Promise<SelkitOption<T>[]>
   taggable?: boolean
   createTag?: (query: string) => SelkitOption<T>
   /** tag 驗證鉤子 回傳 false 則不建立（靜默拒絕） */
@@ -184,6 +188,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     debounce,
     cache = false,
     cacheTTL,
+    resolveSelected,
     taggable = false,
     createTag,
     isValidToken,
@@ -223,6 +228,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     ...(debounce !== undefined ? { debounce } : {}),
     ...(cache ? { cache: true } : {}),
     ...(cacheTTL !== undefined ? { cacheTTL } : {}),
+    ...(resolveSelected ? { resolveSelected } : {}),
     ...(createTag ? { createTag } : {}),
     ...(isValidToken ? { isValidToken } : {}),
     ...(tokenSeparators ? { tokenSeparators } : {}),

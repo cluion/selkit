@@ -355,3 +355,18 @@ describe('dropdownParent 浮層 portal', () => {
     w.unmount()
   })
 })
+
+describe('resolveSelected — 回顯渲染', () => {
+  it('初始 modelValue 以 resolveSelected 回顯 label', async () => {
+    const w = mount(SelkitSelect, {
+      props: {
+        options: [],
+        modelValue: 'x',
+        resolveSelected: async () => [{ value: 'x', label: 'Label-x' }],
+      },
+    })
+    expect(w.find('.selkit__single-value').text()).toBe('x') // fallback
+    await new Promise((r) => setTimeout(r, 0))
+    expect(w.find('.selkit__single-value').text()).toBe('Label-x')
+  })
+})

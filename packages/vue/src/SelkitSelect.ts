@@ -129,6 +129,15 @@ export const SelkitSelect = defineComponent({
     cache: { type: Boolean, default: false },
     /** 快取存活毫秒 超過視為過期 未設則不過期 */
     cacheTTL: { type: Number, default: undefined },
+    /** 回顯初始值：value 對應選項不在 options/loadOptions 結構中時，用此 hook 補上 label（同步或非同步）*/
+    resolveSelected: {
+      type: Function as PropType<
+        (values: Array<string | number>) =>
+          | SelkitOption[]
+          | Promise<SelkitOption[]>
+      >,
+      default: undefined,
+    },
     taggable: { type: Boolean, default: false },
     createTag: {
       type: Function as PropType<(query: string) => SelkitOption>,
@@ -177,6 +186,9 @@ export const SelkitSelect = defineComponent({
         : {}),
       ...(props.clearable !== undefined ? { clearable: props.clearable } : {}),
       ...(props.loadOptions ? { loadOptions: props.loadOptions } : {}),
+      ...(props.resolveSelected
+        ? { resolveSelected: props.resolveSelected }
+        : {}),
       ...(props.debounce !== undefined ? { debounce: props.debounce } : {}),
       ...(props.cache ? { cache: true } : {}),
       ...(props.cacheTTL !== undefined ? { cacheTTL: props.cacheTTL } : {}),

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render } from '@testing-library/react'
+import { fireEvent, render, waitFor } from '@testing-library/react'
 import { SelkitSelect } from './SelkitSelect'
 import type { SelkitItem } from '@selkit/core'
 
@@ -383,5 +383,21 @@ describe('虛擬捲動', () => {
     expect(count).toBeGreaterThan(0)
     expect(count).toBeLessThan(100)
     expect(container.querySelector('.selkit__group')).toBeTruthy()
+  })
+})
+
+describe('resolveSelected — 回顯渲染', () => {
+  it('初始 value 以 resolveSelected 回顯 label', async () => {
+    const { container } = render(
+      <SelkitSelect
+        options={[]}
+        value="x"
+        resolveSelected={async () => [{ value: 'x', label: 'Label-x' }]}
+      />,
+    )
+    const single = () =>
+      container.querySelector('.selkit__single-value') as HTMLElement
+    expect(single().textContent).toBe('x') // fallback 先顯示
+    await waitFor(() => expect(single().textContent).toBe('Label-x'))
   })
 })
