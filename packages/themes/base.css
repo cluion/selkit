@@ -182,10 +182,33 @@
   border-radius: var(--selkit-radius);
   box-shadow: var(--selkit-shadow);
   padding: 4px;
+  /* 開合動畫：opacity + 微滑入；display allow-discrete 讓 [hidden] 也能過渡 */
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    display 0.15s ease allow-discrete;
 }
 
 .selkit__dropdown[hidden] {
   display: none;
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* 開啟瞬間的起點：從隱藏態淡入（否則 display:none→block 無起點 不會 transition）*/
+@starting-style {
+  .selkit__dropdown:not([hidden]) {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selkit__dropdown {
+    transition: none;
+  }
 }
 
 .selkit__group {
