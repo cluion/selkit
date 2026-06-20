@@ -31,6 +31,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # docs 引用 workspace 套件（@selkit/vue、@selkit/themes）的 dist 產物，需先 build
+      - name: Build packages
+        run: pnpm build
+
       - name: Build docs
         run: pnpm --filter @selkit/docs docs:build
         env:
