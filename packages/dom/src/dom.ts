@@ -31,6 +31,21 @@ import {
   type Positioner,
   type PositionerFactory,
 } from './positioner'
+import type {
+  CreateRow,
+  GroupRow,
+  OptionRow,
+  SelkitDomConfig,
+  SelkitDomInstance,
+} from './types'
+import { mergeSelectConfig, syncHiddenInputs, syncToSelect } from './select-form'
+import {
+  applyTemplate,
+  buildCreateRow,
+  buildGroupRow,
+  buildOption,
+  spacer,
+} from './templates'
 
 /** 捲動距底多少 px 內即預載下一頁 */
 const LOAD_MORE_THRESHOLD = 32
@@ -41,10 +56,6 @@ const DEFAULT_GROUP_HEIGHT = 28
 /** sr-only：視覺隱藏但螢幕報讀可讀 內聯以免未載入主題時外露 */
 const SR_ONLY_CSS =
   'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0'
-
-type OptionRow<T> = Extract<SelkitViewRow<T>, { type: 'option' }>
-type GroupRow = Extract<SelkitViewRow, { type: 'group' }>
-type CreateRow = Extract<SelkitViewRow, { type: 'create' }>
 
 /** 內建定位器工廠 包裝零依賴的 attachPositioner 為 PositionerFactory 形狀 */
 const builtinPositioner: PositionerFactory = (trigger, dropdown, opts) =>
@@ -59,142 +70,6 @@ function resolveParent(
   const el = document.querySelector<HTMLElement>(parent)
   if (!el) throw new Error(`[selkit] 找不到 dropdownParent ${parent}`)
   return el
-}
-
-export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {
-  /** class 前綴 預設 "selkit" */
-  classPrefix?: string
-  /** 表單欄位名 設定後自動維護 hidden input 讓傳統表單 submit 帶值 */
-  name?: string
-  /** 多選時於選項顯示打勾（checkbox 樣式）選項點擊改為 toggle 不隱藏已選 */
-  checkboxes?: boolean
-  /** 輸入框寬度隨輸入字數增長（以 size 屬性近似）取代預設的 flex 撐滿 */
-  autogrow?: boolean
-  /** 下拉寬度貼齊內容（至少與控制項同寬 可更寬）而非固定等寬 */
-  dropdownAutoWidth?: boolean
-  /** 啟用虛擬捲動 大量選項時只渲染可視切片 僅在無分組的扁平清單生效 */
-  virtualScroll?: boolean
-  /** 虛擬捲動的單列固定高度 px 預設 36 須與實際樣式高度一致 */
-  itemHeight?: number
-  /** 虛擬捲動下分組標題列的固定高度 px 預設 28 須與實際樣式高度一致 */
-  groupHeight?: number
-  /** 把下拉浮層掛到指定容器（元素或選擇器）逃離 overflow/transform 祖先的裁切 常用 document.body */
-  dropdownParent?: HTMLElement | string
-  /** 自訂定位器工廠 預設為內建零依賴定位器（垂直翻轉）傳入 @selkit/floating 的 createFloatingPositioner 即啟用 flip/shift/size 進階定位 */
-  positioner?: PositionerFactory
-  /** 自訂已選顯示內容（tag 或單值） 回傳字串走 textContent 防 XSS 需 markup（icon 等）請回傳 Node */
-  templateSelection?: (
-    option: SelkitOption<T>,
-    meta: { index: number; multiple: boolean },
-  ) => string | Node
-  /** 自訂下拉選項內容 回傳字串走 textContent 防 XSS 需 markup（icon 等）請回傳 Node */
-  templateOption?: (
-    option: SelkitOption<T>,
-    meta: { index: number; active: boolean; selected: boolean },
-  ) => string | Node
-  /** 自訂下拉箭頭內容（▾）外殼保留 回傳 string 走 textContent Node 直接掛入 */
-  templateArrow?: (meta: { open: boolean }) => string | Node
-  /** 自訂清除鈕內容（×）按鈕外殼與 click 行為保留 */
-  templateClear?: () => string | Node
-  /** 自訂多選標籤移除鈕內容（×）按鈕外殼與 click 行為保留 */
-  templateTagRemove?: (
-    option: SelkitOption<T>,
-    meta: { index: number },
-  ) => string | Node
-  /** 自訂分組標題內容 外殼保留 */
-  templateGroup?: (meta: { label: string; disabled: boolean }) => string | Node
-  /** 自訂下拉為空/載入中的整塊內容 reason 分流 message 為預設文字 */
-  templateEmpty?: (meta: {
-    reason: SelkitEmptyReason
-    message: string
-    query: string
-  }) => string | Node
-}
-
-export interface SelkitDomInstance<T = unknown> {
-  readonly controller: SelkitController<T>
-  readonly element: HTMLElement
-  destroy(): void
-}
-
-/** 從原生 <select> 讀出選項、初始值與屬性 供增強模式使用 */
-function parseSelectElement(select: HTMLSelectElement): {
-  options: SelkitItem[]
-  value: SelkitValue
-  multiple: boolean
-  disabled: boolean
-  placeholder: string | undefined
-  name: string | undefined
-} {
-  const options: SelkitItem[] = []
-  const selectedValues: Array<string | number> = []
-  let placeholder = select.dataset.placeholder
-
-  const readOption = (o: HTMLOptionElement): SelkitOption | null => {
-    // 空 value option 視為 placeholder 佔位 不納入選項
-    if (o.value === '') {
-      if (!placeholder) placeholder = o.textContent?.trim() || undefined
-      return null
-    }
-    if (o.selected) selectedValues.push(o.value)
-    return {
-      value: o.value,
-      label: (o.label || o.textContent || o.value).trim(),
-      ...(o.disabled ? { disabled: true } : {}),
-    }
-  }
-
-  for (const child of Array.from(select.children)) {
-    if (child instanceof HTMLOptGroupElement) {
-      const opts: SelkitOption[] = []
-      for (const o of Array.from(child.children)) {
-        if (o instanceof HTMLOptionElement) {
-          const parsed = readOption(o)
-          if (parsed) opts.push(parsed)
-        }
-      }
-      if (opts.length) {
-        options.push({
-          label: child.label,
-          ...(child.disabled ? { disabled: true } : {}),
-          options: opts,
-        })
-      }
-    } else if (child instanceof HTMLOptionElement) {
-      const parsed = readOption(child)
-      if (parsed) options.push(parsed)
-    }
-  }
-
-  const value: SelkitValue = select.multiple
-    ? selectedValues
-    : (selectedValues[0] ?? null)
-
-  return {
-    options,
-    value,
-    multiple: select.multiple,
-    disabled: select.disabled,
-    placeholder,
-    name: select.name || undefined,
-  }
-}
-
-/** 把原生 <select> 解析出的設定合併進使用者 config 使用者明確設定優先 */
-function mergeSelectConfig<T>(
-  config: SelkitDomConfig<T>,
-  select: HTMLSelectElement,
-): SelkitDomConfig<T> {
-  const parsed = parseSelectElement(select)
-  return {
-    ...config,
-    options: config.options ?? (parsed.options as SelkitItem<T>[]),
-    multiple: config.multiple ?? parsed.multiple,
-    value: config.value ?? parsed.value,
-    disabled: config.disabled ?? parsed.disabled,
-    placeholder: config.placeholder ?? parsed.placeholder,
-    name: config.name ?? parsed.name,
-  }
 }
 
 export class SelkitDom<T> implements SelkitDomInstance<T> {
@@ -621,12 +496,6 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     active?.scrollIntoView?.({ block: 'nearest' })
   }
 
-  /** 套用模板輸出：字串走 textContent（防 XSS）Node 直接掛入 */
-  #applyTemplate(host: HTMLElement, out: string | Node): void {
-    if (out instanceof Node) host.append(out)
-    else host.textContent = out
-  }
-
   /** 套用 templateSelection 到已選容器 無模板則用 label */
   #fillSelection(
     host: HTMLElement,
@@ -637,7 +506,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       host.textContent = option.label
       return
     }
-    this.#applyTemplate(host, this.#templateSelection(option, meta))
+    applyTemplate(host, this.#templateSelection(option, meta))
   }
 
   #renderField(s: Readonly<SelkitState<T>>): void {
@@ -664,7 +533,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         remove.dataset.index = String(i)
         remove.setAttribute('aria-label', `Remove ${opt.label}`)
         if (this.#templateTagRemove) {
-          this.#applyTemplate(remove, this.#templateTagRemove(opt, { index: i }))
+          applyTemplate(remove, this.#templateTagRemove(opt, { index: i }))
         } else {
           remove.textContent = '×'
         }
@@ -703,7 +572,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       clear.className = this.#cls('clear')
       clear.setAttribute('aria-label', 'Clear')
       if (this.#templateClear) {
-        this.#applyTemplate(clear, this.#templateClear())
+        applyTemplate(clear, this.#templateClear())
       } else {
         clear.textContent = '×'
       }
@@ -714,7 +583,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     arrow.className = this.#cls('arrow')
     arrow.setAttribute('aria-hidden', 'true')
     if (this.#templateArrow) {
-      this.#applyTemplate(arrow, this.#templateArrow({ open: s.isOpen }))
+      applyTemplate(arrow, this.#templateArrow({ open: s.isOpen }))
     }
     this.#indicators.append(arrow)
   }
@@ -729,7 +598,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       empty.className = this.#cls('empty')
       const message = this.controller.getEmptyMessage()
       if (this.#templateEmpty) {
-        this.#applyTemplate(
+        applyTemplate(
           empty,
           this.#templateEmpty({
             reason: this.controller.getEmptyReason(),
@@ -784,12 +653,12 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     a11y: SelkitA11y,
     activeIndex: number,
   ): void {
-    this.#dropdown.append(this.#spacer(range.paddingTop))
+    this.#dropdown.append(spacer(range.paddingTop))
     for (let i = range.startIndex; i < range.endIndex; i++) {
       const row = rows[i]
       if (row) this.#renderRow(row, a11y, activeIndex)
     }
-    this.#dropdown.append(this.#spacer(range.paddingBottom))
+    this.#dropdown.append(spacer(range.paddingBottom))
   }
 
   /** 依列型別渲染並掛入下拉 group / create / option */
@@ -799,92 +668,20 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     activeIndex: number,
   ): void {
     if (row.type === 'group') {
-      this.#dropdown.append(this.#buildGroupRow(row))
+      this.#dropdown.append(
+        buildGroupRow(row, this.#prefix, this.#templateGroup),
+      )
       return
     }
     if (row.type === 'create') {
-      this.#dropdown.append(this.#buildCreateRow(row, a11y, activeIndex))
+      this.#dropdown.append(
+        buildCreateRow(row, this.#prefix, a11y, activeIndex),
+      )
       return
     }
-    this.#dropdown.append(this.#buildOption(row, a11y, activeIndex))
-  }
-
-  /** 分組標題列 套用 templateGroup（無則用 label）*/
-  #buildGroupRow(row: GroupRow): HTMLElement {
-    const group = document.createElement('div')
-    group.className = this.#cls('group')
-    if (row.disabled) group.classList.add(this.#cls('group', 'disabled'))
-    if (this.#templateGroup) {
-      this.#applyTemplate(
-        group,
-        this.#templateGroup({ label: row.label, disabled: !!row.disabled }),
-      )
-    } else {
-      group.textContent = row.label
-    }
-    return group
-  }
-
-  /** 「建立新項」列 共用 option 樣式與 a11y 但點擊走 createTag */
-  #buildCreateRow(
-    row: { type: 'create'; index: number; query: string; label: string },
-    a11y: SelkitA11y,
-    activeIndex: number,
-  ): HTMLElement {
-    const attrs = a11y.option(row.index)
-    const el = document.createElement('div')
-    el.className = `${this.#cls('option')} ${this.#cls('create')}`
-    el.id = attrs.id
-    el.dataset.index = String(row.index)
-    el.dataset.create = 'true'
-    el.setAttribute('role', 'option')
-    el.setAttribute('aria-selected', 'false')
-    if (row.index === activeIndex) {
-      el.classList.add(this.#cls('option', 'active'))
-    }
-    el.textContent = row.label
-    return el
-  }
-
-  /** 撐高佔位節點 維持虛擬捲動時的捲動總高度 */
-  #spacer(height: number): HTMLElement {
-    const el = document.createElement('div')
-    el.style.height = `${height}px`
-    el.setAttribute('aria-hidden', 'true')
-    return el
-  }
-
-  #buildOption(
-    row: OptionRow<T>,
-    a11y: SelkitA11y,
-    activeIndex: number,
-  ): HTMLElement {
-    const attrs = a11y.option(row.index)
-    const option = document.createElement('div')
-    option.className = this.#cls('option')
-    option.id = attrs.id
-    option.dataset.index = String(row.index)
-    option.setAttribute('role', 'option')
-    option.setAttribute('aria-selected', String(attrs['aria-selected']))
-    if (attrs['aria-disabled']) option.setAttribute('aria-disabled', 'true')
-    if (row.index === activeIndex) {
-      option.classList.add(this.#cls('option', 'active'))
-    }
-    if (attrs['aria-selected']) {
-      option.classList.add(this.#cls('option', 'selected'))
-    }
-    if (this.#templateOption) {
-      const out = this.#templateOption(row.option, {
-        index: row.index,
-        active: row.index === activeIndex,
-        selected: attrs['aria-selected'],
-      })
-      if (out instanceof Node) option.append(out)
-      else option.textContent = out
-    } else {
-      option.textContent = row.option.label
-    }
-    return option
+    this.#dropdown.append(
+      buildOption(row, this.#prefix, a11y, activeIndex, this.#templateOption),
+    )
   }
 
   #syncA11y(s: Readonly<SelkitState<T>>): void {
@@ -931,41 +728,15 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
 
   // ── 表單同步 ──────────────────────────────────────────────
   #syncForm(): void {
-    if (this.#sourceSelect) this.#syncToSelect(this.#sourceSelect)
-    else if (this.#hiddenContainer) this.#syncHiddenInputs(this.#hiddenContainer)
-  }
-
-  #syncToSelect(select: HTMLSelectElement): void {
     const selected = this.controller.getState().selected
-    const selectedSet = new Set(selected.map((o) => String(o.value)))
-    // tagging 新增的選項補進原生 select 才能被提交
-    for (const opt of selected) {
-      const value = String(opt.value)
-      if (!Array.from(select.options).some((o) => o.value === value)) {
-        const el = document.createElement('option')
-        el.value = value
-        el.textContent = opt.label
-        select.append(el)
-      }
-    }
-    for (const o of Array.from(select.options)) {
-      o.selected = selectedSet.has(o.value)
-    }
-    select.dispatchEvent(new Event('change', { bubbles: true }))
-  }
-
-  #syncHiddenInputs(container: HTMLDivElement): void {
-    container.replaceChildren()
-    const name = this.#name as string
-    const inputName = this.#multiple ? `${name}[]` : name
-    const selected = this.controller.getState().selected
-    const values = this.#multiple ? selected : selected.slice(0, 1)
-    for (const opt of values) {
-      const input = document.createElement('input')
-      input.type = 'hidden'
-      input.name = inputName
-      input.value = String(opt.value)
-      container.append(input)
+    if (this.#sourceSelect) {
+      syncToSelect(this.#sourceSelect, selected)
+    } else if (this.#hiddenContainer) {
+      syncHiddenInputs(this.#hiddenContainer, {
+        name: this.#name as string,
+        multiple: this.#multiple,
+        selected,
+      })
     }
   }
 }

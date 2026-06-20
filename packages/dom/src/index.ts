@@ -7,7 +7,7 @@ export {
   SelkitDom,
   SelkitDom as Selkit,
 } from './dom'
-export type { SelkitDomConfig, SelkitDomInstance } from './dom'
+export type { SelkitDomConfig, SelkitDomInstance } from './types'
 export {
   attachPositioner,
   computePosition,
