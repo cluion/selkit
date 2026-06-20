@@ -3,15 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Selkit — React Demo</title>
-
+    <title>Selkit — React smoke test</title>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
     />
     <link rel="stylesheet" href="../../packages/themes/base.css" />
     <link rel="stylesheet" href="../../packages/themes/bs5.css" />
-
     <!-- React 從 esm.sh 取 ESM external=react 確保只有一份 React 實例 -->
     <script type="importmap">
       {
@@ -25,7 +23,6 @@
         }
       }
     </script>
-
     <style>
       body {
         font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif;
@@ -35,16 +32,17 @@
         color: #1e293b;
       }
       h1 { font-size: 1.4rem; }
-      section { margin: 28px 0; }
+      p.note { color: #64748b; font-size: 0.85rem; }
+      section { margin: 24px 0; }
       label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
-      .hint { color: #64748b; font-size: 0.8rem; margin-top: 6px; }
-      .bs5-scope { padding: 16px; border: 1px dashed #cbd5e1; border-radius: 8px; }
-      pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 0.8rem; overflow: auto; }
     </style>
   </head>
   <body>
-    <h1>Selkit — React Demo</h1>
-    <p class="hint">同一顆 <code>@selkit/core</code>，這裡用 <code>@selkit/react</code> 的 <code>&lt;SelkitSelect&gt;</code>（受控 value + onChange）。htm 讓頁面免打包。</p>
+    <h1>Selkit — React smoke test</h1>
+    <p class="note">
+      驗證 <code>@selkit/react</code> 的 dist 產物能跑（涵蓋核心 API 路徑）。完整 21 個互動 example 見
+      <a href="https://cluion.github.io/selkit/examples">docs gallery</a>。
+    </p>
     <div id="app"></div>
 
     <script type="module">
@@ -60,77 +58,21 @@
         { value: 'apple', label: 'Apple' },
         { value: 'banana', label: 'Banana' },
         { value: 'cherry', label: 'Cherry' },
-        { value: 'date', label: 'Date', disabled: true },
+        { value: 'date', label: 'Date' },
         { value: 'elderberry', label: 'Elderberry' },
-        { value: 'fig', label: 'Fig' },
-        { value: 'grape', label: 'Grape' },
       ]
-
-      const berries = [
-        { value: 'blueberry', label: 'Blueberry' },
-        { value: 'blackberry', label: 'Blackberry' },
-        { value: 'strawberry', label: 'Strawberry' },
-        { value: 'raspberry', label: 'Raspberry' },
-      ]
-
-      const grouped = [
-        {
-          label: 'Fruit',
-          options: [
-            { value: 'apple', label: 'Apple' },
-            { value: 'banana', label: 'Banana' },
-          ],
-        },
-        {
-          label: 'Vegetable',
-          options: [
-            { value: 'carrot', label: 'Carrot' },
-            { value: 'potato', label: 'Potato' },
-          ],
-        },
-      ]
-
       const many = (n) =>
-        Array.from({ length: n }, (_, i) => ({
-          value: i,
-          label: `Option ${i + 1}`,
-        }))
-
-      const groupedMany = Array.from({ length: 10 }, (_, g) => ({
-        label: `Group ${g + 1}`,
-        options: Array.from({ length: 100 }, (_, i) => ({
-          value: `g${g}-${i}`,
-          label: `Group ${g + 1} · Item ${i}`,
-        })),
-      }))
-
-      const loadPage = async (query, page) => {
-        const size = 20
-        const start = (page - 1) * size
-        const items = Array.from({ length: size }, (_, i) => {
-          const num = start + i + 1
-          return { value: num, label: `${query || 'Item'} #${num}` }
-        })
-        return { items, hasMore: page < 5 }
+        Array.from({ length: n }, (_, i) => ({ value: i, label: `Option ${i + 1}` }))
+      const db = many(2000)
+      const makeTag = (q) => ({ value: q.toLowerCase(), label: q })
+      const loadOpts = async (query, page) => {
+        await new Promise((r) => setTimeout(r, 200))
+        const filtered = db.filter((o) => o.label.includes(query))
+        return {
+          items: filtered.slice((page - 1) * 20, page * 20),
+          hasMore: filtered.length > page * 20,
+        }
       }
-
-      const zhMessages = {
-        loading: '載入中…',
-        noResults: '查無資料',
-        minInputLength: (n) => `再輸入 ${n} 個字`,
-      }
-
-      const startsFirst = (a, b, q) => {
-        const rank = (o) =>
-          o.label.toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1
-        return rank(a) - rank(b)
-      }
-
-      const longOpts = [
-        { value: 1, label: 'Short' },
-        { value: 2, label: 'A considerably longer option label here' },
-        { value: 3, label: 'Another fairly long option to widen the menu' },
-      ]
 
       function App() {
         const [last, setLast] = useState('（尚未變更）')
@@ -139,134 +81,23 @@
         return html`
           <${React.Fragment}>
             <section>
-              <label>單選 + 搜尋</label>
+              <label>Single + search</label>
               <${SelkitSelect} options=${fruits} placeholder="Pick a fruit…" onChange=${onChange} />
             </section>
-
             <section>
-              <label>多選</label>
-              <${SelkitSelect} options=${fruits} multiple=${true} placeholder="Pick fruits…" onChange=${onChange} />
+              <label>Multiselect + tagging</label>
+              <${SelkitSelect} options=${fruits} multiple=${true} taggable=${true} createTag=${makeTag} placeholder="Pick or type…" onChange=${onChange} />
             </section>
-
             <section>
-              <label>分組 optgroup</label>
-              <${SelkitSelect} options=${grouped} placeholder="Pick one…" onChange=${onChange} />
+              <label>Async (loadOptions + pagination)</label>
+              <${SelkitSelect} loadOptions=${loadOpts} debounce=${250} placeholder="Search…" onChange=${onChange} />
             </section>
-
             <section>
-              <label>fuzzy 模糊搜尋（試試 "blbr"）</label>
-              <${SelkitSelect} options=${berries} fuzzy=${true} placeholder="Fuzzy…" onChange=${onChange} />
+              <label>Virtual scroll (2000)</label>
+              <${SelkitSelect} options=${many(2000)} virtualScroll=${true} itemHeight=${36} placeholder="2000 options…" onChange=${onChange} />
             </section>
-
             <section>
-              <label>minInputLength（至少 2 字才過濾）</label>
-              <${SelkitSelect} options=${many(30)} minInputLength=${2} placeholder="Type 2+ chars…" onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>i18n / 自訂訊息（messages）</label>
-              <${SelkitSelect} options=${many(30)} minInputLength=${2} messages=${zhMessages} placeholder="輸入以搜尋…" onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>restoreOnBackspace（退格刪 tag 並回填文字）</label>
-              <${SelkitSelect} options=${fruits} multiple=${true} taggable=${true} createTag=${(q) => ({ value: q.toLowerCase(), label: q })} restoreOnBackspace=${true} placeholder="Pick, then backspace…" onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>checkbox 多選（選項打勾，可再點取消）</label>
-              <${SelkitSelect} options=${fruits} multiple=${true} checkboxes=${true} placeholder="Tick fruits…" onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>tokenSeparators（打/貼 a,b,c 自動切 tag）</label>
-              <${SelkitSelect} options=${fruits} multiple=${true} taggable=${true} createTag=${(q) => ({ value: q.toLowerCase(), label: q })} tokenSeparators=${[',', ' ']} placeholder="Type or paste a,b,c…" onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>可見建立列（清單顯示 Add "foo" 可點）</label>
-              <${SelkitSelect} options=${fruits} multiple=${true} taggable=${true} createTag=${(q) => ({ value: q.toLowerCase(), label: q })} messages=${{ create: (q) => `建立「${q}」` }} placeholder="Type a new fruit…" onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>renderOption（選項加 icon）</label>
-              <${SelkitSelect} options=${fruits} placeholder="Pick a fruit…" renderOption=${(opt, { selected }) => `${selected ? '✓ ' : '🍎 '}${opt.label}`} onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>renderSelection（已選加 icon）</label>
-              <${SelkitSelect} options=${fruits} multiple=${true} placeholder="Pick fruits…" renderSelection=${(opt) => `🔖 ${opt.label}`} onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>可換元件（箭頭／清除鈕／移除鈕／分組標題／空狀態）</label>
-              <${SelkitSelect}
-                options=${grouped}
-                multiple=${true}
-                placeholder="Swappable parts…"
-                renderArrow=${({ open }) => (open ? '▾' : '▸')}
-                renderClear=${() => '🧹'}
-                renderTagRemove=${() => '✖'}
-                renderGroup=${({ label }) => `— ${label} —`}
-                renderEmpty=${({ reason, message }) => (reason === 'no-results' ? '🤷 找不到符合的項目' : message)}
-                onChange=${onChange}
-              />
-            </section>
-
-            <section>
-              <label>autogrow（輸入框寬度隨字增長）</label>
-              <${SelkitSelect} options=${fruits} multiple=${true} autogrow=${true} placeholder="Type…" onChange=${onChange} />
-            </section>
-
-            <section style=${{ maxWidth: 220 }}>
-              <label>dropdownAutoWidth（下拉貼齊內容寬度）</label>
-              <${SelkitSelect} options=${longOpts} dropdownAutoWidth=${true} placeholder="Open me…" onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>sorter（相關度：以輸入開頭者排前）</label>
-              <${SelkitSelect} options=${fruits} sorter=${startsFirst} placeholder='Type "a"…' onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>minResultsForSearch（選項太少時隱藏搜尋框）</label>
-              <${SelkitSelect} options=${fruits} minResultsForSearch=${10} placeholder="No search box…" onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>hideSelected + tag 拖曳排序</label>
-              <${SelkitSelect} options=${fruits} multiple=${true} hideSelected=${true} placeholder="Pick & drag tags…" onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>無限捲動 infinite scroll</label>
-              <${SelkitSelect} loadOptions=${loadPage} placeholder="Scroll to load more…" onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>虛擬捲動 virtual scroll（1000 筆）</label>
-              <${SelkitSelect} options=${many(1000)} virtualScroll=${true} itemHeight=${36} placeholder="1000 options…" onChange=${onChange} />
-            </section>
-
-            <section>
-              <label>虛擬捲動 + 分組（10 組 × 100，header 變高）</label>
-              <${SelkitSelect} options=${groupedMany} virtualScroll=${true} itemHeight=${36} groupHeight=${28} placeholder="10 groups × 100…" onChange=${onChange} />
-            </section>
-
-            <section dir="rtl">
-              <label>RTL（dir="rtl"）</label>
-              <${SelkitSelect} options=${fruits} multiple=${true} placeholder="اختر…" onChange=${onChange} />
-            </section>
-
-            <section class="bs5-scope">
-              <label>Bootstrap 5 theme</label>
-              <div class="selkit-theme-bs5">
-                <${SelkitSelect} options=${fruits} placeholder="Bootstrap 5 style…" onChange=${onChange} />
-              </div>
-            </section>
-
-            <section>
-              <label>最後一次變更 (change event)</label>
+              <label>change event</label>
               <pre>${last}</pre>
             </section>
           <//>

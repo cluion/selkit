@@ -3,20 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Selkit — Vanilla Demo</title>
-
-    <!-- Bootstrap 5：讓下方 BS5 區塊真正套用 --bs-* 變數 未連網時走 fallback -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    />
-
-    <!-- 預設 base theme -->
+    <title>Selkit — Vanilla smoke test</title>
     <link rel="stylesheet" href="../../packages/themes/base.css" />
-    <!-- BS5 theme：只作用於帶 selkit-theme-bs5 class 的容器 -->
-    <link rel="stylesheet" href="../../packages/themes/bs5.css" />
-
-    <!-- 讓瀏覽器能解析裸 import（指向各套件已 build 的 dist） -->
     <script type="importmap">
       {
         "imports": {
@@ -25,7 +13,6 @@
         }
       }
     </script>
-
     <style>
       body {
         font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif;
@@ -35,157 +22,33 @@
         color: #1e293b;
       }
       h1 { font-size: 1.4rem; }
-      section { margin: 28px 0; }
+      p.note { color: #64748b; font-size: 0.85rem; }
+      section { margin: 24px 0; }
       label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
-      .hint { color: #64748b; font-size: 0.8rem; margin-top: 6px; }
-      .bs5-scope { padding: 16px; border: 1px dashed #cbd5e1; border-radius: 8px; }
-      pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 0.8rem; overflow: auto; }
     </style>
   </head>
   <body>
-    <h1>Selkit — Vanilla Demo</h1>
-    <p class="hint">純原生 JS，無 jQuery、無框架。大腦是 <code>@selkit/core</code>，渲染是 <code>@selkit/dom</code>。</p>
+    <h1>Selkit — Vanilla smoke test</h1>
+    <p class="note">
+      驗證 <code>@selkit/dom</code> 的 dist 產物能跑（涵蓋核心 API 路徑）。完整 21 個互動 example 見
+      <a href="https://cluion.github.io/selkit/examples">docs gallery</a>。
+    </p>
 
     <section>
-      <label for="single">單選 + 搜尋（base theme）</label>
+      <label>Single + search</label>
       <div id="single"></div>
-      <div class="hint">試試輸入過濾、↑↓ 鍵、Enter 選取、Esc 關閉。</div>
     </section>
-
     <section>
-      <label for="multi">多選（base theme）</label>
+      <label>Multiselect + tagging</label>
       <div id="multi"></div>
-      <div class="hint">可連續選取、tag 可移除、空輸入時 Backspace 刪除最後一個。</div>
     </section>
-
     <section>
-      <label for="grouped">分組 optgroup（base theme）</label>
-      <div id="grouped"></div>
+      <label>Async (loadOptions + pagination)</label>
+      <div id="async"></div>
     </section>
-
-    <section class="bs5-scope">
-      <label for="bs5">Bootstrap 5 theme</label>
-      <div id="bs5" class="selkit-theme-bs5"></div>
-      <div class="hint">同一份元件，容器加上 <code>selkit-theme-bs5</code> class 即融入 BS5 外觀。</div>
-    </section>
-
     <section>
-      <label for="fuzzy">fuzzy 模糊搜尋</label>
-      <div id="fuzzy"></div>
-      <div class="hint">輸入 <code>blbr</code> 也能搜到 Blueberry（子序列比對）。</div>
-    </section>
-
-    <section>
-      <label for="thresholds">minInputLength（至少 2 字才過濾）</label>
-      <div id="thresholds"></div>
-    </section>
-
-    <section>
-      <label for="autogrow">autogrow（輸入框寬度隨字增長）</label>
-      <div id="autogrow"></div>
-      <div class="hint">多選；輸入時輸入框寬度貼齊文字而非撐滿。</div>
-    </section>
-
-    <section style="max-width: 220px">
-      <label for="autowidth">dropdownAutoWidth（下拉貼齊內容寬度）</label>
-      <div id="autowidth"></div>
-      <div class="hint">控制項窄；下拉仍展開到最長選項的寬度，不被截斷。</div>
-    </section>
-
-    <section>
-      <label for="sorter">sorter（相關度：以輸入開頭者排前）</label>
-      <div id="sorter"></div>
-      <div class="hint">輸入 <code>a</code>：以 a 開頭的選項排到最前。</div>
-    </section>
-
-    <section>
-      <label for="i18n">i18n / 自訂訊息（messages）</label>
-      <div id="i18n"></div>
-      <div class="hint">繁中空狀態訊息：剛開啟顯示「再輸入 N 字」，輸滿後若無相符顯示「查無資料」。</div>
-    </section>
-
-    <section>
-      <label for="checkboxes">checkbox 多選（選項打勾，可再點取消）</label>
-      <div id="checkboxes"></div>
-      <div class="hint">已選項留在清單並打勾；再點一次即取消。</div>
-    </section>
-
-    <section>
-      <label for="restore">restoreOnBackspace（退格刪 tag 並回填文字）</label>
-      <div id="restore"></div>
-      <div class="hint">選幾個後，把輸入框清空再按 Backspace：最後一個 tag 被刪、其文字回到輸入框可編輯。</div>
-    </section>
-
-    <section>
-      <label for="tokens">tokenSeparators（打/貼 <code>a,b,c</code> 自動切 tag）</label>
-      <div id="tokens"></div>
-      <div class="hint">輸入或貼上以逗號／空白分隔的字串，逗號前的片段自動成為 tag。</div>
-    </section>
-
-    <section>
-      <label for="create-row">可見建立列（清單顯示 Add "foo" 可點）</label>
-      <div id="create-row"></div>
-      <div class="hint">輸入不存在的字，清單末尾出現可點的建立列；此處用自訂文字「建立 …」。</div>
-    </section>
-
-    <section>
-      <label for="tpl-option">templateOption（選項加 icon）</label>
-      <div id="tpl-option"></div>
-      <div class="hint">下拉每個選項前加 🍎；已選項顯示 ✓。回傳 Node 即可放任意標記。</div>
-    </section>
-
-    <section>
-      <label for="tpl-selection">templateSelection（已選加 icon）</label>
-      <div id="tpl-selection"></div>
-      <div class="hint">每個 tag 前面加上 🔖；回傳 Node 即可放任意標記。</div>
-    </section>
-
-    <section>
-      <label for="swappable">可換元件（換掉箭頭／清除鈕／移除鈕／分組標題／空狀態）</label>
-      <div id="swappable"></div>
-      <div class="hint">
-        箭頭換成 ▸/▾、清除鈕與移除鈕換成 emoji、分組標題加前綴、查無資料時顯示自訂文案。
-      </div>
-    </section>
-
-    <section>
-      <label for="few">minResultsForSearch（選項太少時隱藏搜尋框）</label>
-      <div id="few"></div>
-    </section>
-
-    <section>
-      <label for="hide-reorder">hideSelected + tag 拖曳排序</label>
-      <div id="hide-reorder"></div>
-      <div class="hint">已選項從清單隱藏；拖曳 tag 可重新排序。</div>
-    </section>
-
-    <section>
-      <label for="infinite">無限捲動 infinite scroll</label>
-      <div id="infinite"></div>
-      <div class="hint">捲到下拉底部自動載入下一頁（共 5 頁）。</div>
-    </section>
-
-    <section>
-      <label for="virtual">虛擬捲動 virtual scroll</label>
+      <label>Virtual scroll (2000)</label>
       <div id="virtual"></div>
-      <div class="hint">1000 筆選項，只渲染可視切片。</div>
-    </section>
-
-    <section>
-      <label for="virtual-grouped">虛擬捲動 + 分組（group header 變高）</label>
-      <div id="virtual-grouped"></div>
-      <div class="hint">10 組 × 100 筆，分組標題與選項列高不同，仍只渲染切片。</div>
-    </section>
-
-    <section dir="rtl">
-      <label for="rtl">RTL（dir="rtl"）</label>
-      <div id="rtl"></div>
-      <div class="hint">整個區塊設 dir="rtl"，tag 與箭頭自動翻轉。</div>
-    </section>
-
-    <section>
-      <label>最後一次變更 (change event)</label>
-      <pre id="log">（尚未變更）</pre>
     </section>
 
     <script type="module">
@@ -195,261 +58,45 @@
         { value: 'apple', label: 'Apple' },
         { value: 'banana', label: 'Banana' },
         { value: 'cherry', label: 'Cherry' },
-        { value: 'date', label: 'Date', disabled: true },
+        { value: 'date', label: 'Date' },
         { value: 'elderberry', label: 'Elderberry' },
-        { value: 'fig', label: 'Fig' },
-        { value: 'grape', label: 'Grape' },
       ]
+      const many = (n) =>
+        Array.from({ length: n }, (_, i) => ({ value: i, label: `Option ${i + 1}` }))
+      const db = many(2000)
 
-      const grouped = [
-        {
-          label: 'Fruit',
-          options: [
-            { value: 'apple', label: 'Apple' },
-            { value: 'banana', label: 'Banana' },
-          ],
-        },
-        {
-          label: 'Vegetable',
-          options: [
-            { value: 'carrot', label: 'Carrot' },
-            { value: 'potato', label: 'Potato' },
-          ],
-        },
-      ]
-
-      const log = document.getElementById('log')
-      const show = (e) => {
-        log.textContent = JSON.stringify(e.value)
-      }
-
-      const single = createSelkitDom(document.getElementById('single'), {
+      createSelkitDom(document.getElementById('single'), {
         options: fruits,
         placeholder: 'Pick a fruit…',
       })
-      single.controller.on('change', show)
 
       createSelkitDom(document.getElementById('multi'), {
         options: fruits,
         multiple: true,
-        placeholder: 'Pick fruits…',
-      }).controller.on('change', show)
-
-      createSelkitDom(document.getElementById('grouped'), {
-        options: grouped,
-        placeholder: 'Pick one…',
-      }).controller.on('change', show)
-
-      // BS5：host(#bs5) 帶 selkit-theme-bs5 class bs5.css 即套用 BS5 變數
-      createSelkitDom(document.getElementById('bs5'), {
-        options: fruits,
-        placeholder: 'Bootstrap 5 style…',
-      }).controller.on('change', show)
-
-      const many = (n) =>
-        Array.from({ length: n }, (_, i) => ({
-          value: i,
-          label: `Option ${i + 1}`,
-        }))
-
-      // 6. fuzzy 子序列比對
-      createSelkitDom(document.getElementById('fuzzy'), {
-        options: [
-          { value: 'blueberry', label: 'Blueberry' },
-          { value: 'blackberry', label: 'Blackberry' },
-          { value: 'strawberry', label: 'Strawberry' },
-          { value: 'raspberry', label: 'Raspberry' },
-        ],
-        fuzzy: true,
-        placeholder: 'Try "blbr"…',
-      }).controller.on('change', show)
-
-      // 7. minInputLength：至少 2 字才過濾
-      createSelkitDom(document.getElementById('thresholds'), {
-        options: many(30),
-        minInputLength: 2,
-        placeholder: 'Type 2+ chars…',
-      }).controller.on('change', show)
-
-      // 7a0. autogrow：輸入框寬度隨字增長
-      createSelkitDom(document.getElementById('autogrow'), {
-        options: fruits,
-        multiple: true,
-        autogrow: true,
-        placeholder: 'Type…',
-      }).controller.on('change', show)
-
-      // 7a1. dropdownAutoWidth：下拉貼齊內容（長標籤）
-      const longOpts = [
-        { value: 1, label: 'Short' },
-        { value: 2, label: 'A considerably longer option label here' },
-        { value: 3, label: 'Another fairly long option to widen the menu' },
-      ]
-      createSelkitDom(document.getElementById('autowidth'), {
-        options: longOpts,
-        dropdownAutoWidth: true,
-        placeholder: 'Open me…',
-      }).controller.on('change', show)
-
-      // 7a. sorter：相關度排序（以輸入開頭者優先）
-      const startsFirst = (a, b, q) => {
-        const rank = (o) =>
-          o.label.toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1
-        return rank(a) - rank(b)
-      }
-      createSelkitDom(document.getElementById('sorter'), {
-        options: fruits,
-        sorter: startsFirst,
-        placeholder: 'Type "a"…',
-      }).controller.on('change', show)
-
-      // 7b. i18n：自訂繁中空狀態訊息（loading / noResults / minInputLength）
-      createSelkitDom(document.getElementById('i18n'), {
-        options: many(30),
-        minInputLength: 2,
-        placeholder: '輸入以搜尋…',
-        messages: {
-          loading: '載入中…',
-          noResults: '查無資料',
-          minInputLength: (n) => `再輸入 ${n} 個字`,
-        },
-      }).controller.on('change', show)
-
-      // 7b0. restoreOnBackspace：退格刪 tag 並回填文字
-      createSelkitDom(document.getElementById('restore'), {
-        options: fruits,
-        multiple: true,
         taggable: true,
         createTag: (q) => ({ value: q.toLowerCase(), label: q }),
-        restoreOnBackspace: true,
-        placeholder: 'Pick, then backspace…',
-      }).controller.on('change', show)
-
-      // 7b1. checkbox 多選：選項打勾 點擊 toggle
-      createSelkitDom(document.getElementById('checkboxes'), {
-        options: fruits,
-        multiple: true,
-        checkboxes: true,
-        placeholder: 'Tick fruits…',
-      }).controller.on('change', show)
-
-      // 7b2. tokenSeparators：逗號／空白自動切 tag
-      createSelkitDom(document.getElementById('tokens'), {
-        options: fruits,
-        multiple: true,
-        taggable: true,
-        createTag: (q) => ({ value: q.toLowerCase(), label: q }),
-        tokenSeparators: [',', ' '],
-        placeholder: 'Type or paste a,b,c…',
-      }).controller.on('change', show)
-
-      // 7b3. 可見建立列：taggable 時清單顯示可點的「建立 …」列
-      createSelkitDom(document.getElementById('create-row'), {
-        options: fruits,
-        multiple: true,
-        taggable: true,
-        createTag: (q) => ({ value: q.toLowerCase(), label: q }),
-        messages: { create: (q) => `建立「${q}」` },
-        placeholder: 'Type a new fruit…',
-      }).controller.on('change', show)
-
-      // 7c0. templateOption：下拉選項加 icon（回傳 Node），已選顯示 ✓
-      createSelkitDom(document.getElementById('tpl-option'), {
-        options: fruits,
-        placeholder: 'Pick a fruit…',
-        templateOption: (opt, { selected }) => {
-          const span = document.createElement('span')
-          span.textContent = `${selected ? '✓ ' : '🍎 '}${opt.label}`
-          return span
-        },
-      }).controller.on('change', show)
-
-      // 7c. templateSelection：已選顯示加 icon（回傳 Node）
-      createSelkitDom(document.getElementById('tpl-selection'), {
-        options: fruits,
-        multiple: true,
-        placeholder: 'Pick fruits…',
-        templateSelection: (opt) => {
-          const span = document.createElement('span')
-          span.textContent = `🔖 ${opt.label}`
-          return span
-        },
-      }).controller.on('change', show)
-
-      // 7d. 可換元件：替換結構性零件的內容（外殼與行為保留）
-      createSelkitDom(document.getElementById('swappable'), {
-        options: grouped,
-        multiple: true,
-        placeholder: 'Swappable parts…',
-        templateArrow: ({ open }) => (open ? '▾' : '▸'),
-        templateClear: () => '🧹',
-        templateTagRemove: () => '✖',
-        templateGroup: ({ label }) => `— ${label} —`,
-        templateEmpty: ({ reason, message }) =>
-          reason === 'no-results' ? '🤷 找不到符合的項目' : message,
-      }).controller.on('change', show)
-
-      // 8. minResultsForSearch：選項少於 10 個時隱藏搜尋框
-      createSelkitDom(document.getElementById('few'), {
-        options: fruits,
-        minResultsForSearch: 10,
-        placeholder: 'No search box…',
-      }).controller.on('change', show)
-
-      // 9. hideSelected + tag 拖曳排序
-      createSelkitDom(document.getElementById('hide-reorder'), {
-        options: fruits,
-        multiple: true,
-        hideSelected: true,
-        placeholder: 'Pick & drag tags…',
-      }).controller.on('change', show)
-
-      // 10. 無限捲動：loadOptions 收 page 回傳 { items, hasMore }
-      const infinite = createSelkitDom(document.getElementById('infinite'), {
-        loadOptions: async (query, page) => {
-          const size = 20
-          const start = (page - 1) * size
-          const items = Array.from({ length: size }, (_, i) => {
-            const n = start + i + 1
-            return { value: n, label: `${query || 'Item'} #${n}` }
-          })
-          return { items, hasMore: page < 5 }
-        },
-        placeholder: 'Scroll to load more…',
+        placeholder: 'Pick or type…',
       })
-      infinite.controller.on('change', show)
-      infinite.controller.setQuery('') // 先載入第一頁
 
-      // 11. 虛擬捲動：1000 筆只渲染可視切片
+      createSelkitDom(document.getElementById('async'), {
+        loadOptions: async (query, page) => {
+          await new Promise((r) => setTimeout(r, 200))
+          const filtered = db.filter((o) => o.label.includes(query))
+          return {
+            items: filtered.slice((page - 1) * 20, page * 20),
+            hasMore: filtered.length > page * 20,
+          }
+        },
+        debounce: 250,
+        placeholder: 'Search…',
+      })
+
       createSelkitDom(document.getElementById('virtual'), {
-        options: many(1000),
+        options: many(2000),
         virtualScroll: true,
         itemHeight: 36,
-        placeholder: '1000 options…',
-      }).controller.on('change', show)
-
-      // 11b. 虛擬捲動 + 分組：header 與 option 列高不同
-      const groupedMany = Array.from({ length: 10 }, (_, g) => ({
-        label: `Group ${g + 1}`,
-        options: Array.from({ length: 100 }, (_, i) => ({
-          value: `g${g}-${i}`,
-          label: `Group ${g + 1} · Item ${i}`,
-        })),
-      }))
-      createSelkitDom(document.getElementById('virtual-grouped'), {
-        options: groupedMany,
-        virtualScroll: true,
-        itemHeight: 36,
-        groupHeight: 28,
-        placeholder: '10 groups × 100…',
-      }).controller.on('change', show)
-
-      // 12. RTL：容器 dir="rtl" 即自動適配
-      createSelkitDom(document.getElementById('rtl'), {
-        options: fruits,
-        multiple: true,
-        placeholder: 'اختر…',
-      }).controller.on('change', show)
+        placeholder: '2000 options…',
+      })
     </script>
   </body>
 </html>
