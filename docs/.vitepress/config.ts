@@ -33,6 +33,10 @@ const sidebarEn = [
       { text: 'State & Events', link: '/api/events' },
     ],
   },
+  {
+    text: 'Examples',
+    items: [{ text: 'All examples', link: '/examples' }],
+  },
 ]
 
 // 繁中 sidebar zh locale 連結加上 /zh/ 前綴
@@ -68,6 +72,10 @@ const sidebarZh = [
       { text: 'State 與 Events', link: '/zh/api/events' },
     ],
   },
+  {
+    text: '範例',
+    items: [{ text: '全部範例', link: '/zh/examples' }],
+  },
 ]
 
 // Selkit 文件站雙語 root 為英文 zh 子路徑為繁體中文
@@ -90,6 +98,7 @@ export default defineConfig({
         nav: [
           { text: 'Guide', link: '/guide/getting-started' },
           { text: 'Features', link: '/features/searching' },
+          { text: 'Examples', link: '/examples' },
           { text: 'API', link: '/api/config' },
         ],
         sidebar: sidebarEn,
@@ -106,6 +115,7 @@ export default defineConfig({
         nav: [
           { text: '指南', link: '/zh/guide/getting-started' },
           { text: '功能', link: '/zh/features/searching' },
+          { text: '範例', link: '/zh/examples' },
           { text: 'API', link: '/zh/api/config' },
         ],
         sidebar: sidebarZh,

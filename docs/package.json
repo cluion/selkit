@@ -9,6 +9,8 @@
     "docs:preview": "vitepress preview"
   },
   "devDependencies": {
+    "@selkit/themes": "workspace:*",
+    "@selkit/vue": "workspace:*",
     "vitepress": "^1.6.3"
   }
 }
