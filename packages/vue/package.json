@@ -31,6 +31,7 @@
     "@selkit/core": "workspace:*"
   },
   "devDependencies": {
+    "@vue/server-renderer": "3.5.35",
     "@vue/test-utils": "^2.4.0",
     "axe-core": "^4.12.1",
     "jsdom": "^24.1.0",

@@ -1,10 +1,11 @@
+'use client'
 /**
  * @selkit/react — SelkitSelect 元件
  *
  * 用 React 渲染 行為全部委派給 @selkit/core controller
  * 支援受控 value + onChange 多選 搜尋 分組 與 renderOption 自訂選項
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type {
   ChangeEvent,
@@ -247,11 +248,19 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   const dragFromRef = useRef(-1)
   const [scrollTop, setScrollTop] = useState(0)
   const [portalPos, setPortalPos] = useState({ top: 0, left: 0, width: 0 })
-  const portalTarget = useMemo<HTMLElement | null>(() => {
-    if (!dropdownParent) return null
-    return typeof dropdownParent === 'string'
-      ? document.querySelector<HTMLElement>(dropdownParent)
-      : dropdownParent
+  // portal target 只在 client 解析（SSR 時 document 不存在）→ client-only portal：
+  // render 期不碰 document，mount 後 useEffect 補上，開啟下拉時已就緒
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    if (!dropdownParent) {
+      setPortalTarget(null)
+      return
+    }
+    setPortalTarget(
+      typeof dropdownParent === 'string'
+        ? document.querySelector<HTMLElement>(dropdownParent)
+        : dropdownParent,
+    )
   }, [dropdownParent])
   const syncingRef = useRef(false)
   const onChangeRef = useRef(onChange)
