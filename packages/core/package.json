@@ -1,6 +1,6 @@
 {
   "name": "@selkit/core",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Headless state machine for Selkit — framework-agnostic select logic.",
   "license": "MIT",
   "type": "module",
