@@ -101,7 +101,9 @@ export const SelkitSelect = defineComponent({
     minInputLength: { type: Number, default: undefined },
     hideSelected: { type: Boolean, default: false },
     virtualScroll: { type: Boolean, default: false },
-    itemHeight: { type: Number, default: 36 },
+    itemHeight: { type: Number, default: 38 },
+    /** 下拉選項列間 gap px 預設 4 */
+    optionGap: { type: Number, default: 4 },
     /** 虛擬捲動下分組標題列的固定高度 px 預設 28 須與實際樣式高度一致 */
     groupHeight: { type: Number, default: 28 },
     dropdownParent: {
@@ -340,6 +342,7 @@ export const SelkitSelect = defineComponent({
             scrollTop: dropdown.scrollTop,
             viewportHeight: dropdown.clientHeight,
             itemHeight: props.itemHeight,
+            gap: props.optionGap,
           })
           if (next !== null) {
             dropdown.scrollTop = next
@@ -358,6 +361,7 @@ export const SelkitSelect = defineComponent({
             rowIndex,
             scrollTop: dropdown.scrollTop,
             viewportHeight: dropdown.clientHeight,
+            gap: props.optionGap,
           })
           if (next !== null) {
             dropdown.scrollTop = next
@@ -734,12 +738,14 @@ export const SelkitSelect = defineComponent({
               heights: rowHeights(view.rows),
               scrollTop: scrollTop.value,
               viewportHeight,
+              gap: props.optionGap,
             })
           : computeVirtualRange({
               scrollTop: scrollTop.value,
               viewportHeight,
               itemHeight: props.itemHeight,
               itemCount: view.rows.length,
+              gap: props.optionGap,
             })
         dropdownChildren.push(spacer('vtop', range.paddingTop))
         for (let i = range.startIndex; i < range.endIndex; i++) {
@@ -772,28 +778,31 @@ export const SelkitSelect = defineComponent({
           role: 'listbox',
           ...(props.multiple ? { 'aria-multiselectable': 'true' } : {}),
           // 提供 positioner 時不綁定任何位置樣式 完全交給它命令式接管
-          style: props.positioner
-            ? undefined
-            : portaled
-              ? {
-                  position: 'fixed',
-                  top: `${dropdownPos.value.top}px`,
-                  left: `${dropdownPos.value.left}px`,
-                  ...(props.dropdownAutoWidth
-                    ? {
-                        minWidth: `${dropdownPos.value.width}px`,
-                        width: 'max-content',
-                      }
-                    : { width: `${dropdownPos.value.width}px` }),
-                }
-              : {
-                  position: 'absolute',
-                  top: 'calc(100% + 4px)',
-                  left: '0',
-                  ...(props.dropdownAutoWidth
-                    ? { minWidth: '100%', width: 'max-content' }
-                    : { width: '100%' }),
-                },
+          style: {
+            '--selkit-option-gap': `${props.optionGap}px`,
+            ...(props.positioner
+              ? {}
+              : portaled
+                ? {
+                    position: 'fixed',
+                    top: `${dropdownPos.value.top}px`,
+                    left: `${dropdownPos.value.left}px`,
+                    ...(props.dropdownAutoWidth
+                      ? {
+                          minWidth: `${dropdownPos.value.width}px`,
+                          width: 'max-content',
+                        }
+                      : { width: `${dropdownPos.value.width}px` }),
+                  }
+                : {
+                    position: 'absolute',
+                    top: 'calc(100% + 4px)',
+                    left: '0',
+                    ...(props.dropdownAutoWidth
+                      ? { minWidth: '100%', width: 'max-content' }
+                      : { width: '100%' }),
+                  }),
+          },
           onPointerdown: (e: Event) => e.stopPropagation(),
           onScroll: (e: Event) => {
             const el = e.currentTarget as HTMLElement

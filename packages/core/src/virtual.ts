@@ -1,8 +1,9 @@
 /**
  * @selkit/core — 虛擬捲動的可視範圍計算
  *
- * 純函式不碰 DOM 給定捲動位置與固定列高算出該渲染的切片與上下佔位高度
+ * 純函式不碰 DOM 給定捲動位置算出該渲染的切片與上下佔位高度
  * 各 adapter 量好 scrollTop/viewportHeight 後共用此邏輯 行為三框架一致
+ * gap 為列間間距 計入位置與佔位（dropdown 的 flex gap 須與此一致）
  */
 
 export interface VirtualRange {
@@ -27,15 +28,19 @@ export interface VirtualRangeInput {
   itemCount: number
   /** 可視範圍前後額外緩衝列數 預設 4 */
   overscan?: number
+  /** 列間 gap px 預設 0 */
+  gap?: number
 }
 
 /** 依捲動位置與固定列高算出虛擬捲動的可視切片與上下佔位 */
 export function computeVirtualRange(input: VirtualRangeInput): VirtualRange {
   const { scrollTop, viewportHeight, itemHeight, itemCount } = input
   const overscan = input.overscan ?? 4
+  const gap = input.gap ?? 0
+  const stride = itemHeight + gap
 
-  // 無列或列高非正值時不虛擬化 直接回傳完整範圍
-  if (itemHeight <= 0 || itemCount <= 0) {
+  // stride 非正（gap 過負）時不虛擬化 直接回傳完整範圍
+  if (stride <= 0 || itemCount <= 0) {
     return {
       startIndex: 0,
       endIndex: itemCount > 0 ? itemCount : 0,
@@ -44,21 +49,21 @@ export function computeVirtualRange(input: VirtualRangeInput): VirtualRange {
     }
   }
 
-  const first = Math.floor(scrollTop / itemHeight)
-  const visible = Math.ceil(viewportHeight / itemHeight)
+  const first = Math.floor(scrollTop / stride)
+  const visible = Math.ceil(viewportHeight / stride)
   const startIndex = Math.max(0, first - overscan)
   const endIndex = Math.min(itemCount, first + visible + overscan)
 
   return {
     startIndex,
     endIndex,
-    paddingTop: startIndex * itemHeight,
-    paddingBottom: (itemCount - endIndex) * itemHeight,
+    paddingTop: startIndex * stride,
+    paddingBottom: (itemCount - endIndex) * stride,
   }
 }
 
 export interface ScrollIntoViewInput {
-  /** 要捲入可視的列索引（固定列高下 offset = index × itemHeight） */
+  /** 要捲入可視的列索引（固定列高下 offset = index × stride） */
   index: number
   /** 捲動容器目前的 scrollTop */
   scrollTop: number
@@ -66,6 +71,8 @@ export interface ScrollIntoViewInput {
   viewportHeight: number
   /** 單列固定高度 */
   itemHeight: number
+  /** 列間 gap px 預設 0 */
+  gap?: number
 }
 
 /**
@@ -89,12 +96,13 @@ function nearestScroll(
 
 /**
  * 算出讓第 index 列剛好可見所需的 scrollTop（block: 'nearest' 語意 最小移動）
- * 均高用：offset = index × itemHeight。供扁平虛擬捲動「作用中選項捲入視窗」使用
+ * 均高用：offset = index × stride。供扁平虛擬捲動「作用中選項捲入視窗」使用
  */
 export function computeScrollIntoView(input: ScrollIntoViewInput): number | null {
   const { index, scrollTop, viewportHeight, itemHeight } = input
+  const gap = input.gap ?? 0
   if (itemHeight <= 0 || index < 0) return null
-  return nearestScroll(index * itemHeight, itemHeight, scrollTop, viewportHeight)
+  return nearestScroll(index * (itemHeight + gap), itemHeight, scrollTop, viewportHeight)
 }
 
 export interface VirtualWindowInput {
@@ -106,14 +114,16 @@ export interface VirtualWindowInput {
   viewportHeight: number
   /** 可視範圍前後額外緩衝列數 預設 4 */
   overscan?: number
+  /** 列間 gap px 預設 0 */
+  gap?: number
 }
 
-/** heights 的前綴和：offsets[i] = 第 i 列頂端 y；offsets[n] = 總高 */
-function prefixOffsets(heights: number[]): number[] {
+/** heights 的前綴和：offsets[i] = 第 i 列頂端 y（含前面列的 gap）；offsets[n] = 總高 */
+function prefixOffsets(heights: number[], gap: number): number[] {
   const offsets = new Array<number>(heights.length + 1)
   offsets[0] = 0
   for (let i = 0; i < heights.length; i++) {
-    offsets[i + 1] = offsets[i]! + Math.max(0, heights[i] ?? 0)
+    offsets[i + 1] = offsets[i]! + Math.max(0, heights[i] ?? 0) + gap
   }
   return offsets
 }
@@ -125,12 +135,13 @@ function prefixOffsets(heights: number[]): number[] {
 export function computeVirtualWindow(input: VirtualWindowInput): VirtualRange {
   const { heights, scrollTop, viewportHeight } = input
   const overscan = input.overscan ?? 4
+  const gap = input.gap ?? 0
   const itemCount = heights.length
   if (itemCount === 0) {
     return { startIndex: 0, endIndex: 0, paddingTop: 0, paddingBottom: 0 }
   }
 
-  const offsets = prefixOffsets(heights)
+  const offsets = prefixOffsets(heights, gap)
   const total = offsets[itemCount]!
 
   // 第一個底端 > scrollTop 的列（可視頂端所在）
@@ -161,6 +172,8 @@ export interface ScrollIntoViewVariableInput {
   scrollTop: number
   /** 捲動容器可視高度 */
   viewportHeight: number
+  /** 列間 gap px 預設 0 */
+  gap?: number
 }
 
 /**
@@ -171,9 +184,10 @@ export function computeScrollIntoViewVariable(
   input: ScrollIntoViewVariableInput,
 ): number | null {
   const { heights, rowIndex, scrollTop, viewportHeight } = input
+  const gap = input.gap ?? 0
   if (rowIndex < 0 || rowIndex >= heights.length) return null
   let itemTop = 0
-  for (let i = 0; i < rowIndex; i++) itemTop += Math.max(0, heights[i] ?? 0)
+  for (let i = 0; i < rowIndex; i++) itemTop += Math.max(0, heights[i] ?? 0) + gap
   return nearestScroll(
     itemTop,
     Math.max(0, heights[rowIndex] ?? 0),

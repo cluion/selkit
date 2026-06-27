@@ -208,6 +208,9 @@
   z-index: 50;
   max-height: 260px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--selkit-option-gap, 4px);
   background: var(--selkit-bg);
   border: 1px solid var(--selkit-border);
   border-radius: var(--selkit-radius);
@@ -252,7 +255,7 @@
 }
 
 .selkit__option {
-  padding: 7px 10px;
+  padding: 9px 10px;
   border-radius: 4px;
   cursor: pointer;
   user-select: none;

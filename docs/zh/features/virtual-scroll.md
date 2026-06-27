@@ -12,21 +12,21 @@
 createSelkitDom('#big', {
   options: thousandsOfOptions,
   virtualScroll: true,
-  itemHeight: 36, // px，須與實際渲染列高一致
+  itemHeight: 38, // px，須與實際渲染列高一致
 })
 ```
 
 ```vue [Vue]
-<SelkitSelect :options="thousandsOfOptions" virtual-scroll :item-height="36" />
+<SelkitSelect :options="thousandsOfOptions" virtual-scroll :item-height="38" />
 ```
 
 ```jsx [React]
-<SelkitSelect options={thousandsOfOptions} virtualScroll itemHeight={36} />
+<SelkitSelect options={thousandsOfOptions} virtualScroll itemHeight={38} />
 ```
 
 :::
 
-`itemHeight` 預設 `36`，對齊 base theme 的選項高度。請依你的主題實際渲染高度設定。
+`itemHeight` 預設 `38`，對齊 base theme 的選項高度。請依你的主題實際渲染高度設定。
 
 ## 分組清單
 
@@ -39,17 +39,17 @@ createSelkitDom('#big', {
 createSelkitDom('#big', {
   options: groupedOptions,
   virtualScroll: true,
-  itemHeight: 36,  // option 列高
+  itemHeight: 38,  // option 列高
   groupHeight: 28, // group 標題列高
 })
 ```
 
 ```vue [Vue]
-<SelkitSelect :options="groupedOptions" virtual-scroll :item-height="36" :group-height="28" />
+<SelkitSelect :options="groupedOptions" virtual-scroll :item-height="38" :group-height="28" />
 ```
 
 ```jsx [React]
-<SelkitSelect options={groupedOptions} virtualScroll itemHeight={36} groupHeight={28} />
+<SelkitSelect options={groupedOptions} virtualScroll itemHeight={38} groupHeight={28} />
 ```
 
 :::
@@ -71,7 +71,7 @@ import { computeVirtualRange } from '@selkit/core'
 computeVirtualRange({
   scrollTop: 400,
   viewportHeight: 260,
-  itemHeight: 36,
+  itemHeight: 38,
   itemCount: 1000,
   overscan: 4, // 選用的緩衝列數，預設 4
 })
@@ -85,7 +85,7 @@ computeVirtualRange({
 import { computeVirtualWindow } from '@selkit/core'
 
 computeVirtualWindow({
-  heights: [28, 36, 36, 28, 36], // group, opt, opt, group, opt
+  heights: [28, 38, 38, 28, 38], // group, opt, opt, group, opt
   scrollTop: 100,
   viewportHeight: 260,
   overscan: 4,

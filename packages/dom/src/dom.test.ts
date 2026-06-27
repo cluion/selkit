@@ -480,6 +480,7 @@ describe('作用中選項捲入視窗 scrollIntoView', () => {
       options: many,
       virtualScroll: true,
       itemHeight: 20,
+      optionGap: 0,
     })
     const dropdown = $(inst.element, '.selkit__dropdown')
     // jsdom 無 layout 會夾 scrollTop 且 clientHeight=0；自行接管以觀察計算結果
@@ -868,6 +869,7 @@ describe('虛擬捲動 virtualScroll', () => {
       virtualScroll: true,
       itemHeight: 36,
       groupHeight: 28,
+      optionGap: 0,
     })
     inst.controller.open()
     const opts = $$(inst.element, '.selkit__option')
@@ -882,6 +884,7 @@ describe('虛擬捲動 virtualScroll', () => {
       virtualScroll: true,
       itemHeight: 36,
       groupHeight: 28,
+      optionGap: 0,
     })
     const dropdown = $(inst.element, '.selkit__dropdown')
     let scrollTop = 0

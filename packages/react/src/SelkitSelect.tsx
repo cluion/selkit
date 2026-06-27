@@ -109,6 +109,8 @@ export interface SelkitSelectProps<T = unknown> {
   hideSelected?: boolean
   virtualScroll?: boolean
   itemHeight?: number
+  /** 下拉選項列間 gap px 預設 4 */
+  optionGap?: number
   /** 虛擬捲動下分組標題列的固定高度 px 預設 28 須與實際樣式高度一致 */
   groupHeight?: number
   dropdownParent?: string | HTMLElement
@@ -190,7 +192,8 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     minInputLength,
     hideSelected = false,
     virtualScroll = false,
-    itemHeight = 36,
+    itemHeight = 38,
+    optionGap = 4,
     groupHeight = 28,
     dropdownParent,
     positioner,
@@ -403,6 +406,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         scrollTop: dropdown.scrollTop,
         viewportHeight: dropdown.clientHeight,
         itemHeight,
+        gap: optionGap,
       })
       if (next !== null) {
         dropdown.scrollTop = next
@@ -419,6 +423,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         rowIndex,
         scrollTop: dropdown.scrollTop,
         viewportHeight: dropdown.clientHeight,
+        gap: optionGap,
       })
       if (next !== null) {
         dropdown.scrollTop = next
@@ -665,12 +670,14 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
           heights: rowHeights(view.rows),
           scrollTop,
           viewportHeight,
+          gap: optionGap,
         })
       : computeVirtualRange({
           scrollTop,
           viewportHeight,
           itemHeight,
           itemCount: view.rows.length,
+          gap: optionGap,
         })
     const slice: ReactNode[] = []
     for (let i = range.startIndex; i < range.endIndex; i++) {
@@ -700,26 +707,29 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         role="listbox"
         aria-multiselectable={multiple || undefined}
         style={
-          // 提供 positioner 時不綁定任何位置樣式 完全交給它命令式接管
-          positioner
-            ? undefined
-            : portalTarget
-              ? {
-                  position: 'fixed',
-                  top: portalPos.top,
-                  left: portalPos.left,
-                  ...(dropdownAutoWidth
-                    ? { minWidth: portalPos.width, width: 'max-content' }
-                    : { width: portalPos.width }),
-                }
-              : {
-                  position: 'absolute',
-                  top: 'calc(100% + 4px)',
-                  left: 0,
-                  ...(dropdownAutoWidth
-                    ? { minWidth: '100%', width: 'max-content' }
-                    : { width: '100%' }),
-                }
+          {
+            '--selkit-option-gap': `${optionGap}px`,
+            // 提供 positioner 時不綁定任何位置樣式 完全交給它命令式接管
+            ...(positioner
+              ? {}
+              : portalTarget
+                ? {
+                    position: 'fixed',
+                    top: portalPos.top,
+                    left: portalPos.left,
+                    ...(dropdownAutoWidth
+                      ? { minWidth: portalPos.width, width: 'max-content' }
+                      : { width: portalPos.width }),
+                  }
+                : {
+                    position: 'absolute',
+                    top: 'calc(100% + 4px)',
+                    left: 0,
+                    ...(dropdownAutoWidth
+                      ? { minWidth: '100%', width: 'max-content' }
+                      : { width: '100%' }),
+                  }),
+          } as unknown as CSSProperties
         }
         onPointerDown={(e) => e.stopPropagation()}
         onScroll={(e) => {

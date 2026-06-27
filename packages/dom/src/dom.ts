@@ -50,7 +50,7 @@ import {
 /** 捲動距底多少 px 內即預載下一頁 */
 const LOAD_MORE_THRESHOLD = 32
 /** 虛擬捲動的預設單列高度 px 對齊 base theme 的選項高度 */
-const DEFAULT_ITEM_HEIGHT = 36
+const DEFAULT_ITEM_HEIGHT = 38
 /** 虛擬捲動的預設分組標題列高度 px 對齊 base theme 的 group header */
 const DEFAULT_GROUP_HEIGHT = 28
 /** sr-only：視覺隱藏但螢幕報讀可讀 內聯以免未載入主題時外露 */
@@ -93,6 +93,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #virtual: boolean
   readonly #itemHeight: number
   readonly #groupHeight: number
+  readonly #optionGap: number
   readonly #dropdownParent: HTMLElement | null
   readonly #positionerFactory: PositionerFactory
   readonly #templateSelection:
@@ -160,6 +161,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#virtual = cfg.virtualScroll ?? false
     this.#itemHeight = cfg.itemHeight ?? DEFAULT_ITEM_HEIGHT
     this.#groupHeight = cfg.groupHeight ?? DEFAULT_GROUP_HEIGHT
+    this.#optionGap = cfg.optionGap ?? 4
     this.#dropdownParent = resolveParent(cfg.dropdownParent)
     this.#positionerFactory = cfg.positioner ?? builtinPositioner
     this.#templateSelection = cfg.templateSelection
@@ -202,6 +204,10 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#indicators.className = this.#cls('indicators')
 
     this.#dropdown = document.createElement('div')
+    this.#dropdown.style.setProperty(
+      '--selkit-option-gap',
+      `${this.#optionGap}px`,
+    )
     this.#dropdown.className = this.#cls('dropdown')
     this.#dropdown.hidden = true
 
@@ -486,6 +492,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         scrollTop: this.#dropdown.scrollTop,
         viewportHeight: this.#dropdown.clientHeight,
         itemHeight: this.#itemHeight,
+        gap: this.#optionGap,
       })
       if (next !== null) {
         this.#dropdown.scrollTop = next
@@ -503,6 +510,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         rowIndex,
         scrollTop: this.#dropdown.scrollTop,
         viewportHeight: this.#dropdown.clientHeight,
+        gap: this.#optionGap,
       })
       if (next !== null) {
         this.#dropdown.scrollTop = next
@@ -695,6 +703,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         viewportHeight: this.#dropdown.clientHeight,
         itemHeight: this.#itemHeight,
         itemCount: view.rows.length,
+        gap: this.#optionGap,
       })
       this.#renderVirtualSlice(view.rows, range, a11y, s.activeIndex)
       return
@@ -705,6 +714,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         heights: this.#rowHeights(view.rows),
         scrollTop: this.#dropdown.scrollTop,
         viewportHeight: this.#dropdown.clientHeight,
+        gap: this.#optionGap,
       })
       this.#renderVirtualSlice(view.rows, win, a11y, s.activeIndex)
       return

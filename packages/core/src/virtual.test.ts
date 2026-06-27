@@ -7,6 +7,21 @@ import {
 } from './virtual'
 
 describe('computeVirtualRange', () => {
+  it('gap 計入位置與佔位（stride = itemHeight + gap）', () => {
+    const r = computeVirtualRange({
+      scrollTop: 100,
+      viewportHeight: 200,
+      itemHeight: 36,
+      itemCount: 50,
+      gap: 4,
+    })
+    // stride = 40；first = 2；visible = 5；start = 0；end = 11
+    expect(r.startIndex).toBe(0)
+    expect(r.endIndex).toBe(11)
+    expect(r.paddingTop).toBe(0)
+    expect(r.paddingBottom).toBe((50 - 11) * 40)
+  })
+
   it('頂端起始 endIndex 含 overscan 下緩衝', () => {
     const r = computeVirtualRange({
       scrollTop: 0,

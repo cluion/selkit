@@ -96,6 +96,8 @@ export interface SelkitConfig<T = unknown> {
   clearConfirm?: boolean
   /** clearConfirm 待確認時按鈕顯示的文字（同時作為 aria-label）預設 "Confirm"  */
   clearConfirmText?: string
+  /** 下拉選項列間 gap px 預設 4（adapter 用；同時計入虛擬捲動位置計算）  */
+  optionGap?: number
   /** 是否停用 預設 false  */
   disabled?: boolean
   placeholder?: string
