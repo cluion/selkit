@@ -1,6 +1,6 @@
 {
   "name": "@selkit/react",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "React adapter for Selkit — useSyncExternalStore over @selkit/core.",
   "license": "MIT",
   "type": "module",
