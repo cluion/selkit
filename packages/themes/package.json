@@ -1,6 +1,6 @@
 {
   "name": "@selkit/themes",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "description": "Themes for Selkit — base and Bootstrap 5 styles (CSS variable driven).",
   "license": "MIT",
   "files": [

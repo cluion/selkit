@@ -1,5 +1,16 @@
 # @selkit/vue
 
+## 0.11.0
+
+### Minor Changes
+
+- e81a599: 多選摺疊：`maxSelectedDisplay` 超過上限時顯示前 N 個 tag + 「+M」標記，點擊展開全部、再點收合。三框架一致（adapter 本地展開狀態）。themes 新增 `.selkit__more`；field gap 4→8px 讓多選 tag 不黏。
+
+### Patch Changes
+
+- Updated dependencies [e81a599]
+  - @selkit/core@0.11.0
+
 ## 0.10.1
 
 ### Patch Changes
