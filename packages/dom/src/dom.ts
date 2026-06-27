@@ -82,6 +82,8 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #autogrow: boolean
   readonly #dropdownAutoWidth: boolean
   readonly #clearable: boolean
+  readonly #maxSelectedDisplay: number | undefined
+  #tagsExpanded = false
   readonly #placeholder: string
   readonly #name: string | undefined
   readonly #virtual: boolean
@@ -146,6 +148,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#autogrow = cfg.autogrow ?? false
     this.#dropdownAutoWidth = cfg.dropdownAutoWidth ?? false
     this.#clearable = cfg.clearable ?? !this.#multiple
+    this.#maxSelectedDisplay = cfg.maxSelectedDisplay
     this.#placeholder = cfg.placeholder ?? ''
     this.#name = cfg.name
     this.#virtual = cfg.virtualScroll ?? false
@@ -300,6 +303,12 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       if (target.closest(`.${this.#cls('clear')}`)) {
         e.preventDefault()
         this.controller.clear()
+        return
+      }
+      if (target.closest(`.${this.#cls('more')}`)) {
+        e.preventDefault()
+        this.#tagsExpanded = !this.#tagsExpanded
+        this.#renderField(this.controller.getState())
         return
       }
       const tagRemove = target.closest(
@@ -521,7 +530,11 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
 
     const frag = document.createDocumentFragment()
     if (this.#multiple) {
-      s.selected.forEach((opt, i) => {
+      const max = this.#maxSelectedDisplay
+      const over = max !== undefined && s.selected.length > max
+      const list =
+        !over || this.#tagsExpanded ? s.selected : s.selected.slice(0, max)
+      list.forEach((opt, i) => {
         const tag = document.createElement('span')
         tag.className = this.#cls('tag')
         tag.draggable = true
@@ -545,6 +558,18 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         tag.append(label, remove)
         frag.append(tag)
       })
+      if (over) {
+        const rest = s.selected.length - max
+        const more = document.createElement('button')
+        more.type = 'button'
+        more.className = this.#cls('more')
+        more.textContent = this.#tagsExpanded ? `-${rest}` : `+${rest}`
+        more.setAttribute(
+          'aria-label',
+          this.#tagsExpanded ? 'Collapse' : `${rest} more selected`,
+        )
+        frag.append(more)
+      }
     } else {
       const sel = s.selected[0]
       if (sel && this.#input.value === '') {

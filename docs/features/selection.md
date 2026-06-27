@@ -45,6 +45,21 @@ createSelkit({ options, multiple: true, maxSelections: 3 })
 
 Once the cap is reached, further `select` calls are ignored.
 
+## Collapsing tags
+
+When a multi-select holds many items, the row of tags can overflow the control.
+`maxSelectedDisplay` keeps only the first N tags visible and collapses the rest
+into a `+M` pill; click it to expand and show them all, click again (`-M`) to
+collapse:
+
+```js
+createSelkit({ options, multiple: true, maxSelectedDisplay: 5 })
+```
+
+Unset (the default) shows every tag. It's multiple-only and a pure display
+concern — the selected set itself is unaffected, so `value` still holds every
+chosen item.
+
 ## Hide selected
 
 With `hideSelected`, chosen options are removed from the dropdown list — common

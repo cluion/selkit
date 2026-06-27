@@ -42,6 +42,18 @@ createSelkit({ options, multiple: true, maxSelections: 3 })
 
 達到上限後，後續的 `select` 呼叫會被忽略。
 
+## 摺疊 tag
+
+多選項目很多時，一整排 tag 會撐爆控制項。`maxSelectedDisplay` 只顯示前 N 個 tag，
+其餘摺疊成 `+M` 標記；點擊展開全部、再點（`-M`）收合：
+
+```js
+createSelkit({ options, multiple: true, maxSelectedDisplay: 5 })
+```
+
+未設（預設）時顯示全部 tag。僅多選生效，且純粹是顯示層 — 已選集合本身不受影響，
+`value` 仍持有所有已選項。
+
 ## 隱藏已選
 
 開啟 `hideSelected` 後，已選項會從下拉清單移除 — 多選 UI 常見做法。已選的值會被過濾出

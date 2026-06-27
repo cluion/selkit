@@ -152,6 +152,8 @@ export interface SelkitConfig<T = unknown> {
 
   /** 多選上限 超過則無法再選  */
   maxSelections?: number
+  /** 多選顯示上限 超過則其餘摺疊成 +M 標記 點擊展開 未設則全顯示  */
+  maxSelectedDisplay?: number
 
   /** 空狀態訊息覆寫（i18n） 未提供的鍵維持英文預設  */
   messages?: Partial<SelkitMessages>

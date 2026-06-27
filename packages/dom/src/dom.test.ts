@@ -74,6 +74,49 @@ describe('多實例互斥', () => {
   })
 })
 
+const COLLAPSE_OPTS: SelkitItem[] = [
+  { value: 1, label: 'One' },
+  { value: 2, label: 'Two' },
+  { value: 3, label: 'Three' },
+  { value: 4, label: 'Four' },
+]
+
+describe('多選摺疊', () => {
+  it('超過 maxSelectedDisplay 顯示前 N + +M', () => {
+    const inst = createSelkitDom(host, {
+      options: COLLAPSE_OPTS,
+      multiple: true,
+      value: [1, 2, 3, 4],
+      maxSelectedDisplay: 2,
+    })
+    expect($$(inst.element, '.selkit__tag')).toHaveLength(2)
+    expect($(inst.element, '.selkit__more').textContent).toBe('+2')
+  })
+
+  it('點 +M 展開全部 改顯示 -M', () => {
+    const inst = createSelkitDom(host, {
+      options: COLLAPSE_OPTS,
+      multiple: true,
+      value: [1, 2, 3, 4],
+      maxSelectedDisplay: 2,
+    })
+    pointerdown($(inst.element, '.selkit__more'))
+    expect($$(inst.element, '.selkit__tag')).toHaveLength(4)
+    expect($(inst.element, '.selkit__more').textContent).toBe('-2')
+  })
+
+  it('未達上限不摺疊', () => {
+    const inst = createSelkitDom(host, {
+      options: COLLAPSE_OPTS,
+      multiple: true,
+      value: [1, 2],
+      maxSelectedDisplay: 5,
+    })
+    expect($$(inst.element, '.selkit__tag')).toHaveLength(2)
+    expect(inst.element.querySelector('.selkit__more')).toBeNull()
+  })
+})
+
 describe('掛載結構', () => {
   it('建立 control 與隱藏的 dropdown', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })

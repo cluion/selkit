@@ -97,6 +97,8 @@ export interface SelkitSelectProps<T = unknown> {
   fuzzy?: boolean
   /** 搜尋時將命中片段以 <mark> 標示 預設 true */
   highlightMatches?: boolean
+  /** 多選顯示上限 超過則其餘摺疊成 +M 點擊展開 */
+  maxSelectedDisplay?: number
   /** 自訂結果排序（如相關度）僅扁平清單 */
   sorter?: SorterFn<T>
   minInputLength?: number
@@ -177,6 +179,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     minResultsForSearch,
     fuzzy = false,
     highlightMatches = true,
+    maxSelectedDisplay,
     sorter,
     minInputLength,
     hideSelected = false,
@@ -243,6 +246,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   })
 
   const [query, setQuery] = useState('')
+  const [tagsExpanded, setTagsExpanded] = useState(false)
   const [liveMessage, setLiveMessage] = useState('')
   const queryRef = useRef('')
   queryRef.current = query
@@ -421,6 +425,11 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     if (target.closest(`.${cls('clear')}`)) {
       e.preventDefault()
       controller.clear()
+      return
+    }
+    if (target.closest(`.${cls('more')}`)) {
+      e.preventDefault()
+      setTagsExpanded((v) => !v)
       return
     }
     const tagRemove = target.closest(
@@ -735,30 +744,50 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
             dragFromRef.current = -1
           }}
         >
-          {multiple ? (
-            s.selected.map((opt, i) => (
-              <span
-                className={cls('tag')}
-                key={`tag-${opt.value}`}
-                draggable
-                data-index={i}
-              >
-                <span className={cls('tag-label')}>
-                  {renderSelection
-                    ? renderSelection(opt, { index: i, multiple: true })
-                    : opt.label}
-                </span>
-                <button
-                  type="button"
-                  className={cls('tag-remove')}
-                  data-index={i}
-                  aria-label={`Remove ${opt.label}`}
-                >
-                  {renderTagRemove ? renderTagRemove(opt, { index: i }) : '×'}
-                </button>
-              </span>
-            ))
-          ) : single && query === '' ? (
+          {multiple ? (() => {
+            const max = maxSelectedDisplay
+            const over = max !== undefined && s.selected.length > max
+            const list =
+              !over || tagsExpanded ? s.selected : s.selected.slice(0, max!)
+            const rest = over ? s.selected.length - max! : 0
+            return (
+              <>
+                {list.map((opt, i) => (
+                  <span
+                    className={cls('tag')}
+                    key={`tag-${opt.value}`}
+                    draggable
+                    data-index={i}
+                  >
+                    <span className={cls('tag-label')}>
+                      {renderSelection
+                        ? renderSelection(opt, { index: i, multiple: true })
+                        : opt.label}
+                    </span>
+                    <button
+                      type="button"
+                      className={cls('tag-remove')}
+                      data-index={i}
+                      aria-label={`Remove ${opt.label}`}
+                    >
+                      {renderTagRemove ? renderTagRemove(opt, { index: i }) : '×'}
+                    </button>
+                  </span>
+                ))}
+                {over ? (
+                  <button
+                    type="button"
+                    className={cls('more')}
+                    aria-label={
+                      tagsExpanded ? 'Collapse' : `${rest} more selected`
+                    }
+                  >
+                    {tagsExpanded ? `-${rest}` : `+${rest}`}
+                  </button>
+                ) : null}
+              </>
+            )
+          })() : single && query === '' ? (
             <span className={cls('single-value')}>
               {renderSelection
                 ? renderSelection(single, { index: 0, multiple: false })

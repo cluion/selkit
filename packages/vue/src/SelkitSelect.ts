@@ -114,6 +114,8 @@ export const SelkitSelect = defineComponent({
       default: undefined,
     },
     clearable: { type: Boolean, default: undefined },
+    /** 多選顯示上限 超過則其餘摺疊成 +M 點擊展開 */
+    maxSelectedDisplay: { type: Number, default: undefined },
     disabled: { type: Boolean, default: false },
     classPrefix: { type: String, default: 'selkit' },
     loadOptions: {
@@ -188,6 +190,9 @@ export const SelkitSelect = defineComponent({
         ? { minResultsForSearch: props.minResultsForSearch }
         : {}),
       ...(props.clearable !== undefined ? { clearable: props.clearable } : {}),
+      ...(props.maxSelectedDisplay !== undefined
+        ? { maxSelectedDisplay: props.maxSelectedDisplay }
+        : {}),
       ...(props.loadOptions ? { loadOptions: props.loadOptions } : {}),
       ...(props.resolveSelected
         ? { resolveSelected: props.resolveSelected }
@@ -208,6 +213,7 @@ export const SelkitSelect = defineComponent({
     })
 
     const query = ref('')
+    const tagsExpanded = ref(false)
     const liveMessage = ref('')
     const rootRef = ref<HTMLElement | null>(null)
     const inputRef = ref<HTMLInputElement | null>(null)
@@ -386,6 +392,11 @@ export const SelkitSelect = defineComponent({
         controller.clear()
         return
       }
+      if (target.closest(`.${cls('more')}`)) {
+        e.preventDefault()
+        tagsExpanded.value = !tagsExpanded.value
+        return
+      }
       const tagRemove = target.closest(
         `.${cls('tag-remove')}`,
       ) as HTMLElement | null
@@ -465,7 +476,11 @@ export const SelkitSelect = defineComponent({
 
       const fieldChildren: VNode[] = []
       if (props.multiple) {
-        s.selected.forEach((opt, i) => {
+        const max = props.maxSelectedDisplay
+        const over = max !== undefined && s.selected.length > max
+        const list =
+          !over || tagsExpanded.value ? s.selected : s.selected.slice(0, max)
+        list.forEach((opt, i) => {
           fieldChildren.push(
             h(
               'span',
@@ -498,6 +513,22 @@ export const SelkitSelect = defineComponent({
             ]),
           )
         })
+        if (over) {
+          const rest = s.selected.length - max
+          fieldChildren.push(
+            h(
+              'button',
+              {
+                type: 'button',
+                class: cls('more'),
+                'aria-label': tagsExpanded.value
+                  ? 'Collapse'
+                  : `${rest} more selected`,
+              },
+              tagsExpanded.value ? `-${rest}` : `+${rest}`,
+            ),
+          )
+        }
       } else {
         const sel = s.selected[0]
         if (sel && query.value === '') {

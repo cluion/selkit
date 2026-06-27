@@ -65,7 +65,7 @@
   flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -110,6 +110,22 @@
   background: var(--selkit-tag-bg);
   border-radius: 4px;
   font-size: 0.875em;
+}
+
+/** 摺疊的 +M 標記（maxSelectedDisplay）*/
+.selkit__more {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--selkit-tag-bg);
+  color: var(--selkit-muted);
+  font-size: 0.8em;
+  cursor: pointer;
+}
+.selkit__more:hover {
+  color: var(--selkit-fg);
 }
 
 .selkit__tag-remove {

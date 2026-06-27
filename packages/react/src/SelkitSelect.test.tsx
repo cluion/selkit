@@ -61,6 +61,41 @@ describe('多實例互斥', () => {
   })
 })
 
+const COLLAPSE_OPTS: SelkitItem[] = [
+  { value: 1, label: 'One' },
+  { value: 2, label: 'Two' },
+  { value: 3, label: 'Three' },
+  { value: 4, label: 'Four' },
+]
+
+describe('多選摺疊', () => {
+  it('超過 maxSelectedDisplay 顯示前 N + +M', () => {
+    const { container } = render(
+      <SelkitSelect
+        options={COLLAPSE_OPTS}
+        multiple
+        value={[1, 2, 3, 4]}
+        maxSelectedDisplay={2}
+      />,
+    )
+    expect(container.querySelectorAll('.selkit__tag')).toHaveLength(2)
+    expect(container.querySelector('.selkit__more')?.textContent).toBe('+2')
+  })
+
+  it('點 +M 展開全部', () => {
+    const { container } = render(
+      <SelkitSelect
+        options={COLLAPSE_OPTS}
+        multiple
+        value={[1, 2, 3, 4]}
+        maxSelectedDisplay={2}
+      />,
+    )
+    fireEvent.pointerDown(container.querySelector('.selkit__more')!)
+    expect(container.querySelectorAll('.selkit__tag')).toHaveLength(4)
+  })
+})
+
 describe('SelkitSelect — 渲染', () => {
   it('初始渲染 control 且無 dropdown', () => {
     const { container } = render(<SelkitSelect options={OPTIONS} />)

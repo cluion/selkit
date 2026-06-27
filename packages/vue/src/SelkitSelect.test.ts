@@ -167,6 +167,42 @@ describe('多實例互斥', () => {
   })
 })
 
+const COLLAPSE_OPTS: SelkitItem[] = [
+  { value: 1, label: 'One' },
+  { value: 2, label: 'Two' },
+  { value: 3, label: 'Three' },
+  { value: 4, label: 'Four' },
+]
+
+describe('多選摺疊', () => {
+  it('超過 maxSelectedDisplay 顯示前 N + +M', () => {
+    const w = mount(SelkitSelect, {
+      props: {
+        options: COLLAPSE_OPTS,
+        multiple: true,
+        modelValue: [1, 2, 3, 4],
+        maxSelectedDisplay: 2,
+      },
+    })
+    expect(w.findAll('.selkit__tag')).toHaveLength(2)
+    expect(w.find('.selkit__more').text()).toBe('+2')
+  })
+
+  it('點 +M 展開全部 改顯示 -M', async () => {
+    const w = mount(SelkitSelect, {
+      props: {
+        options: COLLAPSE_OPTS,
+        multiple: true,
+        modelValue: [1, 2, 3, 4],
+        maxSelectedDisplay: 2,
+      },
+    })
+    await w.find('.selkit__more').trigger('pointerdown')
+    expect(w.findAll('.selkit__tag')).toHaveLength(4)
+    expect(w.find('.selkit__more').text()).toBe('-2')
+  })
+})
+
 describe('搜尋', () => {
   it('輸入過濾選項', async () => {
     const w = mount(SelkitSelect, { props: { options: OPTIONS } })
