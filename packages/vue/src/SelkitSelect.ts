@@ -368,8 +368,14 @@ export const SelkitSelect = defineComponent({
         rootRef.value?.contains(target) || dropdownRef.value?.contains(target)
       if (!inside) controller.close()
     }
-    onMounted(() => document.addEventListener('pointerdown', onDocPointer))
-    onUnmounted(() => document.removeEventListener('pointerdown', onDocPointer))
+    onMounted(() =>
+      document.addEventListener('pointerdown', onDocPointer, { capture: true }),
+    )
+    onUnmounted(() =>
+      document.removeEventListener('pointerdown', onDocPointer, {
+        capture: true,
+      }),
+    )
 
     expose({ controller })
 

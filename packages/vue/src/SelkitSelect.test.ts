@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { SelkitSelect } from './SelkitSelect'
 import type { SelkitItem, SelkitOption } from '@selkit/core'
 
@@ -138,6 +139,31 @@ describe('checkboxes 多選打勾', () => {
       props: { options: OPTIONS, checkboxes: true },
     })
     expect(w.find('.selkit').classes()).not.toContain('selkit--checkboxes')
+  })
+})
+
+describe('多實例互斥', () => {
+  it('開第二個時自動關閉第一個', async () => {
+    const a = mount(SelkitSelect, {
+      props: { options: OPTIONS },
+      attachTo: document.body,
+    })
+    const b = mount(SelkitSelect, {
+      props: { options: OPTIONS },
+      attachTo: document.body,
+    })
+    await nextTick()
+    a.find('.selkit__control').element.dispatchEvent(
+      new MouseEvent('pointerdown', { bubbles: true }),
+    )
+    await nextTick()
+    expect(a.find('.selkit__dropdown').exists()).toBe(true)
+    b.find('.selkit__control').element.dispatchEvent(
+      new MouseEvent('pointerdown', { bubbles: true }),
+    )
+    await nextTick()
+    expect(a.find('.selkit__dropdown').exists()).toBe(false)
+    expect(b.find('.selkit__dropdown').exists()).toBe(true)
   })
 })
 

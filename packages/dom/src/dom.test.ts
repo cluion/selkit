@@ -62,6 +62,18 @@ describe('搜尋命中高亮', () => {
   })
 })
 
+describe('多實例互斥', () => {
+  it('開第二個時自動關閉第一個', () => {
+    const a = createSelkitDom(host, { options: OPTIONS })
+    const b = createSelkitDom(host, { options: OPTIONS })
+    pointerdown($(a.element, '.selkit__control'))
+    expect(a.controller.getState().isOpen).toBe(true)
+    pointerdown($(b.element, '.selkit__control'))
+    expect(a.controller.getState().isOpen).toBe(false)
+    expect(b.controller.getState().isOpen).toBe(true)
+  })
+})
+
 describe('掛載結構', () => {
   it('建立 control 與隱藏的 dropdown', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })

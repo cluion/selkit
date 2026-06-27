@@ -338,8 +338,9 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         rootRef.current?.contains(target) || dropdownRef.current?.contains(target)
       if (!inside) controller.close()
     }
-    document.addEventListener('pointerdown', handler)
-    return () => document.removeEventListener('pointerdown', handler)
+    document.addEventListener('pointerdown', handler, { capture: true })
+    return () =>
+      document.removeEventListener('pointerdown', handler, { capture: true })
   }, [controller])
 
   // portal 模式下用 fixed 座標定位 量測 root rect 並隨 scroll/resize 更新

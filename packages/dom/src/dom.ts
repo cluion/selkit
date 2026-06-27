@@ -241,7 +241,9 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
         this.controller.close()
       }
     }
-    document.addEventListener('pointerdown', this.#onDocPointer)
+    document.addEventListener('pointerdown', this.#onDocPointer, {
+      capture: true,
+    })
 
     // 關閉時清空搜尋字 回復完整選項
     this.#offClose = this.controller.on('close', () => {
@@ -271,7 +273,9 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#offCreate()
     this.#offAnnounce()
     this.#positioner?.destroy()
-    document.removeEventListener('pointerdown', this.#onDocPointer)
+    document.removeEventListener('pointerdown', this.#onDocPointer, {
+      capture: true,
+    })
     this.controller.destroy()
     this.#dropdown.remove() // portal 模式下拉不在 element 底下 需另外移除
     this.element.remove()

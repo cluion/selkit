@@ -50,6 +50,17 @@ describe('搜尋命中高亮', () => {
   })
 })
 
+describe('多實例互斥', () => {
+  it('開第二個時關閉第一個（同時只有一個 dropdown）', () => {
+    const { container: ca } = render(<SelkitSelect options={OPTIONS} />)
+    const { container: cb } = render(<SelkitSelect options={OPTIONS} />)
+    fireEvent.pointerDown(ca.querySelector('.selkit__control')!)
+    expect(document.querySelectorAll('.selkit__dropdown')).toHaveLength(1)
+    fireEvent.pointerDown(cb.querySelector('.selkit__control')!)
+    expect(document.querySelectorAll('.selkit__dropdown')).toHaveLength(1)
+  })
+})
+
 describe('SelkitSelect — 渲染', () => {
   it('初始渲染 control 且無 dropdown', () => {
     const { container } = render(<SelkitSelect options={OPTIONS} />)
