@@ -96,6 +96,38 @@ describe('多選摺疊', () => {
   })
 })
 
+describe('clear 兩段確認', () => {
+  it('clearConfirm 點第一次不清 進入待確認', () => {
+    const { container } = render(
+      <SelkitSelect options={COLLAPSE_OPTS} value={1} clearConfirm />,
+    )
+    const clear = container.querySelector('.selkit__clear')!
+    fireEvent.pointerDown(clear)
+    expect(container.querySelector('.selkit__single-value')).toBeTruthy()
+    expect(
+      container.querySelector('.selkit__clear')?.className,
+    ).toContain('selkit__clear--confirm')
+  })
+
+  it('待確認時再點才清空', () => {
+    const { container } = render(
+      <SelkitSelect options={COLLAPSE_OPTS} value={1} clearConfirm />,
+    )
+    const clear = container.querySelector('.selkit__clear')!
+    fireEvent.pointerDown(clear)
+    fireEvent.pointerDown(clear)
+    expect(container.querySelector('.selkit__single-value')).toBeNull()
+  })
+
+  it('未開 clearConfirm 點一下即清', () => {
+    const { container } = render(
+      <SelkitSelect options={COLLAPSE_OPTS} value={1} />,
+    )
+    fireEvent.pointerDown(container.querySelector('.selkit__clear')!)
+    expect(container.querySelector('.selkit__single-value')).toBeNull()
+  })
+})
+
 describe('SelkitSelect — 渲染', () => {
   it('初始渲染 control 且無 dropdown', () => {
     const { container } = render(<SelkitSelect options={OPTIONS} />)

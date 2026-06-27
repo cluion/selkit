@@ -117,6 +117,74 @@ describe('多選摺疊', () => {
   })
 })
 
+describe('clear 兩段確認', () => {
+  it('clearConfirm 點第一次不清 進入待確認', () => {
+    const inst = createSelkitDom(host, {
+      options: COLLAPSE_OPTS,
+      value: 1,
+      clearConfirm: true,
+    })
+    expect($(inst.element, '.selkit__clear').getAttribute('aria-label')).toBe(
+      'Clear',
+    )
+    pointerdown($(inst.element, '.selkit__clear'))
+    expect(inst.controller.getState().selected).toHaveLength(1)
+    const confirming = $(inst.element, '.selkit__clear')
+    expect(confirming.classList.contains('selkit__clear--confirm')).toBe(true)
+    expect(confirming.getAttribute('aria-label')).toBe('Confirm')
+  })
+
+  it('待確認時再點才清空', () => {
+    const inst = createSelkitDom(host, {
+      options: COLLAPSE_OPTS,
+      value: 1,
+      clearConfirm: true,
+    })
+    pointerdown($(inst.element, '.selkit__clear'))
+    pointerdown($(inst.element, '.selkit__clear'))
+    expect(inst.controller.getState().selected).toHaveLength(0)
+  })
+
+  it('未開 clearConfirm 點一下即清', () => {
+    const inst = createSelkitDom(host, { options: COLLAPSE_OPTS, value: 1 })
+    pointerdown($(inst.element, '.selkit__clear'))
+    expect(inst.controller.getState().selected).toHaveLength(0)
+  })
+
+  it('逾時自動復原', () => {
+    vi.useFakeTimers()
+    try {
+      const inst = createSelkitDom(host, {
+        options: COLLAPSE_OPTS,
+        value: 1,
+        clearConfirm: true,
+      })
+      pointerdown($(inst.element, '.selkit__clear'))
+      vi.advanceTimersByTime(2500)
+      expect(
+        $(inst.element, '.selkit__clear').classList.contains(
+          'selkit__clear--confirm',
+        ),
+      ).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('clearConfirmText 自訂確認文字', () => {
+    const inst = createSelkitDom(host, {
+      options: COLLAPSE_OPTS,
+      value: 1,
+      clearConfirm: true,
+      clearConfirmText: '確認清空',
+    })
+    pointerdown($(inst.element, '.selkit__clear'))
+    const clear = $(inst.element, '.selkit__clear')
+    expect(clear.textContent).toBe('確認清空')
+    expect(clear.getAttribute('aria-label')).toBe('確認清空')
+  })
+})
+
 describe('掛載結構', () => {
   it('建立 control 與隱藏的 dropdown', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })

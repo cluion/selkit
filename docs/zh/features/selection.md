@@ -147,3 +147,23 @@ controller.moveSelected(0, 2) // 把第一個 tag 移到索引 2
 ## 清除
 
 `clear()` 會移除所有選取；`clearable` 選項（單選預設 `true`）會在 indicators 區顯示清除鈕。
+
+為避免誤觸清空，設定 `clearConfirm`：第一次點擊會進入「確認」狀態（按鈕變成紅色
+**Confirm**），只有第二次點擊才真正清除。閒置 2.5 秒後自動復原：
+
+```js
+createSelkit({ options, multiple: true, clearable: true, clearConfirm: true })
+```
+
+`clearConfirmText` 可覆寫確認按鈕的文字（同時用於顯示與 `aria-label`，預設
+`"Confirm"`）— 方便做 i18n：
+
+```js
+createSelkit({
+  options,
+  multiple: true,
+  clearable: true,
+  clearConfirm: true,
+  clearConfirmText: '確認清空',
+})
+```

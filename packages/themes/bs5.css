@@ -16,6 +16,7 @@
   --selkit-active-bg: var(--bs-tertiary-bg, #f8f9fa);
   --selkit-selected-bg: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.1);
   --selkit-match-bg: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.18);
+  --selkit-danger: var(--bs-danger, #dc3545);
   --selkit-tag-bg: var(--bs-tertiary-bg, #e9ecef);
   --selkit-disabled-fg: var(--bs-secondary-color, #adb5bd);
   --selkit-shadow: var(--bs-box-shadow, 0 0.5rem 1rem rgba(0, 0, 0, 0.15));

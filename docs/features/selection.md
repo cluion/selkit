@@ -162,3 +162,24 @@ controller.moveSelected(0, 2) // move the first tag to index 2
 
 `clear()` removes all selections; the `clearable` option (default `true` for
 single select) shows a clear button in the indicators area.
+
+For a guard against accidental clears, set `clearConfirm`: the first click enters
+a "confirm" state (the button turns into a red **Confirm**), and only the second
+click actually clears. It auto-reverts after 2.5s of inactivity:
+
+```js
+createSelkit({ options, multiple: true, clearable: true, clearConfirm: true })
+```
+
+`clearConfirmText` overrides the confirm button's label (shown text and
+`aria-label`, default `"Confirm"`) — useful for i18n:
+
+```js
+createSelkit({
+  options,
+  multiple: true,
+  clearable: true,
+  clearConfirm: true,
+  clearConfirmText: '確認清空',
+})
+```

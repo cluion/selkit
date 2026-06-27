@@ -116,6 +116,10 @@ export const SelkitSelect = defineComponent({
     clearable: { type: Boolean, default: undefined },
     /** 多選顯示上限 超過則其餘摺疊成 +M 點擊展開 */
     maxSelectedDisplay: { type: Number, default: undefined },
+    /** clear 時需二次確認 點第一次進入待確認 再點才清空 */
+    clearConfirm: { type: Boolean, default: false },
+    /** clearConfirm 待確認時按鈕顯示文字 預設 "Confirm" */
+    clearConfirmText: { type: String, default: 'Confirm' },
     disabled: { type: Boolean, default: false },
     classPrefix: { type: String, default: 'selkit' },
     loadOptions: {
@@ -214,6 +218,8 @@ export const SelkitSelect = defineComponent({
 
     const query = ref('')
     const tagsExpanded = ref(false)
+    const clearConfirming = ref(false)
+    let clearTimer: ReturnType<typeof setTimeout> | null = null
     const liveMessage = ref('')
     const rootRef = ref<HTMLElement | null>(null)
     const inputRef = ref<HTMLInputElement | null>(null)
@@ -377,19 +383,41 @@ export const SelkitSelect = defineComponent({
     onMounted(() =>
       document.addEventListener('pointerdown', onDocPointer, { capture: true }),
     )
-    onUnmounted(() =>
+    onUnmounted(() => {
       document.removeEventListener('pointerdown', onDocPointer, {
         capture: true,
-      }),
-    )
+      })
+      if (clearTimer) clearTimeout(clearTimer)
+    })
 
     expose({ controller })
+
+    const onClearPressed = (): void => {
+      if (!props.clearConfirm) {
+        controller.clear()
+        return
+      }
+      if (clearConfirming.value) {
+        clearConfirming.value = false
+        if (clearTimer) {
+          clearTimeout(clearTimer)
+          clearTimer = null
+        }
+        controller.clear()
+      } else {
+        clearConfirming.value = true
+        if (clearTimer) clearTimeout(clearTimer)
+        clearTimer = setTimeout(() => {
+          clearConfirming.value = false
+        }, 2500)
+      }
+    }
 
     const onControlPointerdown = (e: PointerEvent): void => {
       const target = e.target as HTMLElement
       if (target.closest(`.${cls('clear')}`)) {
         e.preventDefault()
-        controller.clear()
+        onClearPressed()
         return
       }
       if (target.closest(`.${cls('more')}`)) {
@@ -577,8 +605,20 @@ export const SelkitSelect = defineComponent({
         indicators.push(
           h(
             'button',
-            { type: 'button', class: cls('clear'), 'aria-label': 'Clear' },
-            slots.clear ? slots.clear({}) : '×',
+            {
+              type: 'button',
+              class: clearConfirming.value
+                ? [cls('clear'), cls('clear', 'confirm')]
+                : cls('clear'),
+              'aria-label': clearConfirming.value
+                ? props.clearConfirmText
+                : 'Clear',
+            },
+            clearConfirming.value
+              ? props.clearConfirmText
+              : slots.clear
+                ? slots.clear({})
+                : '×',
           ),
         )
       }

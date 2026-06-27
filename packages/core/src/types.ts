@@ -92,6 +92,10 @@ export interface SelkitConfig<T = unknown> {
   hideSelected?: boolean
   /** 是否顯示清除鈕 單選預設 true  */
   clearable?: boolean
+  /** clear 時需二次確認 點第一次進入待確認 再點才真正清空 預設 false  */
+  clearConfirm?: boolean
+  /** clearConfirm 待確認時按鈕顯示的文字（同時作為 aria-label）預設 "Confirm"  */
+  clearConfirmText?: string
   /** 是否停用 預設 false  */
   disabled?: boolean
   placeholder?: string

@@ -84,6 +84,10 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   readonly #clearable: boolean
   readonly #maxSelectedDisplay: number | undefined
   #tagsExpanded = false
+  readonly #clearConfirm: boolean
+  readonly #clearConfirmText: string
+  #clearConfirming = false
+  #clearTimer: ReturnType<typeof setTimeout> | null = null
   readonly #placeholder: string
   readonly #name: string | undefined
   readonly #virtual: boolean
@@ -149,6 +153,8 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#dropdownAutoWidth = cfg.dropdownAutoWidth ?? false
     this.#clearable = cfg.clearable ?? !this.#multiple
     this.#maxSelectedDisplay = cfg.maxSelectedDisplay
+    this.#clearConfirm = cfg.clearConfirm ?? false
+    this.#clearConfirmText = cfg.clearConfirmText ?? 'Confirm'
     this.#placeholder = cfg.placeholder ?? ''
     this.#name = cfg.name
     this.#virtual = cfg.virtualScroll ?? false
@@ -271,6 +277,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   }
 
   destroy(): void {
+    if (this.#clearTimer) clearTimeout(this.#clearTimer)
     this.#unsubscribe()
     this.#offClose()
     this.#offCreate()
@@ -302,7 +309,7 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       const target = e.target as HTMLElement
       if (target.closest(`.${this.#cls('clear')}`)) {
         e.preventDefault()
-        this.controller.clear()
+        this.#onClearPressed()
         return
       }
       if (target.closest(`.${this.#cls('more')}`)) {
@@ -509,6 +516,36 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     active?.scrollIntoView?.({ block: 'nearest' })
   }
 
+  /** clear 點擊：clearConfirm 時走兩段確認 否則直接清空 */
+  #onClearPressed(): void {
+    if (!this.#clearConfirm) {
+      this.controller.clear()
+      return
+    }
+    if (this.#clearConfirming) {
+      this.#resetClearConfirm()
+      this.controller.clear()
+    } else {
+      this.#enterClearConfirm()
+    }
+  }
+
+  #enterClearConfirm(): void {
+    this.#clearConfirming = true
+    this.#renderIndicators(this.controller.getState())
+    if (this.#clearTimer) clearTimeout(this.#clearTimer)
+    this.#clearTimer = setTimeout(() => this.#resetClearConfirm(), 2500)
+  }
+
+  #resetClearConfirm(): void {
+    this.#clearConfirming = false
+    if (this.#clearTimer) {
+      clearTimeout(this.#clearTimer)
+      this.#clearTimer = null
+    }
+    this.#renderIndicators(this.controller.getState())
+  }
+
   /** 套用 templateSelection 到已選容器 無模板則用 label */
   #fillSelection(
     host: HTMLElement,
@@ -599,11 +636,19 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       const clear = document.createElement('button')
       clear.type = 'button'
       clear.className = this.#cls('clear')
-      clear.setAttribute('aria-label', 'Clear')
-      if (this.#templateClear) {
+      if (this.#clearConfirming) {
+        clear.classList.add(this.#cls('clear', 'confirm'))
+      }
+      clear.setAttribute(
+        'aria-label',
+        this.#clearConfirming ? this.#clearConfirmText : 'Clear',
+      )
+      if (this.#templateClear && !this.#clearConfirming) {
         applyTemplate(clear, this.#templateClear())
       } else {
-        clear.textContent = '×'
+        clear.textContent = this.#clearConfirming
+          ? this.#clearConfirmText
+          : '×'
       }
       this.#indicators.append(clear)
     }

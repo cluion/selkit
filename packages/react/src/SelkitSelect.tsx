@@ -99,6 +99,10 @@ export interface SelkitSelectProps<T = unknown> {
   highlightMatches?: boolean
   /** 多選顯示上限 超過則其餘摺疊成 +M 點擊展開 */
   maxSelectedDisplay?: number
+  /** clear 時需二次確認 點第一次進入待確認 再點才清空 */
+  clearConfirm?: boolean
+  /** clearConfirm 待確認時按鈕顯示文字 預設 "Confirm" */
+  clearConfirmText?: string
   /** 自訂結果排序（如相關度）僅扁平清單 */
   sorter?: SorterFn<T>
   minInputLength?: number
@@ -180,6 +184,8 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     fuzzy = false,
     highlightMatches = true,
     maxSelectedDisplay,
+    clearConfirm = false,
+    clearConfirmText = 'Confirm',
     sorter,
     minInputLength,
     hideSelected = false,
@@ -247,6 +253,13 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
 
   const [query, setQuery] = useState('')
   const [tagsExpanded, setTagsExpanded] = useState(false)
+  const [clearConfirming, setClearConfirming] = useState(false)
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => {
+      if (clearTimerRef.current) clearTimeout(clearTimerRef.current)
+    }
+  }, [])
   const [liveMessage, setLiveMessage] = useState('')
   const queryRef = useRef('')
   queryRef.current = query
@@ -420,11 +433,33 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.isOpen, state.activeIndex])
 
+  const onClearPressed = (): void => {
+    if (!clearConfirm) {
+      controller.clear()
+      return
+    }
+    if (clearConfirming) {
+      setClearConfirming(false)
+      if (clearTimerRef.current) {
+        clearTimeout(clearTimerRef.current)
+        clearTimerRef.current = null
+      }
+      controller.clear()
+    } else {
+      setClearConfirming(true)
+      if (clearTimerRef.current) clearTimeout(clearTimerRef.current)
+      clearTimerRef.current = setTimeout(
+        () => setClearConfirming(false),
+        2500,
+      )
+    }
+  }
+
   const onControlPointerDown = (e: ReactPointerEvent<HTMLDivElement>): void => {
     const target = e.target as HTMLElement
     if (target.closest(`.${cls('clear')}`)) {
       e.preventDefault()
-      controller.clear()
+      onClearPressed()
       return
     }
     if (target.closest(`.${cls('more')}`)) {
@@ -819,8 +854,20 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         </div>
         <div className={cls('indicators')}>
           {clearableResolved && s.selected.length > 0 ? (
-            <button type="button" className={cls('clear')} aria-label="Clear">
-              {renderClear ? renderClear() : '×'}
+            <button
+              type="button"
+              className={
+                clearConfirming
+                  ? `${cls('clear')} ${cls('clear', 'confirm')}`
+                  : cls('clear')
+              }
+              aria-label={clearConfirming ? clearConfirmText : 'Clear'}
+            >
+              {clearConfirming
+                ? clearConfirmText
+                : renderClear
+                  ? renderClear()
+                  : '×'}
             </button>
           ) : null}
           <span className={cls('arrow')} aria-hidden="true">

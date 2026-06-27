@@ -203,6 +203,51 @@ describe('多選摺疊', () => {
   })
 })
 
+describe('clear 兩段確認', () => {
+  it('clearConfirm 點第一次不清 進入待確認', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: COLLAPSE_OPTS, modelValue: 1, clearConfirm: true },
+    })
+    await w.find('.selkit__clear').trigger('pointerdown')
+    expect(w.find('.selkit__single-value').exists()).toBe(true)
+    expect(w.find('.selkit__clear').classes()).toContain('selkit__clear--confirm')
+  })
+
+  it('待確認時再點才清空', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: COLLAPSE_OPTS, modelValue: 1, clearConfirm: true },
+    })
+    await w.find('.selkit__clear').trigger('pointerdown')
+    await w.find('.selkit__clear').trigger('pointerdown')
+    expect(w.find('.selkit__single-value').exists()).toBe(false)
+  })
+
+  it('未開 clearConfirm 點一下即清', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: COLLAPSE_OPTS, modelValue: 1 },
+    })
+    await w.find('.selkit__clear').trigger('pointerdown')
+    expect(w.find('.selkit__single-value').exists()).toBe(false)
+  })
+
+  it('逾時自動復原', async () => {
+    vi.useFakeTimers()
+    try {
+      const w = mount(SelkitSelect, {
+        props: { options: COLLAPSE_OPTS, modelValue: 1, clearConfirm: true },
+      })
+      await w.find('.selkit__clear').trigger('pointerdown')
+      vi.advanceTimersByTime(2500)
+      await nextTick()
+      expect(w.find('.selkit__clear').classes()).not.toContain(
+        'selkit__clear--confirm',
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('搜尋', () => {
   it('輸入過濾選項', async () => {
     const w = mount(SelkitSelect, { props: { options: OPTIONS } })
