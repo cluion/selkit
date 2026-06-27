@@ -40,6 +40,25 @@ createSelkit({
 })
 ```
 
+## 命中高亮
+
+使用者輸入時，Selkit 會把每個選項 label 的命中片段包進
+`<mark class="selkit__match">`，讓人一眼看出某選項「為何被比中」。高亮會跟著目前的
+filter — 預設 filter 下標子字串、`fuzzy` 下標命中的字元 — 且同樣不分變音符號與大小寫，
+與過濾完全一致（`cafe` 會高亮 `Café` 中的命中處）。
+
+預設為開啟。用 `highlightMatches: false` 關閉：
+
+```js
+createSelkit({ options, highlightMatches: false })
+```
+
+使用自訂 `filter` 時，高亮無從得知你判斷函式的精確命中位置，因此仍會在 label 中尋找
+query 作為視覺輔助 — 若高亮與實際比對不一致會造成誤導，請關閉它。
+
+透過 `.selkit__match` class 與 `--selkit-match-bg` CSS 變數調整樣式（bs5 主題將其對應到
+`--bs-primary`）。
+
 ## 排序結果
 
 過濾後可用 `sorter` 重排結果 — 比較器 `(a, b, query) => number`（契約同

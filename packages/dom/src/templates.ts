@@ -4,7 +4,7 @@
  * 把分組標題、建立列、選項列與虛擬捲動佔位抽成不持狀態的構建函式
  * 由 dom.ts 的渲染協調層呼叫 不依賴 instance
  */
-import type { SelkitA11y, SelkitOption } from '@selkit/core'
+import type { HighlightPart, SelkitA11y, SelkitOption } from '@selkit/core'
 import type { CreateRow, GroupRow, OptionRow } from './types'
 
 /** 套用模板輸出：字串走 textContent（防 XSS）Node 直接掛入  */
@@ -61,7 +61,25 @@ export function buildCreateRow(
   return el
 }
 
-/** 選項列 套用 templateOption（無則用 label）*/
+/** 渲染高亮片段：match 段包 <mark>，其餘純文字節點 */
+function renderHighlightParts(
+  host: HTMLElement,
+  parts: HighlightPart[],
+  prefix: string,
+): void {
+  for (const part of parts) {
+    if (part.match) {
+      const mark = document.createElement('mark')
+      mark.className = `${prefix}__match`
+      mark.textContent = part.text
+      host.append(mark)
+    } else if (part.text !== '') {
+      host.append(document.createTextNode(part.text))
+    }
+  }
+}
+
+/** 選項列 套用 templateOption（無則用 label，或高亮命中片段）*/
 export function buildOption<T>(
   row: OptionRow<T>,
   prefix: string,
@@ -71,6 +89,7 @@ export function buildOption<T>(
     option: SelkitOption<T>,
     meta: { index: number; active: boolean; selected: boolean },
   ) => string | Node,
+  highlight?: (label: string) => HighlightPart[],
 ): HTMLElement {
   const attrs = a11y.option(row.index)
   const option = document.createElement('div')
@@ -94,6 +113,8 @@ export function buildOption<T>(
     })
     if (out instanceof Node) option.append(out)
     else option.textContent = out
+  } else if (highlight) {
+    renderHighlightParts(option, highlight(row.option.label), prefix)
   } else {
     option.textContent = row.option.label
   }

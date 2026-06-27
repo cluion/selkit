@@ -15,6 +15,7 @@
   --selkit-active-bg: #eef2ff;
   --selkit-selected-bg: #e0e7ff;
   --selkit-tag-bg: #eef2ff;
+  --selkit-match-bg: rgb(99 102 241 / 0.18);
   --selkit-disabled-fg: #cbd5e1;
   --selkit-shadow: 0 6px 24px rgba(15, 23, 42, 0.12);
   --selkit-control-min-h: 38px;
@@ -239,6 +240,15 @@
 .selkit__option[aria-disabled='true'] {
   color: var(--selkit-disabled-fg);
   cursor: not-allowed;
+}
+
+/** 搜尋命中高亮（<mark class="selkit__match">） */
+.selkit__match {
+  background: var(--selkit-match-bg);
+  color: inherit;
+  padding: 0.05em 0.15em;
+  border-radius: 2px;
+  font-weight: 600;
 }
 
 .selkit__empty {

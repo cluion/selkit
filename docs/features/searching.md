@@ -43,6 +43,27 @@ createSelkit({
 })
 ```
 
+## Highlighting matches
+
+As the user types, Selkit wraps the matched part of each option label in a
+`<mark class="selkit__match">` so it's clear *why* an option matched. The
+highlight follows the active filter — a substring under the default filter, the
+matched characters under `fuzzy` — and is diacritics- and case-insensitive,
+exactly like filtering (`cafe` highlights inside `Café`).
+
+It's on by default. Turn it off with `highlightMatches: false`:
+
+```js
+createSelkit({ options, highlightMatches: false })
+```
+
+With a custom `filter`, highlighting can't know your predicate's exact match,
+so it still looks for the query inside the label as a visual aid — disable it
+if a mismatched highlight would mislead.
+
+Style the mark through the `.selkit__match` class and the `--selkit-match-bg`
+CSS variable (the bs5 theme maps it to `--bs-primary`).
+
 ## Sorting results
 
 After filtering, reorder results with `sorter` — a comparator `(a, b, query) =>

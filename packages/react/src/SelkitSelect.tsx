@@ -5,7 +5,7 @@
  * 用 React 渲染 行為全部委派給 @selkit/core controller
  * 支援受控 value + onChange 多選 搜尋 分組 與 renderOption 自訂選項
  */
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type {
   ChangeEvent,
@@ -95,6 +95,8 @@ export interface SelkitSelectProps<T = unknown> {
   searchable?: boolean
   minResultsForSearch?: number
   fuzzy?: boolean
+  /** 搜尋時將命中片段以 <mark> 標示 預設 true */
+  highlightMatches?: boolean
   /** 自訂結果排序（如相關度）僅扁平清單 */
   sorter?: SorterFn<T>
   minInputLength?: number
@@ -174,6 +176,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     searchable = true,
     minResultsForSearch,
     fuzzy = false,
+    highlightMatches = true,
     sorter,
     minInputLength,
     hideSelected = false,
@@ -220,6 +223,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     disabled,
     taggable,
     fuzzy,
+    highlightMatches,
     hideSelected,
     ...(sorter ? { sorter } : {}),
     ...(minInputLength !== undefined ? { minInputLength } : {}),
@@ -508,6 +512,19 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   if (s.isOpen) rootClass.push(cls('', 'open'))
   if (s.disabled) rootClass.push(cls('', 'disabled'))
 
+  const renderHighlighted = (label: string): ReactNode =>
+    controller
+      .highlightLabel(label)
+      .map((p, i) =>
+        p.match ? (
+          <mark key={i} className={cls('match')}>
+            {p.text}
+          </mark>
+        ) : (
+          <Fragment key={i}>{p.text}</Fragment>
+        ),
+      )
+
   const buildOption = (row: OptionRow<T>): ReactNode => {
     const attrs = a11y.option(row.index)
     const isDisabled = attrs['aria-disabled'] === true
@@ -535,7 +552,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
               active: row.index === s.activeIndex,
               selected: attrs['aria-selected'],
             })
-          : row.option.label}
+          : renderHighlighted(row.option.label)}
       </div>
     )
   }

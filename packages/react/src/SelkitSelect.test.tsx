@@ -14,6 +14,42 @@ const control = (c: HTMLElement) =>
 const options = (c: HTMLElement) =>
   Array.from(c.querySelectorAll('.selkit__option')) as HTMLElement[]
 
+describe('搜尋命中高亮', () => {
+  it('query 命中以 <mark> 標示，整段文字不變', () => {
+    const { container } = render(<SelkitSelect options={OPTIONS} />)
+    fireEvent.pointerDown(control(container as HTMLElement))
+    const input = container.querySelector('.selkit__input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'ban' } })
+    const option = document.querySelector('.selkit__option') as HTMLElement
+    expect(option.querySelector('mark.selkit__match')?.textContent).toBe('Ban')
+    expect(option.textContent).toBe('Banana')
+  })
+
+  it('highlightMatches false 時不渲染 mark', () => {
+    const { container } = render(
+      <SelkitSelect options={OPTIONS} highlightMatches={false} />,
+    )
+    fireEvent.pointerDown(control(container as HTMLElement))
+    const input = container.querySelector('.selkit__input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'ban' } })
+    const option = document.querySelector('.selkit__option') as HTMLElement
+    expect(option.querySelector('mark')).toBeNull()
+  })
+
+  it('含標籤字元的 label 不被當 HTML 解析（防 XSS）', () => {
+    const { container } = render(
+      <SelkitSelect options={[{ value: 'x', label: '<b>Apple</b>' }]} />,
+    )
+    fireEvent.pointerDown(control(container as HTMLElement))
+    const input = container.querySelector('.selkit__input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'app' } })
+    const option = document.querySelector('.selkit__option') as HTMLElement
+    expect(option.querySelectorAll('b')).toHaveLength(0)
+    expect(option.textContent).toBe('<b>Apple</b>')
+    expect(option.querySelector('mark.selkit__match')?.textContent).toBe('App')
+  })
+})
+
 describe('SelkitSelect — 渲染', () => {
   it('初始渲染 control 且無 dropdown', () => {
     const { container } = render(<SelkitSelect options={OPTIONS} />)

@@ -680,7 +680,14 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
       return
     }
     this.#dropdown.append(
-      buildOption(row, this.#prefix, a11y, activeIndex, this.#templateOption),
+      buildOption(
+        row,
+        this.#prefix,
+        a11y,
+        activeIndex,
+        this.#templateOption,
+        (label) => this.controller.highlightLabel(label),
+      ),
     )
   }
 

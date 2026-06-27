@@ -92,6 +92,8 @@ export const SelkitSelect = defineComponent({
     searchable: { type: Boolean, default: true },
     minResultsForSearch: { type: Number, default: undefined },
     fuzzy: { type: Boolean, default: false },
+    /** 搜尋時將命中片段以 <mark> 標示 預設 true */
+    highlightMatches: { type: Boolean, default: true },
     sorter: {
       type: Function as PropType<SorterFn>,
       default: undefined,
@@ -176,6 +178,7 @@ export const SelkitSelect = defineComponent({
       disabled: props.disabled,
       taggable: props.taggable,
       fuzzy: props.fuzzy,
+      highlightMatches: props.highlightMatches,
       ...(props.sorter ? { sorter: props.sorter } : {}),
       hideSelected: props.hideSelected,
       ...(props.minInputLength !== undefined
@@ -579,7 +582,9 @@ export const SelkitSelect = defineComponent({
                 active: row.index === s.activeIndex,
                 selected: attrs['aria-selected'],
               })
-            : row.option.label,
+            : controller.highlightLabel(row.option.label).map((p) =>
+                p.match ? h('mark', { class: cls('match') }, p.text) : p.text,
+              ),
         )
       }
 

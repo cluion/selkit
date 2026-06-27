@@ -65,6 +65,50 @@ describe('開關', () => {
   })
 })
 
+describe('搜尋命中高亮', () => {
+  it('預設開啟 — 依 query 高亮命中片段', () => {
+    const s = createSelkit({ options: OPTIONS })
+    s.setQuery('ap')
+    expect(s.highlightLabel('Apple')).toEqual([
+      { text: 'Ap', match: true },
+      { text: 'ple', match: false },
+    ])
+  })
+
+  it('highlightMatches: false 時整段不 match', () => {
+    const s = createSelkit({ options: OPTIONS, highlightMatches: false })
+    s.setQuery('ap')
+    expect(s.highlightLabel('Apple')).toEqual([
+      { text: 'Apple', match: false },
+    ])
+  })
+
+  it('query 為空時整段不 match', () => {
+    const s = createSelkit({ options: OPTIONS })
+    expect(s.highlightLabel('Apple')).toEqual([
+      { text: 'Apple', match: false },
+    ])
+  })
+
+  it('fuzzy 模式標子序列命中的字元', () => {
+    const s = createSelkit({ options: OPTIONS, fuzzy: true })
+    s.setQuery('ae')
+    expect(s.highlightLabel('Apple')).toEqual([
+      { text: 'A', match: true },
+      { text: 'ppl', match: false },
+      { text: 'e', match: true },
+    ])
+  })
+
+  it('去變音符（café ↔ cafe）', () => {
+    const s = createSelkit({ options: [{ value: 'x', label: 'café' }] })
+    s.setQuery('cafe')
+    expect(s.highlightLabel('café')).toEqual([
+      { text: 'café', match: true },
+    ])
+  })
+})
+
 describe('搜尋過濾', () => {
   it('setQuery 依 label 過濾（大小寫不敏感）', () => {
     const s = createSelkit({ options: OPTIONS })

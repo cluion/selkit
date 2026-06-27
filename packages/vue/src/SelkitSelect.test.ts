@@ -150,6 +150,24 @@ describe('搜尋', () => {
   })
 })
 
+describe('搜尋命中高亮', () => {
+  it('query 命中以 <mark> 標示，整段文字不變', async () => {
+    const w = mount(SelkitSelect, { props: { options: OPTIONS } })
+    await w.find('.selkit__input').setValue('ban')
+    const option = w.find('.selkit__option')
+    expect(option.find('mark.selkit__match').text()).toBe('Ban')
+    expect(option.text()).toBe('Banana')
+  })
+
+  it('highlightMatches false 時不渲染 mark', async () => {
+    const w = mount(SelkitSelect, {
+      props: { options: OPTIONS, highlightMatches: false },
+    })
+    await w.find('.selkit__input').setValue('ban')
+    expect(w.find('.selkit__option').find('mark').exists()).toBe(false)
+  })
+})
+
 describe('autogrow / dropdownAutoWidth', () => {
   it('autogrow 設 root class 且 input size 隨字數', async () => {
     const w = mount(SelkitSelect, {

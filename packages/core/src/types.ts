@@ -107,6 +107,8 @@ export interface SelkitConfig<T = unknown> {
   sorter?: SorterFn<T>
   /** 啟用 fuzzy 子序列比對 取代預設子字串比對 自訂 filter 時此項忽略  */
   fuzzy?: boolean
+  /** 搜尋時以 <mark> 標示 label 命中片段，預設 true */
+  highlightMatches?: boolean
   /** 最少輸入字數 未達時不過濾也不觸發 loadOptions 預設 0  */
   minInputLength?: number
 
@@ -242,6 +244,12 @@ export interface SelkitA11y {
 // 6. 渲染視圖（分組）
 // ─────────────────────────────────────────────────────────────
 
+/** 命中高亮片段：match 段由 adapter 包 <mark> */
+export interface HighlightPart {
+  text: string
+  match: boolean
+}
+
 export type SelkitViewRow<T = unknown> =
   | { type: 'group'; label: string; disabled?: boolean }
   | { type: 'option'; index: number; option: SelkitOption<T> }
@@ -320,6 +328,8 @@ export interface SelkitController<T = unknown> {
   getEmptyMessage(): string
   /** 下拉為空的原因 與 getEmptyMessage 同優先序 供 adapter 自訂 empty/loading 渲染時分流 */
   getEmptyReason(): SelkitEmptyReason
+  /** label 依目前 query 切成高亮片段；關閉或空 query 時整段不 match */
+  highlightLabel(label: string): HighlightPart[]
 
   destroy(): void
 }

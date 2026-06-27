@@ -3,6 +3,7 @@
  */
 export type * from './types'
 export { createSelkit } from './createSelkit'
+export { highlightMatches } from './highlight'
 export {
   computeVirtualRange,
   computeScrollIntoView,

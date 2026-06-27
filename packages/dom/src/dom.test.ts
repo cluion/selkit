@@ -30,6 +30,38 @@ const $ = (root: ParentNode, sel: string): HTMLElement =>
 const $$ = (root: ParentNode, sel: string): HTMLElement[] =>
   Array.from(root.querySelectorAll(sel))
 
+describe('搜尋命中高亮', () => {
+  it('query 命中以 <mark> 標示，整段文字不變', () => {
+    const inst = createSelkitDom(host, { options: OPTIONS })
+    inst.controller.setQuery('ap')
+    const option = $(inst.element, '.selkit__option')
+    const mark = option.querySelector('mark.selkit__match') as HTMLElement
+    expect(mark.textContent).toBe('Ap')
+    expect(option.textContent).toBe('Apple')
+  })
+
+  it('highlightMatches: false 時不渲染 mark', () => {
+    const inst = createSelkitDom(host, {
+      options: OPTIONS,
+      highlightMatches: false,
+    })
+    inst.controller.setQuery('ap')
+    expect($(inst.element, '.selkit__option').querySelector('mark')).toBeNull()
+  })
+
+  it('含標籤字元的 label 不被當 HTML 解析（防 XSS）', () => {
+    const inst = createSelkitDom(host, {
+      options: [{ value: 'x', label: '<b>Apple</b>' }],
+    })
+    inst.controller.setQuery('app')
+    const option = $(inst.element, '.selkit__option')
+    expect(option.querySelectorAll('b')).toHaveLength(0)
+    expect(option.textContent).toBe('<b>Apple</b>')
+    const mark = option.querySelector('mark.selkit__match') as HTMLElement
+    expect(mark.textContent).toBe('App')
+  })
+})
+
 describe('掛載結構', () => {
   it('建立 control 與隱藏的 dropdown', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })

@@ -21,6 +21,7 @@ import type {
   SorterFn,
   SelkitValue,
   SelkitViewRow,
+  HighlightPart,
   Unsubscribe,
 } from './types'
 import {
@@ -30,6 +31,7 @@ import {
   normalizeLoadResult,
   type NormRow,
 } from './utils'
+import { highlightMatches } from './highlight'
 
 let instanceCounter = 0
 
@@ -56,6 +58,8 @@ class Selkit<T> implements SelkitController<T> {
   readonly #multiple: boolean
   readonly #closeOnSelect: boolean
   readonly #filter: FilterFn<T>
+  readonly #fuzzy: boolean
+  readonly #highlight: boolean
   readonly #sorter: SorterFn<T> | undefined
   readonly #minInputLength: number
   readonly #searchable: boolean
@@ -111,6 +115,8 @@ class Selkit<T> implements SelkitController<T> {
     this.#filter =
       config.filter ??
       ((config.fuzzy ? fuzzyFilter : defaultFilter) as FilterFn<T>)
+    this.#fuzzy = config.fuzzy ?? false
+    this.#highlight = config.highlightMatches ?? true
     this.#sorter = config.sorter
     this.#minInputLength = config.minInputLength ?? 0
     this.#searchable = config.searchable ?? true
@@ -582,6 +588,12 @@ class Selkit<T> implements SelkitController<T> {
     if (s.loading) return 'loading'
     if (this.#belowMin(s.query)) return 'min-input'
     return 'no-results'
+  }
+
+  /** label 依目前 query 切成高亮片段；關閉或空 query 時整段不 match */
+  highlightLabel(label: string): HighlightPart[] {
+    if (!this.#highlight) return [{ text: label, match: false }]
+    return highlightMatches(label, this.#state.query, this.#fuzzy)
   }
 
   destroy(): void {
