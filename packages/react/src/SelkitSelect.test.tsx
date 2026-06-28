@@ -76,15 +76,41 @@ describe('樹狀模式 tree', () => {
     expect(container.querySelectorAll('.selkit__treeitem')).toHaveLength(1)
   })
 
-  it('父可選（點擊 treeitem）', () => {
+  it('父可選（cascade 勾子孫葉）', () => {
     const { container } = render(<SelkitSelect options={TREE} multiple />)
     fireEvent.pointerDown(control(container))
     fireEvent.pointerDown(container.querySelectorAll('.selkit__treeitem')[0]!)
     expect(
       (container.querySelectorAll('.selkit__treeitem')[0] as HTMLElement).getAttribute(
-        'aria-selected',
+        'aria-checked',
       ),
     ).toBe('true')
+  })
+})
+
+describe('樹狀模式 cascade', () => {
+  const TREE: SelkitItem[] = [
+    {
+      value: 'elec',
+      label: '電子',
+      children: [
+        {
+          value: 'pc',
+          label: '電腦',
+          children: [
+            { value: 'mbp', label: 'MacBook Pro' },
+            { value: 'mba', label: 'MacBook Air' },
+          ],
+        },
+      ],
+    },
+  ]
+
+  it('select(父) → checkbox checked', () => {
+    const { container } = render(<SelkitSelect options={TREE} multiple />)
+    fireEvent.pointerDown(control(container))
+    fireEvent.pointerDown(container.querySelectorAll('.selkit__treeitem')[0]!)
+    expect(container.querySelectorAll('.selkit__checkbox--checked').length).toBeGreaterThan(0)
   })
 })
 

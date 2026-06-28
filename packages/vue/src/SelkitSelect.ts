@@ -716,6 +716,10 @@ export const SelkitSelect = defineComponent({
             id: attrs.id,
             role: 'treeitem',
             'aria-selected': String(attrs['aria-selected']),
+            ...(attrs['aria-checked'] !== undefined
+              ? { 'aria-checked': String(attrs['aria-checked']) }
+              : {}),
+            'data-checked': row.checked,
             ...(isDisabled ? { 'aria-disabled': 'true' } : {}),
             ...(row.hasChildren ? { 'aria-expanded': String(row.expanded) } : {}),
             style: { '--selkit-depth': String(row.depth) },
@@ -744,6 +748,12 @@ export const SelkitSelect = defineComponent({
                   row.expanded ? '▾' : '▸',
                 )
               : h('span', { class: cls('toggle') }),
+            props.multiple
+              ? h('span', {
+                  class: [cls('checkbox'), cls('checkbox', row.checked)],
+                  'aria-hidden': 'true',
+                })
+              : null,
             ...controller
               .highlightLabel(row.option.label)
               .map((p) => (p.match ? h('mark', { class: cls('match') }, p.text) : p.text)),

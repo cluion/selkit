@@ -129,6 +129,7 @@ export function buildTreeRow<T>(
   prefix: string,
   a11y: SelkitA11y,
   activeIndex: number,
+  multiple: boolean,
   highlight?: (label: string) => HighlightPart[],
 ): HTMLElement {
   const attrs = a11y.option(row.index)
@@ -136,9 +137,13 @@ export function buildTreeRow<T>(
   el.className = `${prefix}__option ${prefix}__treeitem`
   el.id = attrs.id
   el.dataset.index = String(row.index)
+  el.dataset.checked = row.checked
   el.style.setProperty('--selkit-depth', String(row.depth))
   el.setAttribute('role', 'treeitem')
   el.setAttribute('aria-selected', String(attrs['aria-selected']))
+  if (attrs['aria-checked'] !== undefined) {
+    el.setAttribute('aria-checked', String(attrs['aria-checked']))
+  }
   if (attrs['aria-disabled']) el.setAttribute('aria-disabled', 'true')
   if (row.hasChildren) el.setAttribute('aria-expanded', String(row.expanded))
   if (row.index === activeIndex) el.classList.add(`${prefix}__option--active`)
@@ -154,6 +159,13 @@ export function buildTreeRow<T>(
     toggle.textContent = row.expanded ? '▾' : '▸'
   }
   el.append(toggle)
+  // 多選三態 checkbox（cascade 全選／半選／未選）
+  if (multiple) {
+    const cb = document.createElement('span')
+    cb.className = `${prefix}__checkbox ${prefix}__checkbox--${row.checked}`
+    cb.setAttribute('aria-hidden', 'true')
+    el.append(cb)
+  }
   if (highlight) renderHighlightParts(el, highlight(row.option.label), prefix)
   else el.append(document.createTextNode(row.option.label))
   return el

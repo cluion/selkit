@@ -372,10 +372,15 @@ describe('樹狀模式（tree）', () => {
     ).toEqual(['elec'])
   })
 
-  it('父可選、無 cascade（選父不連動子）', () => {
+  it('父可選（cascade 預設勾子孫葉）', () => {
     const s = createSelkit({ options: TREE, multiple: true })
     s.select('elec')
-    expect(s.getState().selected.map((o) => o.value)).toEqual(['elec'])
+    expect(
+      s
+        .getState()
+        .selected.map((o) => o.value)
+        .sort(),
+    ).toEqual(['ip15', 'mbp'])
   })
 
   it('a11y 父節點為 treeitem + aria-expanded', () => {
@@ -385,6 +390,91 @@ describe('樹狀模式（tree）', () => {
     expect(a.option(0)['aria-expanded']).toBe(true)
     expect(a.option(2).role).toBe('treeitem') // mbp 葉
     expect(a.option(2)['aria-expanded']).toBeUndefined()
+  })
+})
+
+describe('樹狀模式 cascade（Phase 2）', () => {
+  const TREE: SelkitItem[] = [
+    {
+      value: 'elec',
+      label: '電子',
+      children: [
+        {
+          value: 'pc',
+          label: '電腦',
+          children: [
+            { value: 'mbp', label: 'MacBook Pro' },
+            { value: 'mba', label: 'MacBook Air' },
+          ],
+        },
+        { value: 'ip15', label: 'iPhone 15' },
+      ],
+    },
+  ]
+  const checkedOf = (
+    s: ReturnType<typeof createSelkit>,
+    value: string,
+  ): string | undefined =>
+    (
+      s
+        .getGroupedView()
+        .rows.find(
+          (r) =>
+            r.type === 'treeitem' &&
+            (r as { option: { value: string } }).option.value === value,
+        ) as { checked?: string } | undefined
+    )?.checked
+
+  it('select(父) cascade 勾所有子孫葉（父不進 selected）', () => {
+    const s = createSelkit({ options: TREE, multiple: true })
+    s.select('elec')
+    expect(
+      s
+        .getState()
+        .selected.map((o) => o.value)
+        .sort(),
+    ).toEqual(['ip15', 'mba', 'mbp'])
+    expect(s.getState().selected.some((o) => o.value === 'elec')).toBe(false)
+  })
+
+  it('父全選 computed', () => {
+    const s = createSelkit({ options: TREE, multiple: true })
+    s.select('elec')
+    expect(checkedOf(s, 'elec')).toBe('checked')
+    expect(checkedOf(s, 'pc')).toBe('checked')
+    expect(checkedOf(s, 'mbp')).toBe('checked')
+  })
+
+  it('半選 computed（部分子選）', () => {
+    const s = createSelkit({ options: TREE, multiple: true })
+    s.select('mbp')
+    expect(checkedOf(s, 'elec')).toBe('mixed')
+    expect(checkedOf(s, 'pc')).toBe('mixed')
+    expect(checkedOf(s, 'mbp')).toBe('checked')
+  })
+
+  it('deselect(父) 移除所有子孫葉', () => {
+    const s = createSelkit({ options: TREE, multiple: true })
+    s.select('elec')
+    s.deselect('elec')
+    expect(s.getState().selected).toHaveLength(0)
+  })
+
+  it('toggleSelect 父全選 → deselect', () => {
+    const s = createSelkit({ options: TREE, multiple: true })
+    s.select('elec')
+    s.toggleSelect('elec')
+    expect(s.getState().selected).toHaveLength(0)
+  })
+
+  it('treeCascade:false 為獨立選取（選父存父）', () => {
+    const s = createSelkit({ options: TREE, multiple: true, treeCascade: false })
+    s.select('elec')
+    expect(
+      s
+        .getState()
+        .selected.map((o) => o.value),
+    ).toEqual(['elec'])
   })
 })
 

@@ -88,10 +88,11 @@ createSelkit({
 })
 ```
 
-> **Phase 1** (first release): parents are selectable but **independent** —
-> selecting a parent does not cascade to its children (cascade arrives later).
-> All nodes are expanded by default. Tree mode does not virtualize (collapsing
-> changes the visible set), and search does not yet filter the tree.
+> Parents are selectable. With `treeCascade: true` (the default, multiple-only),
+> selecting a parent checks all descendant leaves, and a parent shows a **mixed**
+> state when only some are checked; set `treeCascade: false` for independent
+> selection. All nodes are expanded by default. Tree mode does not virtualize
+> (collapsing changes the visible set), and search does not yet filter the tree.
 
 ## Checkbox options
 

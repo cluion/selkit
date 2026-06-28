@@ -295,6 +295,40 @@
   color: var(--selkit-fg);
 }
 
+/** tree 多選三態 checkbox（全選勾／半選橫線／未選空） */
+.selkit__checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  border: 1px solid var(--selkit-border);
+  border-radius: 4px;
+  background: var(--selkit-bg);
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+.selkit__checkbox--checked {
+  border-color: var(--selkit-border-focus);
+  background-color: var(--selkit-border-focus);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.selkit__checkbox--mixed {
+  border-color: var(--selkit-border-focus);
+  background-color: var(--selkit-border-focus);
+}
+.selkit__checkbox--mixed::before {
+  content: '';
+  width: 8px;
+  height: 2px;
+  background: #fff;
+  border-radius: 1px;
+}
+
 .selkit__option[aria-disabled='true'] {
   color: var(--selkit-disabled-fg);
   cursor: not-allowed;
@@ -340,6 +374,10 @@
   border-radius: 4px;
   background: var(--selkit-bg);
   box-sizing: border-box;
+}
+/* tree 多選用專屬三態 checkbox（.selkit__checkbox）不重複 ::before */
+.selkit--checkboxes .selkit__treeitem::before {
+  content: none;
 }
 
 .selkit--checkboxes .selkit__option[aria-selected='true']::before {

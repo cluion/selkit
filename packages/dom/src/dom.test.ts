@@ -294,11 +294,51 @@ describe('樹狀模式 tree', () => {
     )
   })
 
-  it('父可選（點擊 treeitem 選取）', () => {
+  it('父可選（cascade 勾子孫葉）', () => {
     const inst = createSelkitDom(host, { options: TREE, multiple: true })
     inst.controller.open()
     pointerdown($$(inst.element, '.selkit__treeitem')[0]!)
-    expect(inst.controller.getState().selected.map((o) => o.value)).toEqual(['elec'])
+    expect(inst.controller.getState().selected.map((o) => o.value)).toEqual(['mbp'])
+  })
+})
+
+describe('樹狀模式 cascade', () => {
+  const TREE: SelkitItem[] = [
+    {
+      value: 'elec',
+      label: '電子',
+      children: [
+        {
+          value: 'pc',
+          label: '電腦',
+          children: [
+            { value: 'mbp', label: 'MacBook Pro' },
+            { value: 'mba', label: 'MacBook Air' },
+          ],
+        },
+        { value: 'ip15', label: 'iPhone 15' },
+      ],
+    },
+  ]
+
+  it('select(父) → 全部 checkbox checked', () => {
+    const inst = createSelkitDom(host, { options: TREE, multiple: true })
+    inst.controller.open()
+    pointerdown($$(inst.element, '.selkit__treeitem')[0]!)
+    const cbs = $$(inst.element, '.selkit__checkbox')
+    expect(cbs.length).toBeGreaterThan(0)
+    expect(cbs.every((c) => c.className.includes('--checked'))).toBe(true)
+  })
+
+  it('半選 → 父 checkbox mixed', () => {
+    const inst = createSelkitDom(host, { options: TREE, multiple: true })
+    inst.controller.open()
+    const mbp = $$(inst.element, '.selkit__treeitem').find((el) =>
+      el.textContent?.includes('MacBook Pro'),
+    )!
+    pointerdown(mbp)
+    const elec = $$(inst.element, '.selkit__treeitem')[0]!
+    expect(elec.querySelector('.selkit__checkbox')?.className).toContain('--mixed')
   })
 })
 

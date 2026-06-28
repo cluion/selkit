@@ -160,6 +160,8 @@ export interface SelkitConfig<T = unknown> {
 
   /** 多選上限 超過則無法再選  */
   maxSelections?: number
+  /** tree 模式多選連動：選父勾全子、半選狀態 預設 true；false 為獨立選取（Phase 1）  */
+  treeCascade?: boolean
   /** 多選顯示上限 超過則其餘摺疊成 +M 標記 點擊展開 未設則全顯示  */
   maxSelectedDisplay?: number
 
@@ -242,6 +244,7 @@ export interface SelkitOptionA11y {
   'aria-selected': boolean
   'aria-disabled'?: boolean
   'aria-expanded'?: boolean
+  'aria-checked'?: boolean | 'mixed'
 }
 
 export interface SelkitA11y {
@@ -264,8 +267,8 @@ export interface HighlightPart {
 export type SelkitViewRow<T = unknown> =
   | { type: 'group'; label: string; disabled?: boolean; depth: number }
   | { type: 'option'; index: number; option: SelkitOption<T>; depth: number }
-  /** tree 模式的可選父／葉 index 對齊 visibleOptions expanded 表是否展開 hasChildren 表有無子節點 */
-  | { type: 'treeitem'; index: number; option: SelkitOption<T>; depth: number; expanded: boolean; hasChildren: boolean }
+  /** tree 模式的可選父／葉 index 對齊 visibleOptions expanded 表是否展開 hasChildren 表有無子節點 checked 為 cascade 三態（treeCascade） */
+  | { type: 'treeitem'; index: number; option: SelkitOption<T>; depth: number; expanded: boolean; hasChildren: boolean; checked: 'checked' | 'unchecked' | 'mixed' }
   /** taggable 的「建立新項」列 index 對齊 activeIndex（接在實選項之後）label 為已套用 i18n 的顯示文字 */
   | { type: 'create'; index: number; query: string; label: string }
 

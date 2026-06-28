@@ -69,6 +69,7 @@ class Selkit<T> implements SelkitController<T> {
   readonly #minResultsForSearch: number
   readonly #hideSelected: boolean
   readonly #maxSelections: number | undefined
+  readonly #treeCascade: boolean
   readonly #messages: SelkitMessages
 
   readonly #loadOptions:
@@ -133,6 +134,7 @@ class Selkit<T> implements SelkitController<T> {
     this.#minResultsForSearch = config.minResultsForSearch ?? 0
     this.#hideSelected = config.hideSelected ?? false
     this.#maxSelections = config.maxSelections
+    this.#treeCascade = config.treeCascade ?? true
     this.#messages = { ...DEFAULT_MESSAGES, ...config.messages }
 
     this.#loadOptions = config.loadOptions
@@ -332,6 +334,28 @@ class Selkit<T> implements SelkitController<T> {
     const opt = this.#findOption(value)
     if (!opt || opt.disabled) return
 
+    // tree cascade：選父 → 勾所有可選子孫葉（葉則勾自身）
+    if (this.#treeMode && this.#treeCascade && this.#multiple) {
+      const leaves = this.#collectLeaves(value)
+      const targets = leaves.length ? leaves : [opt]
+      const chosen = new Set(this.#state.selected.map((o) => o.value))
+      const next = [...this.#state.selected]
+      for (const t of targets) {
+        if (t.disabled || chosen.has(t.value)) continue
+        if (this.#maxSelections !== undefined && next.length >= this.#maxSelections) {
+          break
+        }
+        chosen.add(t.value)
+        next.push(t)
+      }
+      if (next.length === this.#state.selected.length) return
+      this.#applySelection(next)
+      this.#fireChange()
+      this.#announce(this.#messages.selected(opt.label))
+      if (this.#closeOnSelect) this.close()
+      return
+    }
+
     if (this.#multiple) {
       if (this.#isSelected(value)) return
       if (
@@ -350,6 +374,20 @@ class Selkit<T> implements SelkitController<T> {
   }
 
   deselect(value: string | number): void {
+    // tree cascade：取消父 → 移除所有子孫葉（葉則移除自身）
+    if (this.#treeMode && this.#treeCascade && this.#multiple) {
+      const leaves = this.#collectLeaves(value)
+      const drop = leaves.length
+        ? new Set(leaves.map((o) => o.value))
+        : new Set<string | number>([value])
+      const next = this.#state.selected.filter((o) => !drop.has(o.value))
+      if (next.length === this.#state.selected.length) return
+      const removed = this.#state.selected.find((o) => drop.has(o.value))
+      this.#applySelection(next)
+      this.#fireChange()
+      this.#announce(this.#messages.deselected(removed!.label))
+      return
+    }
     const removed = this.#state.selected.find((o) => o.value === value)
     if (!removed) return
     this.#applySelection(this.#state.selected.filter((o) => o.value !== value))
@@ -358,7 +396,12 @@ class Selkit<T> implements SelkitController<T> {
   }
 
   toggleSelect(value: string | number): void {
-    this.#isSelected(value) ? this.deselect(value) : this.select(value)
+    // tree cascade：依 computed 三態切換（全選→取消）
+    if (this.#treeMode && this.#treeCascade && this.#multiple) {
+      this.#getCheckState(value) === 'checked' ? this.deselect(value) : this.select(value)
+    } else {
+      this.#isSelected(value) ? this.deselect(value) : this.select(value)
+    }
   }
 
   toggleExpanded(value: string | number): void {
@@ -510,6 +553,8 @@ class Selkit<T> implements SelkitController<T> {
     const treeMode = this.#treeMode
     const nodeByValue = this.#nodeByValue
     const collapsed = this.#collapsed
+    const useCheck = treeMode && this.#treeCascade && this.#multiple
+    const checkState = (value: string | number) => this.#getCheckState(value)
     const activeId =
       state.isOpen && state.activeIndex >= 0
         ? `${id}-opt-${state.activeIndex}`
@@ -533,10 +578,17 @@ class Selkit<T> implements SelkitController<T> {
         const opt = state.visibleOptions[index]
         const node = opt ? nodeByValue.get(opt.value) : undefined
         const hasChildren = !!node?.children.length
+        const cs = opt ? checkState(opt.value) : 'unchecked'
         return {
           role: (treeMode ? 'treeitem' : 'option') as 'option' | 'treeitem',
           id: `${id}-opt-${index}`,
-          'aria-selected': opt ? isSelected(opt.value) : false,
+          'aria-selected': useCheck ? false : opt ? isSelected(opt.value) : false,
+          ...(useCheck && opt
+            ? {
+                'aria-checked':
+                  cs === 'checked' ? true : cs === 'mixed' ? 'mixed' : false,
+              }
+            : {}),
           ...(opt?.disabled ? { 'aria-disabled': true } : {}),
           ...(treeMode && hasChildren && opt
             ? { 'aria-expanded': !collapsed.has(opt.value) }
@@ -650,6 +702,35 @@ class Selkit<T> implements SelkitController<T> {
     return result
   }
 
+  /** 收集某節點的所有子孫葉（含 disabled）葉節點回傳自身  */
+  #collectLeaves(value: string | number): SelkitOption<T>[] {
+    const node = this.#nodeByValue.get(value)
+    if (!node) return []
+    const leaves: SelkitOption<T>[] = []
+    const walk = (n: NormNode<T>): void => {
+      if (n.children.length === 0) leaves.push(n.option)
+      else for (const c of n.children) walk(c)
+    }
+    walk(node)
+    return leaves
+  }
+
+  /** 節點勾選三態：tree cascade 父從可選子孫葉 computed；其餘看 selected  */
+  #getCheckState(value: string | number): 'checked' | 'unchecked' | 'mixed' {
+    if (!this.#treeMode || !this.#treeCascade || !this.#multiple) {
+      return this.#isSelected(value) ? 'checked' : 'unchecked'
+    }
+    const node = this.#nodeByValue.get(value)
+    if (!node || node.children.length === 0) {
+      return this.#isSelected(value) ? 'checked' : 'unchecked'
+    }
+    const leaves = this.#collectLeaves(value).filter((o) => !o.disabled)
+    if (leaves.length === 0) return 'unchecked'
+    const sel = new Set(this.#state.selected.map((o) => o.value))
+    const hit = leaves.filter((o) => sel.has(o.value)).length
+    return hit === 0 ? 'unchecked' : hit === leaves.length ? 'checked' : 'mixed'
+  }
+
   /** tree 模式視圖：可見序列映射為 treeitem rows  */
   #treeRows(): SelkitViewRow<T>[] {
     return this.#state.visibleOptions.map((option, index) => {
@@ -661,6 +742,7 @@ class Selkit<T> implements SelkitController<T> {
         depth: node?.depth ?? 0,
         expanded: node ? !this.#collapsed.has(option.value) : true,
         hasChildren: !!node?.children.length,
+        checked: this.#getCheckState(option.value),
       }
     })
   }

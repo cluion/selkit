@@ -656,6 +656,8 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         id={attrs.id}
         role="treeitem"
         aria-selected={attrs['aria-selected']}
+        aria-checked={attrs['aria-checked']}
+        data-checked={row.checked}
         aria-disabled={isDisabled || undefined}
         aria-expanded={row.hasChildren ? row.expanded : undefined}
         style={{ '--selkit-depth': row.depth } as unknown as CSSProperties}
@@ -682,6 +684,12 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
           </button>
         ) : (
           <span className={cls('toggle')} />
+        )}
+        {multiple && (
+          <span
+            className={`${cls('checkbox')} ${cls('checkbox', row.checked)}`}
+            aria-hidden="true"
+          />
         )}
         {renderHighlighted(row.option.label)}
       </div>

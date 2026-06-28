@@ -771,8 +771,13 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     }
     if (row.type === 'treeitem') {
       this.#dropdown.append(
-        buildTreeRow(row, this.#prefix, a11y, activeIndex, (label) =>
-          this.controller.highlightLabel(label),
+        buildTreeRow(
+          row,
+          this.#prefix,
+          a11y,
+          activeIndex,
+          this.#multiple,
+          (label) => this.controller.highlightLabel(label),
         ),
       )
       return
