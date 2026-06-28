@@ -17,15 +17,15 @@ export interface SelkitOption<T = unknown> {
   data?: T
 }
 
-/** 選項分組（optgroup） 僅允許一層  */
+/** 傳入的選項可以是扁平選項或分組  */
+export type SelkitItem<T = unknown> = SelkitOption<T> | SelkitGroup<T>
+
+/** 選項分組（optgroup） 支援無限層：options 可再含子分組  */
 export interface SelkitGroup<T = unknown> {
   label: string
   disabled?: boolean
-  options: SelkitOption<T>[]
+  options: SelkitItem<T>[]
 }
-
-/** 傳入的選項可以是扁平選項或分組  */
-export type SelkitItem<T = unknown> = SelkitOption<T> | SelkitGroup<T>
 
 /** 對外的值：單選為單值或 null 多選為陣列  */
 export type SelkitValue = string | number | null | Array<string | number>
@@ -259,8 +259,8 @@ export interface HighlightPart {
 }
 
 export type SelkitViewRow<T = unknown> =
-  | { type: 'group'; label: string; disabled?: boolean }
-  | { type: 'option'; index: number; option: SelkitOption<T> }
+  | { type: 'group'; label: string; disabled?: boolean; depth: number }
+  | { type: 'option'; index: number; option: SelkitOption<T>; depth: number }
   /** taggable 的「建立新項」列 index 對齊 activeIndex（接在實選項之後）label 為已套用 i18n 的顯示文字 */
   | { type: 'create'; index: number; query: string; label: string }
 

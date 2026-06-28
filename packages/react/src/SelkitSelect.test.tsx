@@ -14,6 +14,35 @@ const control = (c: HTMLElement) =>
 const options = (c: HTMLElement) =>
   Array.from(c.querySelectorAll('.selkit__option')) as HTMLElement[]
 
+describe('多層分組縮排', () => {
+  const NESTED: SelkitItem[] = [
+    {
+      label: '電子',
+      options: [
+        { label: '電腦', options: [{ value: 'mbp', label: 'MacBook Pro' }] },
+        { value: 'ip15', label: 'iPhone 15' },
+      ],
+    },
+  ]
+
+  it('group 與 option 帶 --selkit-depth 反映層級', () => {
+    const { container } = render(<SelkitSelect options={NESTED} />)
+    fireEvent.pointerDown(control(container))
+    const groups = Array.from(
+      container.querySelectorAll('.selkit__group'),
+    ) as HTMLElement[]
+    const opts = options(container)
+    expect(groups.map((g) => g.style.getPropertyValue('--selkit-depth'))).toEqual([
+      '0',
+      '1',
+    ])
+    expect(opts.map((o) => o.style.getPropertyValue('--selkit-depth'))).toEqual([
+      '2',
+      '1',
+    ])
+  })
+})
+
 describe('搜尋命中高亮', () => {
   it('query 命中以 <mark> 標示，整段文字不變', () => {
     const { container } = render(<SelkitSelect options={OPTIONS} />)

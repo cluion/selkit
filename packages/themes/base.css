@@ -20,6 +20,7 @@
   --selkit-disabled-fg: #cbd5e1;
   --selkit-shadow: 0 6px 24px rgba(15, 23, 42, 0.12);
   --selkit-control-min-h: 38px;
+  --selkit-level-indent: 16px;
   --selkit-font: inherit;
 
   position: relative;
@@ -246,7 +247,8 @@
 }
 
 .selkit__group {
-  padding: 6px 8px 2px;
+  padding: 6px 8px 2px
+    calc(var(--selkit-depth, 0) * var(--selkit-level-indent, 16px) + 8px);
   font-size: 0.75em;
   font-weight: 600;
   text-transform: uppercase;
@@ -255,7 +257,8 @@
 }
 
 .selkit__option {
-  padding: 9px 10px;
+  padding: 9px 10px 9px
+    calc(var(--selkit-depth, 0) * var(--selkit-level-indent, 16px) + 10px);
   border-radius: 4px;
   cursor: pointer;
   user-select: none;

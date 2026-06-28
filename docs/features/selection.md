@@ -18,6 +18,54 @@ With `restoreOnBackspace`, pressing Backspace while the input is empty removes t
 last tag and restores its label to the input (opening the dropdown) so you can edit
 it instead of retyping. Without it (the default), Backspace just removes the tag.
 
+## Grouping
+
+Group options under headings by passing `SelkitGroup` items. Groups are
+non-selectable headings — only leaf options can be chosen:
+
+```js
+createSelkit({
+  options: [
+    { label: 'Fruit', options: [{ value: 'a', label: 'Apple' }] },
+    { label: 'Veg', options: [{ value: 'c', label: 'Carrot' }] },
+  ],
+})
+```
+
+### Nested groups
+
+`options` accepts another `SelkitGroup`, so groups nest to any depth. Each level
+indents by `--selkit-level-indent` (default `16px`) via a per-row
+`--selkit-depth`; intermediate headings stay non-selectable and only leaves carry
+a value:
+
+```js
+createSelkit({
+  options: [
+    {
+      label: 'Electronics',
+      options: [
+        { label: 'Computers', options: [
+          { value: 'mbp', label: 'MacBook Pro' },
+          { value: 'mba', label: 'MacBook Air' },
+        ]},
+        { value: 'ip15', label: 'iPhone 15' },
+      ],
+    },
+  ],
+})
+```
+
+Searching a nested list keeps the ancestor headings of any matching leaf, so the
+hit stays in context; branches with no match collapse away. Tune the indent on
+`.selkit` (or any ancestor):
+
+```css
+.selkit { --selkit-level-indent: 20px; }
+```
+
+A group's `disabled` propagates to all its descendants.
+
 ## Checkbox options
 
 For a multi-select where chosen options stay visible with a tick, enable

@@ -589,6 +589,7 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
         role="option"
         aria-selected={attrs['aria-selected']}
         aria-disabled={isDisabled || undefined}
+        style={{ '--selkit-depth': row.depth } as unknown as CSSProperties}
         onPointerDown={(e) => {
           if (isDisabled) return
           e.preventDefault()
@@ -629,7 +630,11 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   }
 
   const buildGroup = (row: GroupRow): ReactNode => (
-    <div className={cls('group')} key={`group-${row.label}`}>
+    <div
+      className={cls('group')}
+      key={`group-${row.label}`}
+      style={{ '--selkit-depth': row.depth } as unknown as CSSProperties}
+    >
       {renderGroup
         ? renderGroup({ label: row.label, disabled: !!row.disabled })
         : row.label}

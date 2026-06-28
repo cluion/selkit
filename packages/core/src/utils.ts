@@ -52,14 +52,18 @@ export function isGroup<T>(item: SelkitItem<T>): item is SelkitGroup<T> {
   return 'options' in item
 }
 
-/** 正規化後的列：分組標頭或選項（選項帶上所屬分組標籤 null 表頂層）  */
+/** 正規化後的列：分組標頭或選項（選項帶上所屬分組標籤 null 表頂層；depth 0 起供縮排）  */
 export type NormRow<T> =
-  | { kind: 'group'; label: string; disabled: boolean }
-  | { kind: 'option'; option: SelkitOption<T>; groupLabel: string | null }
+  | { kind: 'group'; label: string; disabled: boolean; depth: number }
+  | { kind: 'option'; option: SelkitOption<T>; groupLabel: string | null; depth: number }
+
+/** 遞迴深度上限 防呆循環參照 */
+const MAX_GROUP_DEPTH = 64
 
 /**
  * 將傳入的扁平/分組選項正規化為有序列 (rows) 與扁平清單 (flat)
- * 分組的 disabled 會向下傳遞到該組選項（產生新物件 不變動原始資料）
+ * 支援無限層分組：每列帶 depth（0 起）供 adapter 縮排
+ * 分組的 disabled 會沿祖先鏈向下傳遞到所有子孫（產生新物件 不變動原始資料）
  */
 export function normalize<T>(
   items: SelkitItem<T>[],
@@ -67,21 +71,28 @@ export function normalize<T>(
   const rows: NormRow<T>[] = []
   const flat: SelkitOption<T>[] = []
 
-  for (const item of items) {
-    if (isGroup(item)) {
-      const groupDisabled = item.disabled ?? false
-      rows.push({ kind: 'group', label: item.label, disabled: groupDisabled })
-      for (const opt of item.options) {
-        const eff: SelkitOption<T> =
-          groupDisabled && !opt.disabled ? { ...opt, disabled: true } : opt
-        rows.push({ kind: 'option', option: eff, groupLabel: item.label })
+  const walk = (
+    list: SelkitItem<T>[],
+    depth: number,
+    parentDisabled: boolean,
+    parentLabel: string | null,
+  ): void => {
+    for (const item of list) {
+      if (isGroup(item)) {
+        if (depth >= MAX_GROUP_DEPTH) continue
+        const disabled = parentDisabled || (item.disabled ?? false)
+        rows.push({ kind: 'group', label: item.label, disabled, depth })
+        const children = Array.isArray(item.options) ? item.options : []
+        walk(children, depth + 1, disabled, item.label)
+      } else {
+        const disabled = parentDisabled || (item.disabled ?? false)
+        const eff: SelkitOption<T> = disabled ? { ...item, disabled: true } : item
+        rows.push({ kind: 'option', option: eff, groupLabel: parentLabel, depth })
         flat.push(eff)
       }
-    } else {
-      rows.push({ kind: 'option', option: item, groupLabel: null })
-      flat.push(item)
     }
   }
 
+  walk(items, 0, false, null)
   return { rows, flat }
 }

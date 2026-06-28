@@ -29,6 +29,7 @@ export function buildGroupRow(
 ): HTMLElement {
   const group = document.createElement('div')
   group.className = `${prefix}__group`
+  group.style.setProperty('--selkit-depth', String(row.depth))
   if (row.disabled) group.classList.add(`${prefix}__group--disabled`)
   if (templateGroup) {
     applyTemplate(
@@ -96,6 +97,7 @@ export function buildOption<T>(
   option.className = `${prefix}__option`
   option.id = attrs.id
   option.dataset.index = String(row.index)
+  option.style.setProperty('--selkit-depth', String(row.depth))
   option.setAttribute('role', 'option')
   option.setAttribute('aria-selected', String(attrs['aria-selected']))
   if (attrs['aria-disabled']) option.setAttribute('aria-disabled', 'true')

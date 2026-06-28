@@ -221,6 +221,44 @@ describe('掛載結構', () => {
   })
 })
 
+describe('多層分組縮排', () => {
+  const NESTED: SelkitItem[] = [
+    {
+      label: '電子',
+      options: [
+        { label: '電腦', options: [{ value: 'mbp', label: 'MacBook Pro' }] },
+        { value: 'ip15', label: 'iPhone 15' },
+      ],
+    },
+  ]
+
+  it('group 與 option 帶 --selkit-depth 反映層級', () => {
+    const inst = createSelkitDom(host, { options: NESTED })
+    inst.controller.open()
+    const groups = $$(inst.element, '.selkit__group')
+    const options = $$(inst.element, '.selkit__option')
+    expect(groups.map((g) => g.style.getPropertyValue('--selkit-depth'))).toEqual([
+      '0',
+      '1',
+    ])
+    expect(options.map((o) => o.style.getPropertyValue('--selkit-depth'))).toEqual([
+      '2',
+      '1',
+    ])
+  })
+
+  it('搜尋深層命中保留祖先標頭', () => {
+    const inst = createSelkitDom(host, { options: NESTED })
+    inst.controller.open()
+    inst.controller.setQuery('pro')
+    expect($$(inst.element, '.selkit__group').map((g) => g.textContent)).toEqual([
+      '電子',
+      '電腦',
+    ])
+    expect($$(inst.element, '.selkit__option').length).toBe(1)
+  })
+})
+
 describe('開關', () => {
   it('點擊 control 開啟並渲染選項', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })

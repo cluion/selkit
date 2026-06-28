@@ -17,6 +17,51 @@ createSelkit({ options, multiple: true })
 label 回填輸入框（同時開啟下拉），讓你直接編輯而不必重打。未開啟（預設）時 Backspace
 只會刪除該 tag。
 
+## 分組
+
+把選項用標題分組，傳入 `SelkitGroup`。分組標題不可選——只有葉（最末層）選項能選：
+
+```js
+createSelkit({
+  options: [
+    { label: '水果', options: [{ value: 'a', label: 'Apple' }] },
+    { label: '蔬菜', options: [{ value: 'c', label: 'Carrot' }] },
+  ],
+})
+```
+
+### 多層分組
+
+`options` 可再接一個 `SelkitGroup`，因此分組可無限巢狀。每一層縮排
+`--selkit-level-indent`（預設 `16px`），由每列的 `--selkit-depth` 驅動；中間層標題維持
+不可選，只有葉帶 value：
+
+```js
+createSelkit({
+  options: [
+    {
+      label: '電子',
+      options: [
+        { label: '電腦', options: [
+          { value: 'mbp', label: 'MacBook Pro' },
+          { value: 'mba', label: 'MacBook Air' },
+        ]},
+        { value: 'ip15', label: 'iPhone 15' },
+      ],
+    },
+  ],
+})
+```
+
+搜尋多層清單時，命中葉的祖先標題會保留下來，讓命中項留在層級脈絡中；無命中的分支則
+收闔消失。在 `.selkit`（或任一祖先）調整縮排：
+
+```css
+.selkit { --selkit-level-indent: 20px; }
+```
+
+分組的 `disabled` 會向下傳遞到所有子孫。
+
 ## checkbox 選項
 
 若要做「已選項仍顯示並打勾」的多選，啟用 `checkboxes`（DOM config 選項／Vue · React

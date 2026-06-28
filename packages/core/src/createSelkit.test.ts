@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createSelkit } from './createSelkit'
+import { normalize } from './utils'
 import type { SelkitItem } from './types'
 
 const OPTIONS: SelkitItem[] = [
@@ -201,6 +202,86 @@ describe('sorter 自訂結果排序', () => {
       sorter: (a, b) => b.label.localeCompare(a.label),
     })
     expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['a', 'b'])
+  })
+})
+
+describe('多層分組（縮排階層）', () => {
+  const NESTED: SelkitItem[] = [
+    {
+      label: '電子',
+      options: [
+        {
+          label: '電腦',
+          options: [
+            { value: 'mbp', label: 'MacBook Pro' },
+            { value: 'mba', label: 'MacBook Air' },
+          ],
+        },
+        { value: 'ip15', label: 'iPhone 15' },
+      ],
+    },
+    { label: '服裝', options: [{ value: 'tee', label: 'T-shirt' }] },
+  ]
+
+  const tag = (r: Record<string, unknown>) =>
+    'option' in r
+      ? `O${r.depth}:${(r as { option: { value: string } }).option.value}`
+      : `G${r.depth}:${r.label as string}`
+
+  it('normalize 遞迴攤平並標註每列 depth', () => {
+    const { rows, flat } = normalize(NESTED)
+    expect(rows.map((r) => tag(r as never))).toEqual([
+      'G0:電子',
+      'G1:電腦',
+      'O2:mbp',
+      'O2:mba',
+      'O1:ip15',
+      'G0:服裝',
+      'O1:tee',
+    ])
+    expect(flat.map((o) => o.value)).toEqual(['mbp', 'mba', 'ip15', 'tee'])
+  })
+
+  it('分組 disabled 向下傳遞到所有子孫', () => {
+    const { flat } = normalize([
+      {
+        label: 'G',
+        disabled: true,
+        options: [{ label: 'Sub', options: [{ value: 'x', label: 'X' }] }],
+      },
+    ])
+    expect(flat[0]!.disabled).toBe(true)
+  })
+
+  it('getGroupedView 帶出每列 depth（未搜尋）', () => {
+    const s = createSelkit({ options: NESTED })
+    expect(s.getGroupedView().rows.map((r) => tag(r as never))).toEqual([
+      'G0:電子',
+      'G1:電腦',
+      'O2:mbp',
+      'O2:mba',
+      'O1:ip15',
+      'G0:服裝',
+      'O1:tee',
+    ])
+  })
+
+  it('搜尋命中深層葉時保留祖先標頭（無命中分支不顯示）', () => {
+    const s = createSelkit({ options: NESTED })
+    s.setQuery('pro')
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['mbp'])
+    expect(s.getGroupedView().rows.map((r) => tag(r as never))).toEqual([
+      'G0:電子',
+      'G1:電腦',
+      'O2:mbp',
+    ])
+  })
+
+  it('一層舊資料向下相容（group depth 0、option depth 1）', () => {
+    const { rows } = normalize([
+      { label: '水果', options: [{ value: 'a', label: 'Apple' }] },
+    ])
+    expect(rows.map((r) => r.depth)).toEqual([0, 1])
   })
 })
 
@@ -503,11 +584,11 @@ describe('getGroupedView', () => {
     const s = createSelkit({ options: GROUPED })
     const view = s.getGroupedView()
     expect(view.rows).toEqual([
-      { type: 'group', label: 'Fruit' },
-      { type: 'option', index: 0, option: { value: 'a', label: 'Apple' } },
-      { type: 'option', index: 1, option: { value: 'b', label: 'Banana' } },
-      { type: 'group', label: 'Veg' },
-      { type: 'option', index: 2, option: { value: 'c', label: 'Carrot' } },
+      { type: 'group', label: 'Fruit', depth: 0 },
+      { type: 'option', index: 0, option: { value: 'a', label: 'Apple' }, depth: 1 },
+      { type: 'option', index: 1, option: { value: 'b', label: 'Banana' }, depth: 1 },
+      { type: 'group', label: 'Veg', depth: 0 },
+      { type: 'option', index: 2, option: { value: 'c', label: 'Carrot' }, depth: 1 },
     ])
   })
 
@@ -516,8 +597,8 @@ describe('getGroupedView', () => {
     s.setQuery('carrot')
     const view = s.getGroupedView()
     expect(view.rows).toEqual([
-      { type: 'group', label: 'Veg' },
-      { type: 'option', index: 0, option: { value: 'c', label: 'Carrot' } },
+      { type: 'group', label: 'Veg', depth: 0 },
+      { type: 'option', index: 0, option: { value: 'c', label: 'Carrot' }, depth: 1 },
     ])
   })
 })

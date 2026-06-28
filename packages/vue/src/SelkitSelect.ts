@@ -645,6 +645,7 @@ export const SelkitSelect = defineComponent({
           {
             key: `opt-${row.option.value}`,
             class: optClasses,
+            style: { '--selkit-depth': String(row.depth) },
             id: attrs.id,
             role: 'option',
             'aria-selected': String(attrs['aria-selected']),
@@ -693,7 +694,7 @@ export const SelkitSelect = defineComponent({
       const buildGroup = (row: GroupRow): VNode =>
         h(
           'div',
-          { key: `group-${row.label}`, class: cls('group') },
+          { key: `group-${row.label}`, class: cls('group'), style: { '--selkit-depth': String(row.depth) } },
           slots.group
             ? slots.group({ label: row.label, disabled: !!row.disabled })
             : row.label,

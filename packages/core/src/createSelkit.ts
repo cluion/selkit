@@ -388,7 +388,7 @@ class Selkit<T> implements SelkitController<T> {
     if (this.#isValidToken && !this.#isValidToken(query)) return
     const option = this.#createTag(query)
     this.#flat = [...this.#flat, option]
-    this.#rows = [...this.#rows, { kind: 'option', option, groupLabel: null }]
+    this.#rows = [...this.#rows, { kind: 'option', option, groupLabel: null, depth: 0 }]
     this.#fire('create', { option })
     this.select(option.value)
     this.#patch({ query: '', visibleOptions: this.#computeVisible('') })
@@ -449,7 +449,7 @@ class Selkit<T> implements SelkitController<T> {
     if (this.#isValidToken && !this.#isValidToken(token)) return
     const option = this.#createTag(token)
     this.#flat = [...this.#flat, option]
-    this.#rows = [...this.#rows, { kind: 'option', option, groupLabel: null }]
+    this.#rows = [...this.#rows, { kind: 'option', option, groupLabel: null, depth: 0 }]
     this.#fire('create', { option })
     this.select(option.value)
   }
@@ -525,6 +525,7 @@ class Selkit<T> implements SelkitController<T> {
           type: 'option' as const,
           index,
           option,
+          depth: 0,
         }))
 
     const createQuery = this.#createLabel()
@@ -540,36 +541,36 @@ class Selkit<T> implements SelkitController<T> {
     return { rows }
   }
 
-  /** 分組視圖：依 #rows 原始順序交錯標頭與選項 option 的 index 對齊 visibleOptions */
+  /** 分組視圖：依 #rows 順序交錯標頭與選項 多層時用 depth 棧保留命中葉的祖先標頭 */
   #groupedRows(): SelkitViewRow<T>[] {
     const idxByValue = new Map<string | number, number>()
     this.#state.visibleOptions.forEach((o, i) => idxByValue.set(o.value, i))
 
     const rows: SelkitViewRow<T>[] = []
-    let currentGroup: { label: string; disabled: boolean } | null = null
-    let groupEmitted = false
+    // 待 emit 的祖先標頭棧：option 命中時補上沿途尚未顯示的標頭
+    const stack: { label: string; disabled: boolean; depth: number; emitted: boolean }[] = []
 
     for (const row of this.#rows) {
       if (row.kind === 'group') {
-        currentGroup = { label: row.label, disabled: row.disabled }
-        groupEmitted = false
+        while (stack.length && stack[stack.length - 1]!.depth >= row.depth) stack.pop()
+        stack.push({ label: row.label, disabled: row.disabled, depth: row.depth, emitted: false })
         continue
-      }
-      if (row.groupLabel === null) {
-        currentGroup = null
-        groupEmitted = false
       }
       const index = idxByValue.get(row.option.value)
       if (index === undefined) continue
-      if (currentGroup && !groupEmitted) {
+      // 吐掉不屬於此選項祖先的同層/深層標頭（頂層選項 depth 0 → 清空）
+      while (stack.length && stack[stack.length - 1]!.depth >= row.depth) stack.pop()
+      for (const g of stack) {
+        if (g.emitted) continue
         rows.push({
           type: 'group',
-          label: currentGroup.label,
-          ...(currentGroup.disabled ? { disabled: true } : {}),
+          label: g.label,
+          depth: g.depth,
+          ...(g.disabled ? { disabled: true } : {}),
         })
-        groupEmitted = true
+        g.emitted = true
       }
-      rows.push({ type: 'option', index, option: row.option })
+      rows.push({ type: 'option', index, option: row.option, depth: row.depth })
     }
     return rows
   }

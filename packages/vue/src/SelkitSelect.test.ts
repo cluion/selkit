@@ -25,6 +25,31 @@ describe('SelkitSelect — 渲染', () => {
   })
 })
 
+describe('多層分組縮排', () => {
+  const NESTED: SelkitItem[] = [
+    {
+      label: '電子',
+      options: [
+        { label: '電腦', options: [{ value: 'mbp', label: 'MacBook Pro' }] },
+        { value: 'ip15', label: 'iPhone 15' },
+      ],
+    },
+  ]
+
+  it('group 與 option 帶 --selkit-depth 反映層級', async () => {
+    const w = mount(SelkitSelect, { props: { options: NESTED } })
+    await w.find('.selkit__control').trigger('pointerdown')
+    const groups = w.findAll('.selkit__group')
+    const opts = w.findAll('.selkit__option')
+    expect(
+      groups.map((g) => (g.element as HTMLElement).style.getPropertyValue('--selkit-depth')),
+    ).toEqual(['0', '1'])
+    expect(
+      opts.map((o) => (o.element as HTMLElement).style.getPropertyValue('--selkit-depth')),
+    ).toEqual(['2', '1'])
+  })
+})
+
 describe('開關與選取', () => {
   it('點 control 開啟並渲染選項', async () => {
     const w = mount(SelkitSelect, { props: { options: OPTIONS } })
