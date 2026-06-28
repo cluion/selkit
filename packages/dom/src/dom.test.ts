@@ -259,6 +259,49 @@ describe('多層分組縮排', () => {
   })
 })
 
+describe('樹狀模式 tree', () => {
+  const TREE: SelkitItem[] = [
+    {
+      label: '電子',
+      value: 'elec',
+      children: [
+        { value: 'pc', label: '電腦', children: [{ value: 'mbp', label: 'MacBook Pro' }] },
+      ],
+    },
+  ]
+
+  it('渲染 treeitem 帶展開箭頭與 depth', () => {
+    const inst = createSelkitDom(host, { options: TREE })
+    inst.controller.open()
+    const items = $$(inst.element, '.selkit__treeitem')
+    expect(items.map((el) => el.style.getPropertyValue('--selkit-depth'))).toEqual([
+      '0',
+      '1',
+      '2',
+    ])
+    expect($(inst.element, '.selkit__toggle[data-toggle]')).toBeTruthy()
+    expect(items[0]!.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('點擊展開箭頭收合父', () => {
+    const inst = createSelkitDom(host, { options: TREE })
+    inst.controller.open()
+    const toggle = $(inst.element, '.selkit__toggle[data-toggle]') as HTMLElement
+    pointerdown(toggle)
+    expect($$(inst.element, '.selkit__treeitem').length).toBe(1)
+    expect($(inst.element, '.selkit__treeitem').getAttribute('aria-expanded')).toBe(
+      'false',
+    )
+  })
+
+  it('父可選（點擊 treeitem 選取）', () => {
+    const inst = createSelkitDom(host, { options: TREE, multiple: true })
+    inst.controller.open()
+    pointerdown($$(inst.element, '.selkit__treeitem')[0]!)
+    expect(inst.controller.getState().selected.map((o) => o.value)).toEqual(['elec'])
+  })
+})
+
 describe('開關', () => {
   it('點擊 control 開啟並渲染選項', () => {
     const inst = createSelkitDom(host, { options: OPTIONS })

@@ -44,6 +44,7 @@ import {
   buildCreateRow,
   buildGroupRow,
   buildOption,
+  buildTreeRow,
   spacer,
 } from './templates'
 
@@ -355,6 +356,17 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
 
     this.#dropdown.addEventListener('pointerdown', (e) => {
       e.stopPropagation() // 內部互動不冒泡到 outside-click handler
+      // tree 展開／收合箭頭：優先處理 不觸發選取
+      const toggleEl = (e.target as HTMLElement).closest(
+        '[data-toggle]',
+      ) as HTMLElement | null
+      if (toggleEl) {
+        e.preventDefault()
+        const idx = Number(toggleEl.dataset.toggle)
+        const opt = this.controller.getState().visibleOptions[idx]
+        if (opt) this.controller.toggleExpanded(opt.value)
+        return
+      }
       const optEl = (e.target as HTMLElement).closest(
         `.${this.#cls('option')}`,
       ) as HTMLElement | null
@@ -754,6 +766,14 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     if (row.type === 'group') {
       this.#dropdown.append(
         buildGroupRow(row, this.#prefix, this.#templateGroup),
+      )
+      return
+    }
+    if (row.type === 'treeitem') {
+      this.#dropdown.append(
+        buildTreeRow(row, this.#prefix, a11y, activeIndex, (label) =>
+          this.controller.highlightLabel(label),
+        ),
       )
       return
     }

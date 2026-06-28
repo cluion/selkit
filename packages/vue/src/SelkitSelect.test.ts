@@ -50,6 +50,43 @@ describe('多層分組縮排', () => {
   })
 })
 
+describe('樹狀模式 tree', () => {
+  const TREE: SelkitItem[] = [
+    {
+      value: 'elec',
+      label: '電子',
+      children: [
+        { value: 'pc', label: '電腦', children: [{ value: 'mbp', label: 'MacBook Pro' }] },
+      ],
+    },
+  ]
+
+  it('渲染 treeitem 帶展開箭頭與 depth', async () => {
+    const w = mount(SelkitSelect, { props: { options: TREE } })
+    await w.find('.selkit__control').trigger('pointerdown')
+    const items = w.findAll('.selkit__treeitem')
+    expect(
+      items.map((el) => (el.element as HTMLElement).style.getPropertyValue('--selkit-depth')),
+    ).toEqual(['0', '1', '2'])
+    expect(w.find('.selkit__toggle').exists()).toBe(true)
+    expect(items[0]!.attributes('aria-expanded')).toBe('true')
+  })
+
+  it('點擊展開箭頭收合父', async () => {
+    const w = mount(SelkitSelect, { props: { options: TREE } })
+    await w.find('.selkit__control').trigger('pointerdown')
+    await w.find('.selkit__toggle').trigger('pointerdown')
+    expect(w.findAll('.selkit__treeitem')).toHaveLength(1)
+  })
+
+  it('父可選（點擊 treeitem）', async () => {
+    const w = mount(SelkitSelect, { props: { options: TREE, multiple: true } })
+    await w.find('.selkit__control').trigger('pointerdown')
+    await w.findAll('.selkit__treeitem')[0]!.trigger('pointerdown')
+    expect(w.findAll('.selkit__treeitem')[0]!.attributes('aria-selected')).toBe('true')
+  })
+})
+
 describe('開關與選取', () => {
   it('點 control 開啟並渲染選項', async () => {
     const w = mount(SelkitSelect, { props: { options: OPTIONS } })

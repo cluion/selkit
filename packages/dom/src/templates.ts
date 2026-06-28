@@ -5,7 +5,7 @@
  * 由 dom.ts 的渲染協調層呼叫 不依賴 instance
  */
 import type { HighlightPart, SelkitA11y, SelkitOption } from '@selkit/core'
-import type { CreateRow, GroupRow, OptionRow } from './types'
+import type { CreateRow, GroupRow, OptionRow, TreeRow } from './types'
 
 /** 套用模板輸出：字串走 textContent（防 XSS）Node 直接掛入  */
 export function applyTemplate(host: HTMLElement, out: string | Node): void {
@@ -121,4 +121,40 @@ export function buildOption<T>(
     option.textContent = row.option.label
   }
   return option
+}
+
+/** tree 模式節點列：可選父／葉 帶展開箭頭 與 option 共用樣式  */
+export function buildTreeRow<T>(
+  row: TreeRow<T>,
+  prefix: string,
+  a11y: SelkitA11y,
+  activeIndex: number,
+  highlight?: (label: string) => HighlightPart[],
+): HTMLElement {
+  const attrs = a11y.option(row.index)
+  const el = document.createElement('div')
+  el.className = `${prefix}__option ${prefix}__treeitem`
+  el.id = attrs.id
+  el.dataset.index = String(row.index)
+  el.style.setProperty('--selkit-depth', String(row.depth))
+  el.setAttribute('role', 'treeitem')
+  el.setAttribute('aria-selected', String(attrs['aria-selected']))
+  if (attrs['aria-disabled']) el.setAttribute('aria-disabled', 'true')
+  if (row.hasChildren) el.setAttribute('aria-expanded', String(row.expanded))
+  if (row.index === activeIndex) el.classList.add(`${prefix}__option--active`)
+  if (attrs['aria-selected']) el.classList.add(`${prefix}__option--selected`)
+  // 展開箭頭：父可點（data-toggle 帶 index）葉用 spacer 對齊縮排
+  const toggle = document.createElement(row.hasChildren ? 'button' : 'span')
+  toggle.className = `${prefix}__toggle`
+  if (row.hasChildren) {
+    ;(toggle as HTMLButtonElement).type = 'button'
+    toggle.dataset.toggle = String(row.index)
+    toggle.tabIndex = -1
+    toggle.setAttribute('aria-hidden', 'true')
+    toggle.textContent = row.expanded ? '▾' : '▸'
+  }
+  el.append(toggle)
+  if (highlight) renderHighlightParts(el, highlight(row.option.label), prefix)
+  else el.append(document.createTextNode(row.option.label))
+  return el
 }

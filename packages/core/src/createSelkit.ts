@@ -27,8 +27,11 @@ import type {
 import {
   defaultFilter,
   fuzzyFilter,
+  hasTree,
   normalize,
   normalizeLoadResult,
+  normalizeTree,
+  type NormNode,
   type NormRow,
 } from './utils'
 import { highlightMatches } from './highlight'
@@ -90,9 +93,16 @@ class Selkit<T> implements SelkitController<T> {
       ) => SelkitOption<T>[] | Promise<SelkitOption<T>[]>)
     | undefined
 
-  #rows: NormRow<T>[]
-  #flat: SelkitOption<T>[]
+  #rows!: NormRow<T>[]
+  #flat!: SelkitOption<T>[]
   #state: SelkitState<T>
+
+  /** tree 模式：選項樹 + 扁平池 + value→節點映射 + 收合集合（空＝全展開） */
+  #treeMode = false
+  #tree: NormNode<T>[] = []
+  #treeFlat: SelkitOption<T>[] = []
+  #nodeByValue = new Map<string | number, NormNode<T>>()
+  #collapsed = new Set<string | number>()
 
   #debounceTimer: ReturnType<typeof setTimeout> | null = null
   #loadSeq = 0
@@ -137,9 +147,7 @@ class Selkit<T> implements SelkitController<T> {
     this.#restoreOnBackspace = config.restoreOnBackspace ?? false
     this.#resolveSelected = config.resolveSelected
 
-    const { rows, flat } = normalize(config.options ?? [])
-    this.#rows = rows
-    this.#flat = flat
+    this.#buildOptions(config.options ?? [])
 
     const { selected, missing } = this.#resolveInitial(config.value)
     const initialVisible = this.#computeVisible('', selected)
@@ -353,6 +361,21 @@ class Selkit<T> implements SelkitController<T> {
     this.#isSelected(value) ? this.deselect(value) : this.select(value)
   }
 
+  toggleExpanded(value: string | number): void {
+    if (!this.#treeMode) return
+    const node = this.#nodeByValue.get(value)
+    if (!node || node.children.length === 0) return
+    const next = new Set(this.#collapsed)
+    if (next.has(value)) next.delete(value)
+    else next.add(value)
+    this.#collapsed = next
+    const visibleOptions = this.#treeVisible()
+    this.#patch({
+      visibleOptions,
+      activeIndex: this.#state.isOpen ? this.#firstEnabled(visibleOptions) : -1,
+    })
+  }
+
   clear(): void {
     if (this.#state.selected.length === 0) return
     this.#applySelection([])
@@ -458,9 +481,7 @@ class Selkit<T> implements SelkitController<T> {
   setOptions(options: SelkitItem<T>[]): void {
     // 選項換掉 遠端快取視為過期 清空
     this.#cacheStore.clear()
-    const { rows, flat } = normalize(options)
-    this.#rows = rows
-    this.#flat = flat
+    this.#buildOptions(options)
     const visibleOptions = this.#computeVisible(this.#state.query)
     this.#patch({
       visibleOptions,
@@ -486,6 +507,9 @@ class Selkit<T> implements SelkitController<T> {
     const id = this.#id
     const state = this.#state
     const isSelected = (value: string | number) => this.#isSelected(value)
+    const treeMode = this.#treeMode
+    const nodeByValue = this.#nodeByValue
+    const collapsed = this.#collapsed
     const activeId =
       state.isOpen && state.activeIndex >= 0
         ? `${id}-opt-${state.activeIndex}`
@@ -507,26 +531,33 @@ class Selkit<T> implements SelkitController<T> {
       },
       option(index: number) {
         const opt = state.visibleOptions[index]
+        const node = opt ? nodeByValue.get(opt.value) : undefined
+        const hasChildren = !!node?.children.length
         return {
-          role: 'option' as const,
+          role: (treeMode ? 'treeitem' : 'option') as 'option' | 'treeitem',
           id: `${id}-opt-${index}`,
           'aria-selected': opt ? isSelected(opt.value) : false,
           ...(opt?.disabled ? { 'aria-disabled': true } : {}),
+          ...(treeMode && hasChildren && opt
+            ? { 'aria-expanded': !collapsed.has(opt.value) }
+            : {}),
         }
       },
     }
   }
 
   getGroupedView(): SelkitGroupedView<T> {
-    const rows: SelkitViewRow<T>[] = this.#grouped()
-      ? this.#groupedRows()
-      : // 扁平清單：直接依 visibleOptions 順序（反映 sorter）index 即陣列位置
-        this.#state.visibleOptions.map((option, index) => ({
-          type: 'option' as const,
-          index,
-          option,
-          depth: 0,
-        }))
+    const rows: SelkitViewRow<T>[] = this.#treeMode
+      ? this.#treeRows()
+      : this.#grouped()
+        ? this.#groupedRows()
+        : // 扁平清單：直接依 visibleOptions 順序（反映 sorter）index 即陣列位置
+          this.#state.visibleOptions.map((option, index) => ({
+            type: 'option' as const,
+            index,
+            option,
+            depth: 0,
+          }))
 
     const createQuery = this.#createLabel()
     if (createQuery !== null) {
@@ -573,6 +604,65 @@ class Selkit<T> implements SelkitController<T> {
       rows.push({ type: 'option', index, option: row.option, depth: row.depth })
     }
     return rows
+  }
+
+  /** 正規化選項：tree 模式（option.children）或一般（group/扁平）分流  */
+  #buildOptions(items: SelkitItem<T>[]): void {
+    if (hasTree(items)) {
+      this.#treeMode = true
+      const opts = items.filter((i): i is SelkitOption<T> => !('options' in i))
+      const { tree, flat } = normalizeTree(opts)
+      this.#tree = tree
+      this.#treeFlat = flat
+      this.#flat = flat
+      this.#rows = []
+      this.#nodeByValue = new Map()
+      const fill = (nodes: NormNode<T>[]) => {
+        for (const n of nodes) {
+          this.#nodeByValue.set(n.option.value, n)
+          fill(n.children)
+        }
+      }
+      fill(tree)
+      return
+    }
+    this.#treeMode = false
+    const { rows, flat } = normalize(items)
+    this.#rows = rows
+    this.#flat = flat
+    this.#tree = []
+    this.#treeFlat = []
+    this.#nodeByValue = new Map()
+  }
+
+  /** tree 模式可見序列：DFS 跳過收合父的子樹  */
+  #treeVisible(): SelkitOption<T>[] {
+    const result: SelkitOption<T>[] = []
+    const walk = (nodes: NormNode<T>[]) => {
+      for (const n of nodes) {
+        result.push(n.option)
+        if (n.children.length && !this.#collapsed.has(n.option.value)) {
+          walk(n.children)
+        }
+      }
+    }
+    walk(this.#tree)
+    return result
+  }
+
+  /** tree 模式視圖：可見序列映射為 treeitem rows  */
+  #treeRows(): SelkitViewRow<T>[] {
+    return this.#state.visibleOptions.map((option, index) => {
+      const node = this.#nodeByValue.get(option.value)
+      return {
+        type: 'treeitem' as const,
+        index,
+        option,
+        depth: node?.depth ?? 0,
+        expanded: node ? !this.#collapsed.has(option.value) : true,
+        hasChildren: !!node?.children.length,
+      }
+    })
   }
 
   getEmptyMessage(): string {
@@ -801,6 +891,7 @@ class Selkit<T> implements SelkitController<T> {
     query: string,
     selected: SelkitOption<T>[] = this.#state.selected,
   ): SelkitOption<T>[] {
+    if (this.#treeMode) return this.#treeVisible()
     if (this.#belowMin(query)) return []
     let pool = this.#flat
     if (this.#hideSelected && selected.length > 0) {

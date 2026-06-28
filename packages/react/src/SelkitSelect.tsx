@@ -641,12 +641,61 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     </div>
   )
 
+  const buildTreeRow = (
+    row: Extract<SelkitViewRow<T>, { type: 'treeitem' }>,
+  ): ReactNode => {
+    const attrs = a11y.option(row.index)
+    const isDisabled = attrs['aria-disabled'] === true
+    const optClass = [cls('option'), cls('treeitem')]
+    if (row.index === s.activeIndex) optClass.push(cls('option', 'active'))
+    if (attrs['aria-selected']) optClass.push(cls('option', 'selected'))
+    return (
+      <div
+        key={`tree-${row.option.value}`}
+        className={optClass.join(' ')}
+        id={attrs.id}
+        role="treeitem"
+        aria-selected={attrs['aria-selected']}
+        aria-disabled={isDisabled || undefined}
+        aria-expanded={row.hasChildren ? row.expanded : undefined}
+        style={{ '--selkit-depth': row.depth } as unknown as CSSProperties}
+        onPointerDown={(e) => {
+          if (isDisabled) return
+          e.preventDefault()
+          if (multiple) controller.toggleSelect(row.option.value)
+          else controller.select(row.option.value)
+        }}
+      >
+        {row.hasChildren ? (
+          <button
+            type="button"
+            className={cls('toggle')}
+            tabIndex={-1}
+            aria-hidden="true"
+            onPointerDown={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              controller.toggleExpanded(row.option.value)
+            }}
+          >
+            {row.expanded ? '▾' : '▸'}
+          </button>
+        ) : (
+          <span className={cls('toggle')} />
+        )}
+        {renderHighlighted(row.option.label)}
+      </div>
+    )
+  }
+
   const buildRow = (row: SelkitViewRow<T>): ReactNode =>
     row.type === 'group'
       ? buildGroup(row)
-      : row.type === 'create'
-        ? buildCreateRow(row)
-        : buildOption(row)
+      : row.type === 'treeitem'
+        ? buildTreeRow(row)
+        : row.type === 'create'
+          ? buildCreateRow(row)
+          : buildOption(row)
 
   // 每列高度：分組標題用 groupHeight 其餘用 itemHeight
   const rowHeights = (rows: readonly SelkitViewRow<T>[]): number[] =>

@@ -700,12 +700,65 @@ export const SelkitSelect = defineComponent({
             : row.label,
         )
 
+      const buildTreeRow = (
+        row: Extract<SelkitViewRow, { type: 'treeitem' }>,
+      ): VNode => {
+        const attrs = a11y.option(row.index)
+        const classes = [cls('option'), cls('treeitem')]
+        if (row.index === s.activeIndex) classes.push(cls('option', 'active'))
+        if (attrs['aria-selected']) classes.push(cls('option', 'selected'))
+        const isDisabled = attrs['aria-disabled'] === true
+        return h(
+          'div',
+          {
+            key: `tree-${row.option.value}`,
+            class: classes,
+            id: attrs.id,
+            role: 'treeitem',
+            'aria-selected': String(attrs['aria-selected']),
+            ...(isDisabled ? { 'aria-disabled': 'true' } : {}),
+            ...(row.hasChildren ? { 'aria-expanded': String(row.expanded) } : {}),
+            style: { '--selkit-depth': String(row.depth) },
+            onPointerdown: (e: PointerEvent) => {
+              if (isDisabled) return
+              e.preventDefault()
+              if (props.multiple) controller.toggleSelect(row.option.value)
+              else controller.select(row.option.value)
+            },
+          },
+          [
+            row.hasChildren
+              ? h(
+                  'button',
+                  {
+                    type: 'button' as const,
+                    class: cls('toggle'),
+                    tabindex: '-1',
+                    'aria-hidden': 'true',
+                    onPointerdown: (e: PointerEvent) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      controller.toggleExpanded(row.option.value)
+                    },
+                  },
+                  row.expanded ? '▾' : '▸',
+                )
+              : h('span', { class: cls('toggle') }),
+            ...controller
+              .highlightLabel(row.option.label)
+              .map((p) => (p.match ? h('mark', { class: cls('match') }, p.text) : p.text)),
+          ],
+        )
+      }
+
       const buildRow = (row: SelkitViewRow): VNode =>
         row.type === 'group'
           ? buildGroup(row)
-          : row.type === 'create'
-            ? buildCreateRow(row)
-            : buildOption(row)
+          : row.type === 'treeitem'
+            ? buildTreeRow(row)
+            : row.type === 'create'
+              ? buildCreateRow(row)
+              : buildOption(row)
 
       // 每列高度：分組標題用 groupHeight 其餘用 itemHeight
       const rowHeights = (rows: readonly SelkitViewRow[]): number[] =>

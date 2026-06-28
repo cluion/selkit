@@ -62,6 +62,29 @@ createSelkit({
 
 分組的 `disabled` 會向下傳遞到所有子孫。
 
+## 樹狀模式 tree
+
+選項帶 `children` 時，select 會進入 **樹狀模式**：每個節點（父或葉）都有 value、
+都可選；父節點透過 `controller.toggleExpanded(value)` 展開／收合。這與
+[`SelkitGroup`](#分組)（不可選的標題）不同：`children` 讓父節點本身成為可選項。
+
+```js
+createSelkit({
+  multiple: true,
+  options: [
+    { value: 'elec', label: '電子', children: [
+      { value: 'pc', label: '電腦', children: [
+        { value: 'mbp', label: 'MacBook Pro' },
+        { value: 'mba', label: 'MacBook Air' },
+      ]},
+    ]},
+  ],
+})
+```
+
+> **Phase 1**（首版）：父節點可選但**獨立**——選父不會連動勾選子（cascade 之後再做）。
+> 預設全部展開。樹狀模式不虛擬捲動（收合會變動可見集），搜尋暫不過濾樹。
+
 ## checkbox 選項
 
 若要做「已選項仍顯示並打勾」的多選，啟用 `checkboxes`（DOM config 選項／Vue · React

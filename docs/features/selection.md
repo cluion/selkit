@@ -66,6 +66,33 @@ hit stays in context; branches with no match collapse away. Tune the indent on
 
 A group's `disabled` propagates to all its descendants.
 
+## Tree mode
+
+When an option carries `children`, the select switches to **tree mode**: every
+node — parent or leaf — has a value and is selectable; parents expand/collapse
+through `controller.toggleExpanded(value)`. This is distinct from
+[`SelkitGroup`](#grouping) (a non-selectable heading): `children` makes the
+parent a selectable node.
+
+```js
+createSelkit({
+  multiple: true,
+  options: [
+    { value: 'elec', label: 'Electronics', children: [
+      { value: 'pc', label: 'Computers', children: [
+        { value: 'mbp', label: 'MacBook Pro' },
+        { value: 'mba', label: 'MacBook Air' },
+      ]},
+    ]},
+  ],
+})
+```
+
+> **Phase 1** (first release): parents are selectable but **independent** —
+> selecting a parent does not cascade to its children (cascade arrives later).
+> All nodes are expanded by default. Tree mode does not virtualize (collapsing
+> changes the visible set), and search does not yet filter the tree.
+
 ## Checkbox options
 
 For a multi-select where chosen options stay visible with a tick, enable

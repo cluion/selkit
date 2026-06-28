@@ -43,6 +43,51 @@ describe('多層分組縮排', () => {
   })
 })
 
+describe('樹狀模式 tree', () => {
+  const TREE: SelkitItem[] = [
+    {
+      value: 'elec',
+      label: '電子',
+      children: [
+        { value: 'pc', label: '電腦', children: [{ value: 'mbp', label: 'MacBook Pro' }] },
+      ],
+    },
+  ]
+
+  it('渲染 treeitem 帶展開箭頭與 depth', () => {
+    const { container } = render(<SelkitSelect options={TREE} />)
+    fireEvent.pointerDown(control(container))
+    const items = Array.from(
+      container.querySelectorAll('.selkit__treeitem'),
+    ) as HTMLElement[]
+    expect(items.map((el) => el.style.getPropertyValue('--selkit-depth'))).toEqual([
+      '0',
+      '1',
+      '2',
+    ])
+    expect(container.querySelector('.selkit__toggle')).toBeTruthy()
+    expect(items[0]!.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('點擊展開箭頭收合父', () => {
+    const { container } = render(<SelkitSelect options={TREE} />)
+    fireEvent.pointerDown(control(container))
+    fireEvent.pointerDown(container.querySelector('.selkit__toggle')!)
+    expect(container.querySelectorAll('.selkit__treeitem')).toHaveLength(1)
+  })
+
+  it('父可選（點擊 treeitem）', () => {
+    const { container } = render(<SelkitSelect options={TREE} multiple />)
+    fireEvent.pointerDown(control(container))
+    fireEvent.pointerDown(container.querySelectorAll('.selkit__treeitem')[0]!)
+    expect(
+      (container.querySelectorAll('.selkit__treeitem')[0] as HTMLElement).getAttribute(
+        'aria-selected',
+      ),
+    ).toBe('true')
+  })
+})
+
 describe('搜尋命中高亮', () => {
   it('query 命中以 <mark> 標示，整段文字不變', () => {
     const { container } = render(<SelkitSelect options={OPTIONS} />)

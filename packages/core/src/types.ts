@@ -15,6 +15,8 @@ export interface SelkitOption<T = unknown> {
   label: string
   disabled?: boolean
   data?: T
+  /** 子節點 帶此鍵的選項為可選父 進入 tree 模式（父可選、可收合） */
+  children?: SelkitOption<T>[]
 }
 
 /** 傳入的選項可以是扁平選項或分組  */
@@ -235,10 +237,11 @@ export interface SelkitListboxA11y {
 }
 
 export interface SelkitOptionA11y {
-  role: 'option'
+  role: 'option' | 'treeitem'
   id: string
   'aria-selected': boolean
   'aria-disabled'?: boolean
+  'aria-expanded'?: boolean
 }
 
 export interface SelkitA11y {
@@ -261,6 +264,8 @@ export interface HighlightPart {
 export type SelkitViewRow<T = unknown> =
   | { type: 'group'; label: string; disabled?: boolean; depth: number }
   | { type: 'option'; index: number; option: SelkitOption<T>; depth: number }
+  /** tree 模式的可選父／葉 index 對齊 visibleOptions expanded 表是否展開 hasChildren 表有無子節點 */
+  | { type: 'treeitem'; index: number; option: SelkitOption<T>; depth: number; expanded: boolean; hasChildren: boolean }
   /** taggable 的「建立新項」列 index 對齊 activeIndex（接在實選項之後）label 為已套用 i18n 的顯示文字 */
   | { type: 'create'; index: number; query: string; label: string }
 
@@ -311,6 +316,8 @@ export interface SelkitController<T = unknown> {
   select(value: string | number): void
   deselect(value: string | number): void
   toggleSelect(value: string | number): void
+  /** tree 模式切換節點展開／收合（預設全展開）非樹模式無作用 */
+  toggleExpanded(value: string | number): void
   clear(): void
   /** 重排已選項目 將索引 from 的項目移到 to 用於 tag 拖曳排序 */
   moveSelected(from: number, to: number): void

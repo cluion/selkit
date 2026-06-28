@@ -14,6 +14,7 @@ import type { PositionerFactory } from './positioner'
 
 export type OptionRow<T = unknown> = Extract<SelkitViewRow<T>, { type: 'option' }>
 export type GroupRow = Extract<SelkitViewRow, { type: 'group' }>
+export type TreeRow<T = unknown> = Extract<SelkitViewRow<T>, { type: 'treeitem' }>
 export type CreateRow = Extract<SelkitViewRow, { type: 'create' }>
 
 export interface SelkitDomConfig<T = unknown> extends SelkitConfig<T> {

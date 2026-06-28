@@ -112,6 +112,7 @@
   background: var(--selkit-tag-bg);
   border-radius: 4px;
   font-size: 0.875em;
+  line-height: 1.4;
 }
 
 /** 摺疊的 +M 標記（maxSelectedDisplay）*/
@@ -271,6 +272,27 @@
 .selkit__option--selected {
   background: var(--selkit-selected-bg);
   font-weight: 500;
+}
+
+/** tree 模式展開箭頭（▾/▸）葉用 spacer 對齊縮排 */
+.selkit__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--selkit-muted);
+  cursor: pointer;
+  font-size: 0.75em;
+  line-height: 1;
+  vertical-align: middle;
+}
+.selkit__toggle:hover {
+  color: var(--selkit-fg);
 }
 
 .selkit__option[aria-disabled='true'] {

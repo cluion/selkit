@@ -96,3 +96,56 @@ export function normalize<T>(
   walk(items, 0, false, null)
   return { rows, flat }
 }
+
+/** 樹狀正規化節點：父可選 帶 depth 與子節點  */
+export interface NormNode<T = unknown> {
+  option: SelkitOption<T>
+  depth: number
+  disabled: boolean
+  children: NormNode<T>[]
+}
+
+/** 遞迴深度上限 防呆循環參照  */
+const MAX_TREE_DEPTH = 64
+
+/** option 是否帶非空 children  */
+const hasChildren = <T>(o: SelkitOption<T>): boolean =>
+  Array.isArray(o.children) && o.children.length > 0
+
+/** 傳入選項是否含樹狀結構（任一 option 帶 children）→ 進 tree 模式  */
+export function hasTree<T>(items: SelkitItem<T>[]): boolean {
+  return items.some((i) => !isGroup(i) && hasChildren(i))
+}
+
+/**
+ * 將帶 children 的選項樹正規化為 NormNode 樹與扁平序列（DFS 父＋葉）
+ * disabled 沿祖先鏈向下傳遞（產生新物件 不變動原始資料）
+ */
+export function normalizeTree<T>(
+  options: SelkitOption<T>[],
+): { tree: NormNode<T>[]; flat: SelkitOption<T>[] } {
+  const flat: SelkitOption<T>[] = []
+  const build = (
+    list: SelkitOption<T>[],
+    depth: number,
+    parentDisabled: boolean,
+  ): NormNode<T>[] => {
+    if (depth >= MAX_TREE_DEPTH) return []
+    const nodes: NormNode<T>[] = []
+    for (const item of list) {
+      const disabled = parentDisabled || (item.disabled ?? false)
+      const eff: SelkitOption<T> = disabled ? { ...item, disabled: true } : item
+      flat.push(eff)
+      const kids = Array.isArray(item.children) ? item.children : []
+      nodes.push({
+        option: eff,
+        depth,
+        disabled,
+        children: kids.length ? build(kids, depth + 1, disabled) : [],
+      })
+    }
+    return nodes
+  }
+  const tree = build(options, 0, false)
+  return { tree, flat }
+}

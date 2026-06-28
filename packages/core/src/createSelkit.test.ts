@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createSelkit } from './createSelkit'
-import { normalize } from './utils'
+import { hasTree, normalize, normalizeTree } from './utils'
 import type { SelkitItem } from './types'
 
 const OPTIONS: SelkitItem[] = [
@@ -282,6 +282,109 @@ describe('多層分組（縮排階層）', () => {
       { label: '水果', options: [{ value: 'a', label: 'Apple' }] },
     ])
     expect(rows.map((r) => r.depth)).toEqual([0, 1])
+  })
+})
+
+describe('樹狀模式（normalizeTree）', () => {
+  const TREE = [
+    {
+      value: 'elec',
+      label: '電子',
+      children: [
+        {
+          value: 'pc',
+          label: '電腦',
+          children: [{ value: 'mbp', label: 'MacBook Pro' }],
+        },
+        { value: 'ip15', label: 'iPhone 15' },
+      ],
+    },
+  ]
+
+  it('正規化為 NormNode 樹（depth + children）', () => {
+    const { tree } = normalizeTree(TREE)
+    expect(tree).toHaveLength(1)
+    const elec = tree[0]!
+    expect(elec.option.value).toBe('elec')
+    expect(elec.depth).toBe(0)
+    expect(elec.children).toHaveLength(2)
+    const pc = elec.children[0]!
+    expect(pc.depth).toBe(1)
+    expect(pc.children[0]!.option.value).toBe('mbp')
+    expect(pc.children[0]!.depth).toBe(2)
+    expect(elec.children[1]!.children).toEqual([]) // 葉
+  })
+
+  it('flat 為 DFS 父＋葉序列', () => {
+    const { flat } = normalizeTree(TREE)
+    expect(flat.map((o) => o.value)).toEqual(['elec', 'pc', 'mbp', 'ip15'])
+  })
+
+  it('disabled 沿祖先鏈向下傳遞', () => {
+    const { flat, tree } = normalizeTree([
+      { value: 'p', label: 'P', disabled: true, children: [{ value: 'c', label: 'C' }] },
+    ])
+    expect(flat.find((o) => o.value === 'c')!.disabled).toBe(true)
+    expect(tree[0]!.children[0]!.disabled).toBe(true)
+  })
+
+  it('hasTree 偵測樹狀資料（option.children 區別於 group）', () => {
+    expect(hasTree(TREE)).toBe(true)
+    expect(hasTree([{ value: 'a', label: 'A' }])).toBe(false)
+    expect(hasTree([{ label: 'G', options: [{ value: 'a', label: 'A' }] }])).toBe(false)
+  })
+})
+
+describe('樹狀模式（tree）', () => {
+  const TREE: SelkitItem[] = [
+    {
+      value: 'elec',
+      label: '電子',
+      children: [
+        { value: 'pc', label: '電腦', children: [{ value: 'mbp', label: 'MacBook Pro' }] },
+        { value: 'ip15', label: 'iPhone 15' },
+      ],
+    },
+  ]
+
+  const tag = (r: Record<string, unknown>) =>
+    r.type === 'treeitem'
+      ? `T${r.depth}:${(r as { option: { value: string } }).option.value}${
+          (r as { hasChildren: boolean }).hasChildren ? '*' : ''
+        }`
+      : '?'
+
+  it('全展開：getGroupedView 為 treeitem DFS 序列', () => {
+    const s = createSelkit({ options: TREE })
+    expect(s.getGroupedView().rows.map((r) => tag(r as never))).toEqual([
+      'T0:elec*',
+      'T1:pc*',
+      'T2:mbp',
+      'T1:ip15',
+    ])
+  })
+
+  it('toggleExpanded 收合父 → 子樹不顯示', () => {
+    const s = createSelkit({ options: TREE })
+    s.toggleExpanded('elec')
+    expect(
+      s.getGroupedView().rows.map((r) => (r as { option: { value: string } }).option.value),
+    ).toEqual(['elec'])
+  })
+
+  it('父可選、無 cascade（選父不連動子）', () => {
+    const s = createSelkit({ options: TREE, multiple: true })
+    s.select('elec')
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['elec'])
+  })
+
+  it('a11y 父節點為 treeitem + aria-expanded', () => {
+    const s = createSelkit({ options: TREE })
+    const a = s.a11y()
+    expect(a.option(0).role).toBe('treeitem') // elec 父
+    expect(a.option(0)['aria-expanded']).toBe(true)
+    expect(a.option(2).role).toBe('treeitem') // mbp 葉
+    expect(a.option(2)['aria-expanded']).toBeUndefined()
   })
 })
 
