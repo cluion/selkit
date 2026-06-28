@@ -1,6 +1,6 @@
 {
   "name": "@selkit/vue",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Vue 3 adapter for Selkit — reactive renderer over @selkit/core.",
   "license": "MIT",
   "type": "module",
