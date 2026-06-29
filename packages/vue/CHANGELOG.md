@@ -1,5 +1,19 @@
 # @selkit/vue
 
+## 0.17.0
+
+### Minor Changes
+
+- eec4299: Tree search: in tree mode, searching filters the tree and auto-expands the
+  ancestor chain of any matching node (branches with no match collapse away);
+  clearing the query restores the original expand state. core `#treeVisible` takes
+  a query; no adapter changes needed (visibleOptions already drives rendering).
+
+### Patch Changes
+
+- Updated dependencies [eec4299]
+  - @selkit/core@0.17.0
+
 ## 0.16.0
 
 ### Minor Changes
