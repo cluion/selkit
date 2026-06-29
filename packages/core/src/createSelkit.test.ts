@@ -478,6 +478,65 @@ describe('樹狀模式 cascade（Phase 2）', () => {
   })
 })
 
+describe('樹狀模式搜尋', () => {
+  const TREE: SelkitItem[] = [
+    {
+      value: 'elec',
+      label: '電子',
+      children: [
+        {
+          value: 'pc',
+          label: '電腦',
+          children: [
+            { value: 'mbp', label: 'MacBook Pro' },
+            { value: 'mba', label: 'MacBook Air' },
+          ],
+        },
+        { value: 'ip15', label: 'iPhone 15' },
+      ],
+    },
+    { value: 'cloth', label: '服裝', children: [{ value: 'tee', label: 'T-shirt' }] },
+  ]
+
+  it('搜尋命中多葉 → 保留命中 + 祖先（自動展開）', () => {
+    const s = createSelkit({ options: TREE })
+    s.setQuery('macbook')
+    expect(
+      s
+        .getGroupedView()
+        .rows.map((r) => (r as { option: { value: string } }).option.value),
+    ).toEqual(['elec', 'pc', 'mbp', 'mba'])
+  })
+
+  it('搜尋命中單葉 → 祖先鏈保留、無命中分支消失', () => {
+    const s = createSelkit({ options: TREE })
+    s.setQuery('iphone')
+    expect(
+      s
+        .getGroupedView()
+        .rows.map((r) => (r as { option: { value: string } }).option.value),
+    ).toEqual(['elec', 'ip15'])
+  })
+
+  it('搜尋無命中 → noResults', () => {
+    const s = createSelkit({ options: TREE })
+    s.setQuery('zzz')
+    expect(s.getState().visibleOptions).toHaveLength(0)
+    expect(s.getState().noResults).toBe(true)
+  })
+
+  it('query 清空 → 恢復全展開序列', () => {
+    const s = createSelkit({ options: TREE })
+    s.setQuery('macbook')
+    s.setQuery('')
+    expect(
+      s
+        .getGroupedView()
+        .rows.map((r) => (r as { option: { value: string } }).option.value),
+    ).toEqual(['elec', 'pc', 'mbp', 'mba', 'ip15', 'cloth', 'tee'])
+  })
+})
+
 describe('單選', () => {
   it('select 取代既有選取並觸發 change', () => {
     const s = createSelkit({ options: OPTIONS })

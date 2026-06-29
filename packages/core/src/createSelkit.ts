@@ -687,15 +687,38 @@ class Selkit<T> implements SelkitController<T> {
     this.#nodeByValue = new Map()
   }
 
-  /** tree 模式可見序列：DFS 跳過收合父的子樹  */
-  #treeVisible(): SelkitOption<T>[] {
+  /** tree 模式可見序列：無 query 依收合狀態；有 query 保留命中 + 祖先鏈（自動展開） */
+  #treeVisible(query = ''): SelkitOption<T>[] {
     const result: SelkitOption<T>[] = []
+    if (query === '') {
+      const walk = (nodes: NormNode<T>[]) => {
+        for (const n of nodes) {
+          result.push(n.option)
+          if (n.children.length && !this.#collapsed.has(n.option.value)) {
+            walk(n.children)
+          }
+        }
+      }
+      walk(this.#tree)
+      return result
+    }
+    // 有 query：算子樹命中 → DFS 保留命中節點 + 祖先
+    const hit = new Map<string | number, boolean>()
+    const calc = (n: NormNode<T>): boolean => {
+      let childHit = false
+      for (const c of n.children) {
+        if (calc(c)) childHit = true
+      }
+      const h = this.#filter(n.option, query) || childHit
+      hit.set(n.option.value, h)
+      return h
+    }
+    this.#tree.forEach(calc)
     const walk = (nodes: NormNode<T>[]) => {
       for (const n of nodes) {
+        if (!hit.get(n.option.value)) continue
         result.push(n.option)
-        if (n.children.length && !this.#collapsed.has(n.option.value)) {
-          walk(n.children)
-        }
+        walk(n.children)
       }
     }
     walk(this.#tree)
@@ -740,7 +763,12 @@ class Selkit<T> implements SelkitController<T> {
         index,
         option,
         depth: node?.depth ?? 0,
-        expanded: node ? !this.#collapsed.has(option.value) : true,
+        expanded:
+          this.#state.query !== ''
+            ? true
+            : node
+              ? !this.#collapsed.has(option.value)
+              : true,
         hasChildren: !!node?.children.length,
         checked: this.#getCheckState(option.value),
       }
@@ -973,7 +1001,7 @@ class Selkit<T> implements SelkitController<T> {
     query: string,
     selected: SelkitOption<T>[] = this.#state.selected,
   ): SelkitOption<T>[] {
-    if (this.#treeMode) return this.#treeVisible()
+    if (this.#treeMode) return this.#treeVisible(query)
     if (this.#belowMin(query)) return []
     let pool = this.#flat
     if (this.#hideSelected && selected.length > 0) {
