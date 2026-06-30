@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createSelkit } from './createSelkit'
 import { hasTree, normalize, normalizeTree } from './utils'
-import type { SelkitItem } from './types'
+import type { SelkitItem, SelkitViewRow } from './types'
 
 const OPTIONS: SelkitItem[] = [
   { value: 'a', label: 'Apple' },
@@ -282,6 +282,140 @@ describe('多層分組（縮排階層）', () => {
       { label: '水果', options: [{ value: 'a', label: 'Apple' }] },
     ])
     expect(rows.map((r) => r.depth)).toEqual([0, 1])
+  })
+})
+
+describe('折疊分組（collapsible groups）', () => {
+  const COLLAPSE: SelkitItem[] = [
+    {
+      label: '電子',
+      collapsible: true,
+      options: [
+        { value: 'ip15', label: 'iPhone 15' },
+        {
+          label: '電腦',
+          collapsible: true,
+          defaultCollapsed: true,
+          options: [
+            { value: 'mbp', label: 'MacBook Pro' },
+            { value: 'mba', label: 'MacBook Air' },
+          ],
+        },
+      ],
+    },
+    { label: '服裝', options: [{ value: 'tee', label: 'T-shirt' }] },
+  ]
+
+  const groupRow = (
+    s: ReturnType<typeof createSelkit>,
+    label: string,
+  ): Extract<SelkitViewRow, { type: 'group' }> =>
+    s
+      .getGroupedView()
+      .rows.find(
+        (r): r is Extract<SelkitViewRow, { type: 'group' }> =>
+          r.type === 'group' && r.label === label,
+      )!
+
+  it('defaultCollapsed 初始收合：後代選項自可見清單隱藏（標題仍顯示）', () => {
+    const s = createSelkit({ options: COLLAPSE })
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual([
+      'ip15',
+      'tee',
+    ])
+    // 收合的「電腦」標題仍在視圖中
+    expect(groupRow(s, '電腦')).toBeTruthy()
+  })
+
+  it('group row 帶 collapsible / expanded / groupKey（路徑唯一）', () => {
+    const s = createSelkit({ options: COLLAPSE })
+    const 電子 = groupRow(s, '電子')
+    const 電腦 = groupRow(s, '電腦')
+    const 服裝 = groupRow(s, '服裝')
+    expect(電子.collapsible).toBe(true)
+    expect(電子.expanded).toBe(true)
+    expect(電腦.collapsible).toBe(true)
+    expect(電腦.expanded).toBe(false) // defaultCollapsed
+    expect(服裝.collapsible).toBe(false)
+    expect(電子.groupKey).not.toBe(電腦.groupKey) // 路徑區分父子同 label
+  })
+
+  it('toggleGroup 展開 → 後代選項回到可見清單、expanded 翻轉', () => {
+    const s = createSelkit({ options: COLLAPSE })
+    s.toggleGroup(groupRow(s, '電腦').groupKey)
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual([
+      'ip15',
+      'mbp',
+      'mba',
+      'tee',
+    ])
+    expect(groupRow(s, '電腦').expanded).toBe(true)
+  })
+
+  it('toggleGroup 收合祖先 → 整個子樹（含子分組後代）隱藏', () => {
+    const s = createSelkit({ options: COLLAPSE })
+    s.toggleGroup(groupRow(s, '電腦').groupKey) // 先展開電腦
+    s.toggleGroup(groupRow(s, '電子').groupKey) // 收合祖先電子
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['tee'])
+  })
+
+  it('收合祖先 → 巢狀分組標題不洩漏到視圖 rows', () => {
+    const s = createSelkit({ options: COLLAPSE })
+    s.toggleGroup(groupRow(s, '電子').groupKey) // 收合電子
+    const tags = s
+      .getGroupedView()
+      .rows.map((r) =>
+        r.type === 'group'
+          ? `G:${r.label}`
+          : 'option' in r
+            ? `O:${r.option.value}`
+            : `${r.type}`,
+      )
+    // 電子標題（收合中仍顯示）+ 服裝標題 + tee；電腦標題、ip15、mbp/mba 都不該出現
+    expect(tags).toEqual(['G:電子', 'G:服裝', 'O:tee'])
+  })
+
+  it('搜尋時自動展開：收合中的後代仍可被搜到、group expanded=true', () => {
+    const s = createSelkit({ options: COLLAPSE }) // 電腦初始收合
+    s.setQuery('pro')
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['mbp'])
+    expect(groupRow(s, '電腦').expanded).toBe(true)
+  })
+
+  it('清空搜尋後恢復原本收合狀態', () => {
+    const s = createSelkit({ options: COLLAPSE })
+    s.setQuery('pro')
+    s.setQuery('')
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual([
+      'ip15',
+      'tee',
+    ])
+    expect(groupRow(s, '電腦').expanded).toBe(false)
+  })
+
+  it('收合不影響已選值（selected 保留、change 不觸發）', () => {
+    const s = createSelkit({ options: COLLAPSE, multiple: true })
+    s.select('mbp') // 透過 toggleSelect 選取（電腦收合中但 select 仍作用）
+    const changes = vi.fn()
+    s.on('change', changes)
+    s.toggleGroup(groupRow(s, '電腦').groupKey)
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['mbp'])
+    expect(changes).not.toHaveBeenCalled()
+  })
+
+  it('扁平清單 toggleGroup 無作用（不爆錯）', () => {
+    const s = createSelkit({ options: [{ value: 'a', label: 'A' }] })
+    s.toggleGroup('nope')
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual(['a'])
+  })
+
+  it('toggleGroup 無效 key 無作用', () => {
+    const s = createSelkit({ options: COLLAPSE })
+    s.toggleGroup('不存在的群')
+    expect(s.getState().visibleOptions.map((o) => o.value)).toEqual([
+      'ip15',
+      'tee',
+    ])
   })
 })
 
@@ -640,6 +774,58 @@ describe('多選', () => {
   })
 })
 
+describe('highlight 起點與清除（highlightFirst）', () => {
+  const AB = [
+    { value: 'a', label: 'Apple' },
+    { value: 'b', label: 'Banana' },
+  ]
+
+  it('預設 highlightFirst：開啟時 highlight 首個可選項', () => {
+    const s = createSelkit({ options: AB })
+    s.open()
+    expect(s.getState().activeIndex).toBe(0)
+  })
+
+  it('highlightFirst: false → 開啟時不自動 highlight', () => {
+    const s = createSelkit({ options: AB, highlightFirst: false })
+    s.open()
+    expect(s.getState().activeIndex).toBe(-1)
+  })
+
+  it('highlightFirst: false → 搜尋後也不自動 highlight', () => {
+    const s = createSelkit({ options: AB, highlightFirst: false })
+    s.open()
+    s.setQuery('a')
+    expect(s.getState().activeIndex).toBe(-1)
+  })
+
+  it('highlightFirst: false → 鍵盤 Down 仍可帶出 highlight', () => {
+    const s = createSelkit({ options: AB, highlightFirst: false })
+    s.open()
+    s.moveActive(1)
+    expect(s.getState().activeIndex).toBe(0)
+  })
+
+  it('多選 toggleSelect（滑鼠路徑）後清除 highlight', () => {
+    const s = createSelkit({ options: AB, multiple: true })
+    s.open()
+    expect(s.getState().activeIndex).toBe(0)
+    s.toggleSelect('a')
+    expect(s.getState().activeIndex).toBe(-1)
+  })
+
+  it('多選 selectActive（鍵盤）後保持位置：選取→取消連續', () => {
+    const s = createSelkit({ options: AB, multiple: true })
+    s.open()
+    s.moveActive(1) // B
+    s.selectActive() // 選 B
+    expect(s.getState().selected.map((o) => o.value)).toEqual(['b'])
+    expect(s.getState().activeIndex).toBe(1) // 鍵盤保持位置
+    s.selectActive() // 取消 B
+    expect(s.getState().selected).toEqual([])
+  })
+})
+
 describe('highlight 移動（不 wrap、跳過 disabled）', () => {
   it('moveActive 跳過 disabled 選項', () => {
     const s = createSelkit({ options: OPTIONS })
@@ -832,15 +1018,23 @@ describe('getGroupedView', () => {
     { label: 'Veg', options: [{ value: 'c', label: 'Carrot' }] },
   ]
 
+  // 投影比對：只看結構欄位 不受未來新增欄位影響
+  const proj = (r: SelkitViewRow): Record<string, unknown> =>
+    r.type === 'group'
+      ? { type: 'group', label: r.label, depth: r.depth, collapsible: r.collapsible, expanded: r.expanded }
+      : r.type === 'option'
+        ? { type: 'option', index: r.index, value: r.option.value, depth: r.depth }
+        : { type: r.type }
+
   it('輸出分組標頭與選項交錯，index 對齊 visibleOptions', () => {
     const s = createSelkit({ options: GROUPED })
     const view = s.getGroupedView()
-    expect(view.rows).toEqual([
-      { type: 'group', label: 'Fruit', depth: 0 },
-      { type: 'option', index: 0, option: { value: 'a', label: 'Apple' }, depth: 1 },
-      { type: 'option', index: 1, option: { value: 'b', label: 'Banana' }, depth: 1 },
-      { type: 'group', label: 'Veg', depth: 0 },
-      { type: 'option', index: 2, option: { value: 'c', label: 'Carrot' }, depth: 1 },
+    expect(view.rows.map(proj)).toEqual([
+      { type: 'group', label: 'Fruit', depth: 0, collapsible: false, expanded: true },
+      { type: 'option', index: 0, value: 'a', depth: 1 },
+      { type: 'option', index: 1, value: 'b', depth: 1 },
+      { type: 'group', label: 'Veg', depth: 0, collapsible: false, expanded: true },
+      { type: 'option', index: 2, value: 'c', depth: 1 },
     ])
   })
 
@@ -848,9 +1042,9 @@ describe('getGroupedView', () => {
     const s = createSelkit({ options: GROUPED })
     s.setQuery('carrot')
     const view = s.getGroupedView()
-    expect(view.rows).toEqual([
-      { type: 'group', label: 'Veg', depth: 0 },
-      { type: 'option', index: 0, option: { value: 'c', label: 'Carrot' }, depth: 1 },
+    expect(view.rows.map(proj)).toEqual([
+      { type: 'group', label: 'Veg', depth: 0, collapsible: false, expanded: true },
+      { type: 'option', index: 0, value: 'c', depth: 1 },
     ])
   })
 })

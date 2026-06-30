@@ -17,6 +17,16 @@ createSelkit({ options, multiple: true })
 label 回填輸入框（同時開啟下拉），讓你直接編輯而不必重打。未開啟（預設）時 Backspace
 只會刪除該 tag。
 
+## Highlight
+
+開啟下拉與每次搜尋後，第一個可選項會自動 highlight，作為鍵盤導覽起點（Enter 直接選取、方向鍵從此移動）。設 `highlightFirst: false` 可關閉——下拉開啟時不 highlight，只有鍵盤移動才帶出 highlight：
+
+```js
+createSelkit({ options, highlightFirst: false })
+```
+
+無論哪種，選取一個選項後會清除 highlight（不會殘留在剛選的項上）；鍵盤 `Enter` 則保持位置，所以能再按一次 Enter 取消該項。收合／展開分組或樹狀節點時，只要被 highlight 的項還在可見清單中就會保留。
+
 ## 分組
 
 把選項用標題分組，傳入 `SelkitGroup`。分組標題不可選——只有葉（最末層）選項能選：
@@ -61,6 +71,35 @@ createSelkit({
 ```
 
 分組的 `disabled` 會向下傳遞到所有子孫。
+
+### 折疊分組
+
+給分組加上 `collapsible: true`，標題就變成可點擊——收合後會隱藏該分組的選項，但標題仍顯示（且依然不可選）。搭配 `defaultCollapsed: true` 可讓分組初始就收合：
+
+```js
+createSelkit({
+  options: [
+    {
+      label: '電子',
+      collapsible: true,
+      options: [
+        { value: 'ip15', label: 'iPhone 15' },
+        {
+          label: '電腦',
+          collapsible: true,
+          defaultCollapsed: true,
+          options: [
+            { value: 'mbp', label: 'MacBook Pro' },
+            { value: 'mba', label: 'MacBook Air' },
+          ],
+        },
+      ],
+    },
+  ],
+})
+```
+
+點擊可折疊標題會呼叫 `controller.toggleGroup(groupKey)`，`groupKey` 可從 `getGroupedView()` 的每個 group row 取得。搜尋時會暫時展開所有分組讓命中項可達；清空查詢則恢復原本的收合狀態。與[樹狀模式](#樹狀模式-tree)不同：折疊的分組是純標題，永遠無法被選取。
 
 ## 樹狀模式 tree
 

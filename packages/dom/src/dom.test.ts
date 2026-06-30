@@ -259,6 +259,66 @@ describe('多層分組縮排', () => {
   })
 })
 
+describe('折疊分組 collapsible groups', () => {
+  const COLLAPSE: SelkitItem[] = [
+    {
+      label: '電子',
+      collapsible: true,
+      options: [
+        { value: 'ip15', label: 'iPhone 15' },
+        {
+          label: '電腦',
+          collapsible: true,
+          defaultCollapsed: true,
+          options: [{ value: 'mbp', label: 'MacBook Pro' }],
+        },
+      ],
+    },
+  ]
+
+  it('collapsible 標題帶 toggle 鈕、role=button、aria-expanded', () => {
+    const inst = createSelkitDom(host, { options: COLLAPSE })
+    inst.controller.open()
+    const 電子 = $$(inst.element, '.selkit__group')[0]!
+    expect(電子.classList.contains('selkit__group--collapsible')).toBe(true)
+    expect(電子.getAttribute('role')).toBe('button')
+    expect(電子.getAttribute('aria-expanded')).toBe('true')
+    expect(電子.querySelector('.selkit__group-toggle')!.textContent).toBe('▾')
+  })
+
+  it('defaultCollapsed 初始收合 → 後代不渲染、aria-expanded=false', () => {
+    const inst = createSelkitDom(host, { options: COLLAPSE })
+    inst.controller.open()
+    const 電腦 = $$(inst.element, '.selkit__group').find((g) =>
+      g.textContent?.includes('電腦'),
+    )!
+    expect(電腦.getAttribute('aria-expanded')).toBe('false')
+    expect($$(inst.element, '.selkit__option').map((o) => o.textContent)).toEqual([
+      'iPhone 15',
+    ])
+  })
+
+  it('點擊標題收合 → 後代隱藏；再點展開 → 後代回來', () => {
+    const inst = createSelkitDom(host, { options: COLLAPSE })
+    inst.controller.open()
+    pointerdown($$(inst.element, '.selkit__group')[0]!) // 收合電子 → 整個子樹隱藏
+    // dom 重渲染會替換節點 需重新查詢
+    expect($$(inst.element, '.selkit__group')[0]!.getAttribute('aria-expanded')).toBe(
+      'false',
+    )
+    expect($$(inst.element, '.selkit__option').length).toBe(0)
+    // 收合祖先：巢狀「電腦」標題不該洩漏 只剩電子標題
+    expect($$(inst.element, '.selkit__group').length).toBe(1)
+    pointerdown($$(inst.element, '.selkit__group')[0]!) // 展開電子 → ip15 回來（電腦仍收合）
+    expect($$(inst.element, '.selkit__group')[0]!.getAttribute('aria-expanded')).toBe(
+      'true',
+    )
+    expect($$(inst.element, '.selkit__option').map((o) => o.textContent)).toEqual([
+      'iPhone 15',
+    ])
+  })
+})
+
 describe('樹狀模式 tree', () => {
   const TREE: SelkitItem[] = [
     {

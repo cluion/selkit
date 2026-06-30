@@ -262,6 +262,34 @@
   color: var(--selkit-muted);
 }
 
+/** 折疊分組：標題可點收合 toggle 與 label 橫排 */
+.selkit__group--collapsible {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.selkit__group--collapsible:hover {
+  color: var(--selkit-fg);
+}
+.selkit__group--disabled.selkit__group--collapsible {
+  cursor: default;
+}
+.selkit__group-label {
+  flex: 1;
+  min-width: 0;
+}
+.selkit__group-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--selkit-muted);
+  font-size: 0.85em;
+  line-height: 1;
+}
+
 .selkit__option {
   padding: 9px 10px 9px
     calc(var(--selkit-depth, 0) * var(--selkit-level-indent, 16px) + 10px);

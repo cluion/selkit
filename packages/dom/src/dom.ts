@@ -354,6 +354,15 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
 
     this.#dropdown.addEventListener('pointerdown', (e) => {
       e.stopPropagation() // 內部互動不冒泡到 outside-click handler
+      // 折疊分組標題：點擊收合／展開 不觸發選取
+      const groupToggleEl = (e.target as HTMLElement).closest(
+        '[data-group-toggle]',
+      ) as HTMLElement | null
+      if (groupToggleEl) {
+        e.preventDefault()
+        this.controller.toggleGroup(groupToggleEl.dataset.groupToggle!)
+        return
+      }
       // tree 展開／收合箭頭：優先處理 不觸發選取
       const toggleEl = (e.target as HTMLElement).closest(
         '[data-toggle]',

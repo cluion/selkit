@@ -21,7 +21,7 @@ export function spacer(height: number): HTMLElement {
   return el
 }
 
-/** 分組標題列 套用 templateGroup（無則用 label）*/
+/** 分組標題列 套用 templateGroup（無則用 label）collapsible 時加收合箭頭與互動屬性 */
 export function buildGroupRow(
   row: GroupRow,
   prefix: string,
@@ -31,14 +31,30 @@ export function buildGroupRow(
   group.className = `${prefix}__group`
   group.style.setProperty('--selkit-depth', String(row.depth))
   if (row.disabled) group.classList.add(`${prefix}__group--disabled`)
-  if (templateGroup) {
-    applyTemplate(
-      group,
-      templateGroup({ label: row.label, disabled: !!row.disabled }),
-    )
-  } else {
-    group.textContent = row.label
+  // 折疊分組：整列可點收合 帶 role/aria 供輔助技術辨識
+  if (row.collapsible) {
+    group.classList.add(`${prefix}__group--collapsible`)
+    group.dataset.groupToggle = row.groupKey
+    group.setAttribute('role', 'button')
+    group.setAttribute('aria-expanded', String(row.expanded))
+    group.tabIndex = 0
+    const toggle = document.createElement('span')
+    toggle.className = `${prefix}__toggle ${prefix}__group-toggle`
+    toggle.setAttribute('aria-hidden', 'true')
+    toggle.textContent = row.expanded ? '▾' : '▸'
+    group.append(toggle)
   }
+  // label 包 span 避免與 toggle 互相覆寫（templateGroup 字串走 textContent）
+  const labelEl = document.createElement('span')
+  labelEl.className = `${prefix}__group-label`
+  if (templateGroup) {
+    const out = templateGroup({ label: row.label, disabled: !!row.disabled })
+    if (out instanceof Node) labelEl.append(out)
+    else labelEl.textContent = out
+  } else {
+    labelEl.textContent = row.label
+  }
+  group.append(labelEl)
   return group
 }
 

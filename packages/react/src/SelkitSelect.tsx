@@ -641,13 +641,40 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
 
   const buildGroup = (row: GroupRow): ReactNode => (
     <div
-      className={cls('group')}
-      key={`group-${row.label}`}
+      className={[
+        cls('group'),
+        row.collapsible ? cls('group', 'collapsible') : '',
+        row.disabled ? cls('group', 'disabled') : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      key={`group-${row.groupKey}`}
       style={{ '--selkit-depth': row.depth } as unknown as CSSProperties}
+      {...(row.collapsible
+        ? ({
+            role: 'button',
+            'aria-expanded': row.expanded,
+            tabIndex: 0,
+            'data-group-toggle': row.groupKey,
+            onPointerDown: (e: React.PointerEvent) => {
+              e.preventDefault()
+              e.stopPropagation()
+              controller.toggleGroup(row.groupKey)
+            },
+          } as const)
+        : {})}
     >
+      {row.collapsible && (
+        <span
+          className={`${cls('toggle')} ${cls('group-toggle')}`}
+          aria-hidden="true"
+        >
+          {row.expanded ? '▾' : '▸'}
+        </span>
+      )}
       {renderGroup
         ? renderGroup({ label: row.label, disabled: !!row.disabled })
-        : row.label}
+        : <span className={cls('group-label')}>{row.label}</span>}
     </div>
   )
 

@@ -27,6 +27,10 @@ export interface SelkitGroup<T = unknown> {
   label: string
   disabled?: boolean
   options: SelkitItem<T>[]
+  /** 標題可點擊收合：收合後隱藏其下選項、僅留標題（標題本身不可選）  */
+  collapsible?: boolean
+  /** 初始是否收合 僅 collapsible 為 true 時生效 預設展開  */
+  defaultCollapsed?: boolean
 }
 
 /** 對外的值：單選為單值或 null 多選為陣列  */
@@ -108,6 +112,8 @@ export interface SelkitConfig<T = unknown> {
 
   /** 選取後是否自動關閉 單選預設 true 多選預設 false  */
   closeOnSelect?: boolean
+  /** 開啟下拉與搜尋後是否自動 highlight 首個可選項（鍵盤導覽起點）預設 true；設 false 則僅鍵盤操作時才 highlight  */
+  highlightFirst?: boolean
 
   /** 自訂過濾 預設大小寫不敏感的 label 子字串比對  */
   filter?: FilterFn<T>
@@ -265,7 +271,7 @@ export interface HighlightPart {
 }
 
 export type SelkitViewRow<T = unknown> =
-  | { type: 'group'; label: string; disabled?: boolean; depth: number }
+  | { type: 'group'; label: string; disabled?: boolean; depth: number; collapsible: boolean; expanded: boolean; groupKey: string }
   | { type: 'option'; index: number; option: SelkitOption<T>; depth: number }
   /** tree 模式的可選父／葉 index 對齊 visibleOptions expanded 表是否展開 hasChildren 表有無子節點 checked 為 cascade 三態（treeCascade） */
   | { type: 'treeitem'; index: number; option: SelkitOption<T>; depth: number; expanded: boolean; hasChildren: boolean; checked: 'checked' | 'unchecked' | 'mixed' }
@@ -321,6 +327,8 @@ export interface SelkitController<T = unknown> {
   toggleSelect(value: string | number): void
   /** tree 模式切換節點展開／收合（預設全展開）非樹模式無作用 */
   toggleExpanded(value: string | number): void
+  /** 折疊分組：切換某分組標題的收合／展開 groupKey 取自 getGroupedView 的 group row */
+  toggleGroup(groupKey: string): void
   clear(): void
   /** 重排已選項目 將索引 from 的項目移到 to 用於 tag 拖曳排序 */
   moveSelected(from: number, to: number): void

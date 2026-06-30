@@ -107,7 +107,7 @@ describe('增強現有 <select>', () => {
       '<optgroup label="Fruit"><option value="a">Apple</option></optgroup>',
     )
     const view = createSelkitDom(select).controller.getGroupedView()
-    expect(view.rows[0]).toEqual({ type: 'group', label: 'Fruit', depth: 0 })
+    expect(view.rows[0]).toMatchObject({ type: 'group', label: 'Fruit', depth: 0 })
   })
 
   it('destroy 後還原 select 顯示', () => {

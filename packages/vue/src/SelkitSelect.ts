@@ -703,10 +703,40 @@ export const SelkitSelect = defineComponent({
       const buildGroup = (row: GroupRow): VNode =>
         h(
           'div',
-          { key: `group-${row.label}`, class: cls('group'), style: { '--selkit-depth': String(row.depth) } },
-          slots.group
-            ? slots.group({ label: row.label, disabled: !!row.disabled })
-            : row.label,
+          {
+            key: `group-${row.groupKey}`,
+            class: [
+              cls('group'),
+              row.collapsible ? cls('group', 'collapsible') : null,
+              row.disabled ? cls('group', 'disabled') : null,
+            ],
+            style: { '--selkit-depth': String(row.depth) },
+            ...(row.collapsible
+              ? {
+                  role: 'button',
+                  'aria-expanded': String(row.expanded),
+                  tabindex: '0',
+                  'data-group-toggle': row.groupKey,
+                  onPointerdown: (e: PointerEvent) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    controller.toggleGroup(row.groupKey)
+                  },
+                }
+              : {}),
+          },
+          [
+            row.collapsible
+              ? h(
+                  'span',
+                  { class: [cls('toggle'), cls('group-toggle')], 'aria-hidden': 'true' },
+                  row.expanded ? '▾' : '▸',
+                )
+              : null,
+            slots.group
+              ? slots.group({ label: row.label, disabled: !!row.disabled })
+              : h('span', { class: cls('group-label') }, row.label),
+          ],
         )
 
       const buildTreeRow = (

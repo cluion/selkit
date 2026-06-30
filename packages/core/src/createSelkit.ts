@@ -70,6 +70,7 @@ class Selkit<T> implements SelkitController<T> {
   readonly #hideSelected: boolean
   readonly #maxSelections: number | undefined
   readonly #treeCascade: boolean
+  readonly #highlightFirst: boolean
   readonly #messages: SelkitMessages
 
   readonly #loadOptions:
@@ -103,6 +104,8 @@ class Selkit<T> implements SelkitController<T> {
   #tree: NormNode<T>[] = []
   #nodeByValue = new Map<string | number, NormNode<T>>()
   #collapsed = new Set<string | number>()
+  /** 折疊分組：收合中的 group key 集合（空＝全展開）非 tree 模式使用 */
+  #groupCollapsed = new Set<string>()
 
   #debounceTimer: ReturnType<typeof setTimeout> | null = null
   #loadSeq = 0
@@ -134,6 +137,7 @@ class Selkit<T> implements SelkitController<T> {
     this.#hideSelected = config.hideSelected ?? false
     this.#maxSelections = config.maxSelections
     this.#treeCascade = config.treeCascade ?? true
+    this.#highlightFirst = config.highlightFirst ?? true
     this.#messages = { ...DEFAULT_MESSAGES, ...config.messages }
 
     this.#loadOptions = config.loadOptions
@@ -240,7 +244,7 @@ class Selkit<T> implements SelkitController<T> {
     const visibleOptions = this.#computeVisible(query)
     const hasCreate = this.#createLabel(query) !== null
     const activeIndex = this.#state.isOpen
-      ? this.#firstActiveFor(visibleOptions, hasCreate)
+      ? this.#autoActive(visibleOptions, hasCreate)
       : -1
     this.#patch({
       query,
@@ -320,9 +324,15 @@ class Selkit<T> implements SelkitController<T> {
     const { activeIndex, visibleOptions } = this.#state
     const opt = activeIndex >= 0 ? visibleOptions[activeIndex] : undefined
     if (opt) {
+      const value = opt.value
       // 多選：再次觸發同一項即取消（checkbox 式 toggle）單選維持選取
-      if (this.#multiple) this.toggleSelect(opt.value)
-      else this.select(opt.value)
+      if (this.#multiple) this.toggleSelect(value)
+      else this.select(value)
+      // 多選不關閉：select 清掉了 highlight，鍵盤連續操作需保持位置（hideSelected 隱藏則不復原）
+      if (this.#multiple && this.#state.isOpen) {
+        const ni = this.#state.visibleOptions.findIndex((o) => o.value === value)
+        if (ni >= 0) this.#patch({ activeIndex: ni })
+      }
     } else if (this.#taggable) {
       // 落在建立列（index === visibleOptions.length）或無相符 Enter 皆建立 tag
       this.createTag()
@@ -414,7 +424,22 @@ class Selkit<T> implements SelkitController<T> {
     const visibleOptions = this.#treeVisible()
     this.#patch({
       visibleOptions,
-      activeIndex: this.#state.isOpen ? this.#firstEnabled(visibleOptions) : -1,
+      activeIndex: this.#carryActive(visibleOptions),
+    })
+  }
+
+  toggleGroup(groupKey: string): void {
+    if (this.#treeMode) return
+    if (!this.#rows.some((r) => r.kind === 'group' && r.key === groupKey)) return
+    const next = new Set(this.#groupCollapsed)
+    if (next.has(groupKey)) next.delete(groupKey)
+    else next.add(groupKey)
+    this.#groupCollapsed = next
+    const visibleOptions = this.#computeVisible(this.#state.query)
+    this.#patch({
+      visibleOptions,
+      noResults: !this.#belowMin(this.#state.query) && visibleOptions.length === 0,
+      activeIndex: this.#carryActive(visibleOptions),
     })
   }
 
@@ -531,7 +556,7 @@ class Selkit<T> implements SelkitController<T> {
         !this.#belowMin(this.#state.query) &&
         !this.#state.loading &&
         visibleOptions.length === 0,
-      activeIndex: this.#state.isOpen ? this.#firstEnabled(visibleOptions) : -1,
+      activeIndex: this.#state.isOpen ? this.#autoActive(visibleOptions) : -1,
     })
   }
 
@@ -623,36 +648,83 @@ class Selkit<T> implements SelkitController<T> {
     return { rows }
   }
 
-  /** 分組視圖：依 #rows 順序交錯標頭與選項 多層時用 depth 棧保留命中葉的祖先標頭 */
+  /**
+   * 分組視圖：依 #rows 順序交錯標頭與選項 多層時用 depth 棧保留命中葉的祖先標頭
+   * 標題顯示條件看「搜尋池」（含收合後代）→ 收合的標題仍顯示供點擊展開
+   * option 是否輸出看 visibleOptions → 收合的後代選項不輸出
+   */
   #groupedRows(): SelkitViewRow<T>[] {
-    const idxByValue = new Map<string | number, number>()
-    this.#state.visibleOptions.forEach((o, i) => idxByValue.set(o.value, i))
+    // searchable：搜尋過濾後的池（不排除收合）用於判斷標題該不該顯示
+    const searchable = this.#computeVisible(
+      this.#state.query,
+      this.#state.selected,
+      false,
+    )
+    const searchByValue = new Set(searchable.map((o) => o.value))
+    const visByValue = new Map<string | number, number>()
+    this.#state.visibleOptions.forEach((o, i) => visByValue.set(o.value, i))
 
     const rows: SelkitViewRow<T>[] = []
     // 待 emit 的祖先標頭棧：option 命中時補上沿途尚未顯示的標頭
-    const stack: { label: string; disabled: boolean; depth: number; emitted: boolean }[] = []
+    const stack: {
+      label: string
+      disabled: boolean
+      depth: number
+      collapsible: boolean
+      key: string
+      emitted: boolean
+    }[] = []
+    const searching = this.#state.query !== ''
 
     for (const row of this.#rows) {
       if (row.kind === 'group') {
         while (stack.length && stack[stack.length - 1]!.depth >= row.depth) stack.pop()
-        stack.push({ label: row.label, disabled: row.disabled, depth: row.depth, emitted: false })
+        stack.push({
+          label: row.label,
+          disabled: row.disabled,
+          depth: row.depth,
+          collapsible: row.collapsible,
+          key: row.key,
+          emitted: false,
+        })
         continue
       }
-      const index = idxByValue.get(row.option.value)
-      if (index === undefined) continue
+      // 搜尋過濾：此 option 不在搜尋池 → 跳過（其祖先標頭也不 emit）
+      if (!searchByValue.has(row.option.value)) continue
       // 吐掉不屬於此選項祖先的同層/深層標頭（頂層選項 depth 0 → 清空）
       while (stack.length && stack[stack.length - 1]!.depth >= row.depth) stack.pop()
-      for (const g of stack) {
+      // 最淺的收合祖先（非搜尋時）：該祖先之下（含巢狀標題與選項）全隱藏 只 emit 到該祖先（含）
+      let collapseIdx = -1
+      if (!searching) {
+        for (let i = 0; i < stack.length; i++) {
+          if (this.#groupCollapsed.has(stack[i]!.key)) {
+            collapseIdx = i
+            break
+          }
+        }
+      }
+      const emitUntil = collapseIdx >= 0 ? collapseIdx : stack.length - 1
+      for (let i = 0; i <= emitUntil; i++) {
+        const g = stack[i]!
         if (g.emitted) continue
         rows.push({
           type: 'group',
           label: g.label,
           depth: g.depth,
           ...(g.disabled ? { disabled: true } : {}),
+          collapsible: g.collapsible,
+          expanded: searching ? true : !this.#groupCollapsed.has(g.key),
+          groupKey: g.key,
         })
         g.emitted = true
       }
-      rows.push({ type: 'option', index, option: row.option, depth: row.depth })
+      // 收合子樹內的選項不輸出；否則依 visibleOptions 輸出（hideSelected 等過濾）
+      if (collapseIdx === -1) {
+        const index = visByValue.get(row.option.value)
+        if (index !== undefined) {
+          rows.push({ type: 'option', index, option: row.option, depth: row.depth })
+        }
+      }
     }
     return rows
   }
@@ -682,6 +754,10 @@ class Selkit<T> implements SelkitController<T> {
     this.#flat = flat
     this.#tree = []
     this.#nodeByValue = new Map()
+    // 初始收合：從 defaultCollapsed 的 group 收集 key
+    this.#groupCollapsed = new Set(
+      rows.flatMap((r) => (r.kind === 'group' && r.collapsed ? [r.key] : [])),
+    )
   }
 
   /** tree 模式可見序列：無 query 依收合狀態；有 query 保留命中 + 祖先鏈（自動展開） */
@@ -912,7 +988,7 @@ class Selkit<T> implements SelkitController<T> {
       activeIndex: append
         ? this.#state.activeIndex
         : this.#state.isOpen
-          ? this.#firstEnabled(visibleOptions)
+          ? this.#autoActive(visibleOptions)
           : -1,
     })
     // 首次載入（非追加）且開啟時公告結果數
@@ -997,6 +1073,7 @@ class Selkit<T> implements SelkitController<T> {
   #computeVisible(
     query: string,
     selected: SelkitOption<T>[] = this.#state.selected,
+    excludeCollapsed = true,
   ): SelkitOption<T>[] {
     if (this.#treeMode) return this.#treeVisible(query)
     if (this.#belowMin(query)) return []
@@ -1005,14 +1082,42 @@ class Selkit<T> implements SelkitController<T> {
       const chosen = new Set(selected.map((o) => o.value))
       pool = pool.filter((o) => !chosen.has(o.value))
     }
+    // 折疊分組：排除收合中 group 的後代選項（搜尋時自動展開 不排除）
+    if (excludeCollapsed) {
+      const hidden = this.#groupHiddenValues(query)
+      if (hidden.size > 0) pool = pool.filter((o) => !hidden.has(o.value))
+    }
     if (query !== '') pool = pool.filter((o) => this.#filter(o, query))
     return this.#sortPool(query === '' ? pool.slice() : pool, query)
   }
 
-  /** 套用新的已選清單 hideSelected 時連帶重算可見選項與 highlight */
+  /**
+   * 收合中 group 的後代 option value 集合（應自可見清單隱藏）
+   * 搜尋中（query !== ''）或無任何收合時回空集合（自動展開）
+   * 以 #rows 的 DFS 序 + depth 棧判斷祖先鏈是否含收合 group
+   */
+  #groupHiddenValues(query: string): Set<string | number> {
+    if (query !== '' || this.#groupCollapsed.size === 0) {
+      return new Set()
+    }
+    const hidden = new Set<string | number>()
+    const stack: { depth: number; collapsed: boolean }[] = []
+    for (const row of this.#rows) {
+      if (row.kind === 'group') {
+        while (stack.length && stack[stack.length - 1]!.depth >= row.depth) stack.pop()
+        stack.push({ depth: row.depth, collapsed: this.#groupCollapsed.has(row.key) })
+        continue
+      }
+      while (stack.length && stack[stack.length - 1]!.depth >= row.depth) stack.pop()
+      if (stack.some((g) => g.collapsed)) hidden.add(row.option.value)
+    }
+    return hidden
+  }
+
+  /** 套用新的已選清單 選取後清掉 highlight（下次由鍵盤導覽重新帶出） */
   #applySelection(selected: SelkitOption<T>[]): void {
     if (!this.#hideSelected) {
-      this.#patch({ selected })
+      this.#patch({ selected, activeIndex: -1 })
       return
     }
     const visibleOptions = this.#computeVisible(this.#state.query, selected)
@@ -1020,7 +1125,7 @@ class Selkit<T> implements SelkitController<T> {
       selected,
       visibleOptions,
       noResults: !this.#belowMin(this.#state.query) && visibleOptions.length === 0,
-      activeIndex: this.#state.isOpen ? this.#firstEnabled(visibleOptions) : -1,
+      activeIndex: -1,
     })
   }
 
@@ -1037,6 +1142,15 @@ class Selkit<T> implements SelkitController<T> {
       if (!opts[i]?.disabled) return i
     }
     return -1
+  }
+
+  /** 收合／展開後保留原 highlight：原 active 的選項仍在可見清單則帶到新 index 否則 -1（不主動跳首項） */
+  #carryActive(newVisible: SelkitOption<T>[]): number {
+    const old = this.#state.activeIndex
+    if (old < 0 || old >= this.#state.visibleOptions.length) return -1
+    const value = this.#state.visibleOptions[old]!.value
+    const ni = newVisible.findIndex((o) => o.value === value)
+    return ni >= 0 && !newVisible[ni]?.disabled ? ni : -1
   }
 
   /** 目前是否應顯示「建立新項」列 是則回傳 trim 後的 query 否則 null */
@@ -1082,6 +1196,12 @@ class Selkit<T> implements SelkitController<T> {
     return hasCreate ? opts.length : -1
   }
 
+  /** 自動 highlight 起點（開啟／搜尋／載入後）：highlightFirst 關閉時不自動 highlight 回 -1 否則首個可選項（或建立列） */
+  #autoActive(opts: SelkitOption<T>[], hasCreate = false): number {
+    if (!this.#highlightFirst) return -1
+    return this.#firstActiveFor(opts, hasCreate)
+  }
+
   #lastEnabled(opts: SelkitOption<T>[]): number {
     for (let i = opts.length - 1; i >= 0; i--) {
       if (!opts[i]?.disabled) return i
@@ -1090,6 +1210,7 @@ class Selkit<T> implements SelkitController<T> {
   }
 
   #initialActive(): number {
+    if (!this.#highlightFirst) return -1
     const sel = this.#state.selected[0]
     if (sel) {
       const idx = this.#state.visibleOptions.findIndex((o) => o.value === sel.value)

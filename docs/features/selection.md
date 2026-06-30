@@ -18,6 +18,22 @@ With `restoreOnBackspace`, pressing Backspace while the input is empty removes t
 last tag and restores its label to the input (opening the dropdown) so you can edit
 it instead of retyping. Without it (the default), Backspace just removes the tag.
 
+## Highlight
+
+On open and after each search, the first enabled option is auto-highlighted as a
+keyboard-navigation starting point (so Enter picks it and arrow keys move from
+there). Set `highlightFirst: false` to opt out — the dropdown opens with no
+highlight and only keyboard movement produces one:
+
+```js
+createSelkit({ options, highlightFirst: false })
+```
+
+Either way, selecting an option clears the highlight (it doesn't linger on the
+just-chosen item); keyboard `Enter` keeps its position so you can toggle an item
+off by pressing Enter again. Collapsing or expanding a group/tree preserves the
+current highlight when the highlighted item stays visible.
+
 ## Grouping
 
 Group options under headings by passing `SelkitGroup` items. Groups are
@@ -65,6 +81,41 @@ hit stays in context; branches with no match collapse away. Tune the indent on
 ```
 
 A group's `disabled` propagates to all its descendants.
+
+### Collapsible groups
+
+Add `collapsible: true` to a group to make its heading clickable — collapsing
+hides the group's options while the heading stays visible (and still
+non-selectable). Pair it with `defaultCollapsed: true` to start a group folded:
+
+```js
+createSelkit({
+  options: [
+    {
+      label: 'Electronics',
+      collapsible: true,
+      options: [
+        { value: 'ip15', label: 'iPhone 15' },
+        {
+          label: 'Computers',
+          collapsible: true,
+          defaultCollapsed: true,
+          options: [
+            { value: 'mbp', label: 'MacBook Pro' },
+            { value: 'mba', label: 'MacBook Air' },
+          ],
+        },
+      ],
+    },
+  ],
+})
+```
+
+Clicking a collapsible heading calls `controller.toggleGroup(groupKey)`, where
+`groupKey` is exposed on each group row from `getGroupedView()`. Searching
+temporarily expands every group so matches stay reachable; clearing the query
+restores the previous collapsed state. Unlike [tree mode](#tree-mode), a
+collapsed group is a pure heading — it can never be selected.
 
 ## Tree mode
 
