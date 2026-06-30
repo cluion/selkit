@@ -93,7 +93,8 @@ createSelkit({
 > state when only some are checked; set `treeCascade: false` for independent
 > selection. All nodes are expanded by default. Searching filters the tree and
 > auto-expands the ancestors of any match (clear the query to restore). Tree
-> mode does not yet virtualize (collapsing changes the visible set).
+> mode virtualizes like flat lists — set `virtualScroll: true` for large trees;
+> collapsing and searching re-flow the visible window.
 
 ## Checkbox options
 

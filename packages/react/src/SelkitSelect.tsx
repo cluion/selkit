@@ -271,6 +271,9 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
   const dropdownRef = useRef<HTMLDivElement | null>(null)
   const dragFromRef = useRef(-1)
   const [scrollTop, setScrollTop] = useState(0)
+  // 首次開啟 dropdown 時瀏覽器尚未佈局 clientHeight 讀到 0 → 虛擬捲動只渲染 overscan 切片
+  // 在下一幀（已佈局）bump tick 觸發重渲染 重讀 clientHeight 算出正確切片
+  const [viewportTick, setViewportTick] = useState(0)
   const [portalPos, setPortalPos] = useState({ top: 0, left: 0, width: 0 })
   // portal target 只在 client 解析（SSR 時 document 不存在）→ client-only portal：
   // render 期不碰 document，mount 後 useEffect 補上，開啟下拉時已就緒
@@ -391,6 +394,13 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     const inst = positioner(reference, floating, { autoWidth: dropdownAutoWidth })
     return () => inst.destroy()
   }, [positioner, state.isOpen, dropdownAutoWidth])
+
+  // 虛擬捲動：首幀 clientHeight=0 切片過小 下一幀 tick 觸發重渲染重讀 clientHeight
+  useEffect(() => {
+    if (!virtualScroll || !state.isOpen) return
+    const id = requestAnimationFrame(() => setViewportTick((t) => t + 1))
+    return () => cancelAnimationFrame(id)
+  }, [virtualScroll, state.isOpen])
 
   // 作用中選項保持可見（aria-activedescendant 完整度）
   // deps 僅 isOpen/activeIndex：手動捲動更新的是 scrollTop state 不會誤觸
@@ -726,6 +736,8 @@ export function SelkitSelect<T = unknown>(props: SelkitSelectProps<T>) {
     )
   } else if (virtualScroll) {
     // 扁平走均高 O(1)；分組走變高（header 與 option 高度不同）
+    // viewportTick 於 isOpen 後下一幀 bump 觸發重渲染重讀 clientHeight（避免 lint 未使用警告）
+    void viewportTick
     const viewportHeight = dropdownRef.current?.clientHeight ?? 0
     const range = hasGroups
       ? computeVirtualWindow({

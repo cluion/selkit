@@ -227,6 +227,11 @@
     display 0.15s ease allow-discrete;
 }
 
+/* flex 捲動容器反模式修正：children 不可壓縮 否則虛擬捲動 spacer 被壓→無溢出→無捲動 */
+.selkit__dropdown > * {
+  flex-shrink: 0;
+}
+
 .selkit__dropdown[hidden] {
   display: none;
   opacity: 0;

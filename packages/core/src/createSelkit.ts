@@ -101,7 +101,6 @@ class Selkit<T> implements SelkitController<T> {
   /** tree 模式：選項樹 + 扁平池 + value→節點映射 + 收合集合（空＝全展開） */
   #treeMode = false
   #tree: NormNode<T>[] = []
-  #treeFlat: SelkitOption<T>[] = []
   #nodeByValue = new Map<string | number, NormNode<T>>()
   #collapsed = new Set<string | number>()
 
@@ -665,7 +664,6 @@ class Selkit<T> implements SelkitController<T> {
       const opts = items.filter((i): i is SelkitOption<T> => !('options' in i))
       const { tree, flat } = normalizeTree(opts)
       this.#tree = tree
-      this.#treeFlat = flat
       this.#flat = flat
       this.#rows = []
       this.#nodeByValue = new Map()
@@ -683,7 +681,6 @@ class Selkit<T> implements SelkitController<T> {
     this.#rows = rows
     this.#flat = flat
     this.#tree = []
-    this.#treeFlat = []
     this.#nodeByValue = new Map()
   }
 

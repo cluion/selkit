@@ -17,14 +17,11 @@ import {
 } from '@selkit/core'
 import type {
   SelkitA11y,
-  SelkitConfig,
   SelkitController,
-  SelkitEmptyReason,
-  SelkitItem,
   SelkitOption,
   SelkitState,
-  SelkitValue,
   SelkitViewRow,
+  VirtualRange,
 } from '@selkit/core'
 import {
   attachPositioner,
@@ -32,9 +29,6 @@ import {
   type PositionerFactory,
 } from './positioner'
 import type {
-  CreateRow,
-  GroupRow,
-  OptionRow,
   SelkitDomConfig,
   SelkitDomInstance,
 } from './types'
@@ -127,6 +121,10 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
   #dragFrom = -1
   /** 上次已捲入可視的 activeIndex 僅在變動時才捲 避免跟使用者手動捲動打架 */
   #lastActive = -1
+  /** 重繪中還原 scrollTop 會觸發 scroll 事件 以此旗攔截該回聲避免無限遞迴 */
+  #rendering = false
+  /** 上次虛擬切片範圍 捲動觸發重繪時若未變即跳過 減少 DOM 抖動並收斂回聲 */
+  #lastSlice: { start: number; end: number; count: number; activeIndex: number } | null = null
 
   #positioner: Positioner | null = null
   readonly #unsubscribe: () => void
@@ -386,12 +384,17 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
 
     // 捲到接近底部時載入下一頁 無更多或載入中時 loadMore 自身會忽略
     this.#dropdown.addEventListener('scroll', () => {
+      // renderOptions 還原 scrollTop 會回聲觸發本事件 攔截以免無限遞迴
+      if (this.#rendering) {
+        this.#rendering = false
+        return
+      }
       const el = this.#dropdown
       if (el.scrollTop + el.clientHeight >= el.scrollHeight - LOAD_MORE_THRESHOLD) {
         this.controller.loadMore()
       }
-      // 虛擬捲動時依新捲動位置重算可視切片
-      if (this.#virtual) this.#renderOptions(this.controller.getState())
+      // 虛擬捲動時依新捲動位置重算可視切片 fromScroll 走切片快取可跳過未變的重繪
+      if (this.#virtual) this.#renderOptions(this.controller.getState(), true)
     })
 
     // tag 拖曳排序 委派在 field 上 以 dataset.index 計算來源與目標
@@ -682,12 +685,21 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     this.#indicators.append(arrow)
   }
 
-  #renderOptions(s: Readonly<SelkitState<T>>): void {
-    this.#dropdown.replaceChildren()
+  /**
+   * 重繪下拉選項。
+   * fromScroll=true 表示由捲動事件觸發 此時若切片未變可跳過重繪以減少 DOM 抖動。
+   *
+   * 虛擬捲動關鍵：replaceChildren() 會清空內容 瀏覽器隨即把 scrollTop clamp 回 0；
+   * 故須在清空「前」快取 scrollTop、用快取值算切片、重繪「後」還原 scrollTop。
+   * 還原會回聲觸發一次 scroll 事件 由 handler 以 #rendering 旗攔截。
+   */
+  #renderOptions(s: Readonly<SelkitState<T>>, fromScroll = false): void {
     const a11y = this.controller.a11y()
     const view = this.controller.getGroupedView()
 
     if (view.rows.length === 0) {
+      this.#dropdown.replaceChildren()
+      this.#lastSlice = null
       const empty = document.createElement('div')
       empty.className = this.#cls('empty')
       const message = this.controller.getEmptyMessage()
@@ -708,31 +720,67 @@ export class SelkitDom<T> implements SelkitDomInstance<T> {
     }
 
     const hasGroups = view.rows.some((r) => r.type === 'group')
+    // 先快取 scrollTop 與 clientHeight：後續 replaceChildren 會使 scrollTop 被 clamp 回 0
+    const scrollTop = this.#dropdown.scrollTop
+    const viewportHeight = this.#dropdown.clientHeight
+    // 首次開啟 dropdown 尚未佈局 clientHeight=0 會算出過小切片 待下一幀重算
+    if (this.#virtual && viewportHeight === 0) {
+      requestAnimationFrame(() => this.#renderOptions(this.controller.getState()))
+    }
+
+    let range: VirtualRange | null = null
     if (this.#virtual && !hasGroups) {
       // 扁平均高快路徑（O(1) 計算 不配置 heights 陣列）
-      const range = computeVirtualRange({
-        scrollTop: this.#dropdown.scrollTop,
-        viewportHeight: this.#dropdown.clientHeight,
+      range = computeVirtualRange({
+        scrollTop,
+        viewportHeight,
         itemHeight: this.#itemHeight,
         itemCount: view.rows.length,
         gap: this.#optionGap,
       })
-      this.#renderVirtualSlice(view.rows, range, a11y, s.activeIndex)
-      return
-    }
-    if (this.#virtual && hasGroups) {
+    } else if (this.#virtual && hasGroups) {
       // 分組變高路徑：header 與 option 高度不同 以 heights 陣列算窗格
-      const win = computeVirtualWindow({
+      range = computeVirtualWindow({
         heights: this.#rowHeights(view.rows),
-        scrollTop: this.#dropdown.scrollTop,
-        viewportHeight: this.#dropdown.clientHeight,
+        scrollTop,
+        viewportHeight,
         gap: this.#optionGap,
       })
-      this.#renderVirtualSlice(view.rows, win, a11y, s.activeIndex)
+    }
+
+    // 捲動觸發且切片範圍未變（回聲或微捲仍在同一切片） 跳過重繪
+    if (
+      fromScroll &&
+      range &&
+      this.#lastSlice &&
+      this.#lastSlice.start === range.startIndex &&
+      this.#lastSlice.end === range.endIndex &&
+      this.#lastSlice.count === view.rows.length &&
+      this.#lastSlice.activeIndex === s.activeIndex
+    ) {
       return
     }
 
-    for (const row of view.rows) this.#renderRow(row, a11y, s.activeIndex)
+    this.#dropdown.replaceChildren()
+    if (range) {
+      this.#renderVirtualSlice(view.rows, range, a11y, s.activeIndex)
+      this.#lastSlice = {
+        start: range.startIndex,
+        end: range.endIndex,
+        count: view.rows.length,
+        activeIndex: s.activeIndex,
+      }
+    } else {
+      for (const row of view.rows) this.#renderRow(row, a11y, s.activeIndex)
+      this.#lastSlice = null
+    }
+
+    // 內容重建後 scrollHeight 已還原 把被 clamp 的 scrollTop 補回原值。
+    // 還原為實際變更才會回聲 scroll 事件 故僅在此時設旗 由 handler 清除
+    if (this.#dropdown.scrollTop !== scrollTop) {
+      this.#rendering = true
+      this.#dropdown.scrollTop = scrollTop
+    }
   }
 
   /** 每列高度：分組標題用 groupHeight 其餘（option/create）用 itemHeight */

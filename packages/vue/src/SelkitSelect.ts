@@ -227,6 +227,9 @@ export const SelkitSelect = defineComponent({
     const inputRef = ref<HTMLInputElement | null>(null)
     const dropdownRef = ref<HTMLElement | null>(null)
     const scrollTop = ref(0)
+    // 首次開啟 dropdown 時瀏覽器尚未佈局 clientHeight 讀到 0 → 虛擬捲動只渲染 overscan 切片
+    // 在下一幀（已佈局）bump tick 觸發重渲染 重讀 clientHeight 算出正確切片
+    const viewportTick = ref(0)
     let dragFrom = -1
 
     // portal 模式下用 fixed 座標定位 量測 root rect 並隨 scroll/resize 更新
@@ -265,6 +268,12 @@ export const SelkitSelect = defineComponent({
             updatePos()
             window.addEventListener('scroll', updatePos, true)
             window.addEventListener('resize', updatePos)
+          }
+          // 虛擬捲動：首幀 clientHeight=0 切片過小 下一幀重讀算出正確可視窗格
+          if (props.virtualScroll) {
+            requestAnimationFrame(() => {
+              viewportTick.value++
+            })
           }
         } else {
           teardownPositioner()
@@ -796,6 +805,8 @@ export const SelkitSelect = defineComponent({
         )
       } else if (props.virtualScroll) {
         // 扁平走均高 O(1)；分組走變高（header 與 option 高度不同）
+        // 建立 viewportTick reactive dep：isOpen 後下一幀 tick++ 觸發重渲染重讀 clientHeight
+        void viewportTick.value
         const viewportHeight = dropdownRef.value?.clientHeight ?? 0
         const range = hasGroups
           ? computeVirtualWindow({

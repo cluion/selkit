@@ -999,6 +999,27 @@ describe('虛擬捲動 virtualScroll', () => {
     expect($(inst.element, '.selkit__group')).toBeTruthy() // 切片含標題
   })
 
+  it('tree + 虛擬：只渲染切片', () => {
+    const bigTree: SelkitItem[] = Array.from({ length: 50 }, (_, i) => ({
+      value: `p${i}`,
+      label: `Parent ${i}`,
+      children: Array.from({ length: 20 }, (_, j) => ({
+        value: `p${i}_${j}`,
+        label: `Leaf ${i}-${j}`,
+      })),
+    }))
+    const inst = createSelkitDom(host, {
+      options: bigTree,
+      virtualScroll: true,
+      itemHeight: 36,
+      optionGap: 0,
+    })
+    inst.controller.open()
+    const items = $$(inst.element, '.selkit__treeitem')
+    expect(items.length).toBeGreaterThan(0)
+    expect(items.length).toBeLessThan(1050) // 全展開 50 父 + 1000 葉 沒有整份渲染
+  })
+
   it('分組 + 虛擬：導航到視窗外的作用列會調整 scrollTop（用變高累積）', () => {
     const inst = createSelkitDom(host, {
       options: bigGrouped,
