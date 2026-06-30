@@ -1,5 +1,30 @@
 # @selkit/react
 
+## 0.19.0
+
+### Minor Changes
+
+- 17bed30: Collapsible groups: add `collapsible` and `defaultCollapsed` to `SelkitGroup`
+  so a heading becomes clickable — collapsing hides the group's options while the
+  heading stays visible (and non-selectable). Searching temporarily expands every
+  group so matches stay reachable; clearing the query restores the previous
+  collapsed state. New `controller.toggleGroup(groupKey)` toggles a heading, and
+  each group row from `getGroupedView()` now carries `collapsible`, `expanded`,
+  and an opaque `groupKey`. Unlike tree mode, a collapsed group is a pure heading
+  and can never be selected.
+- 17bed30: highlightFirst: new config (default `true`). When `false`, the dropdown opens
+  and re-searches with no auto-highlight — only keyboard movement produces one.
+  Selecting an option now clears the highlight instead of leaving it on the
+  just-chosen item; keyboard `Enter` keeps its position so toggle-off still works.
+  Collapsing/expanding a group or tree node preserves the current highlight when
+  the highlighted item stays visible.
+
+### Patch Changes
+
+- Updated dependencies [17bed30]
+- Updated dependencies [17bed30]
+  - @selkit/core@0.19.0
+
 ## 0.18.0
 
 ### Minor Changes

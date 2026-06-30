@@ -1,6 +1,6 @@
 {
   "name": "@selkit/floating",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "Optional advanced dropdown positioner for Selkit — flip / shift / size collision handling powered by @floating-ui/dom.",
   "license": "MIT",
   "type": "module",
