@@ -1,6 +1,6 @@
 {
   "name": "@selkit/dom",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "description": "Vanilla JS renderer for Selkit — DOM, events, a11y and default positioner.",
   "license": "MIT",
   "type": "module",
