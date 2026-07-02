@@ -132,6 +132,7 @@ describe('clear 兩段確認', () => {
     const confirming = $(inst.element, '.selkit__clear')
     expect(confirming.classList.contains('selkit__clear--confirm')).toBe(true)
     expect(confirming.getAttribute('aria-label')).toBe('Confirm')
+    inst.destroy() // 清掉待確認計時器 避免測試結束後才觸發
   })
 
   it('待確認時再點才清空', () => {
@@ -182,6 +183,7 @@ describe('clear 兩段確認', () => {
     const clear = $(inst.element, '.selkit__clear')
     expect(clear.textContent).toBe('確認清空')
     expect(clear.getAttribute('aria-label')).toBe('確認清空')
+    inst.destroy() // 清掉待確認計時器 避免測試結束後才觸發
   })
 })
 

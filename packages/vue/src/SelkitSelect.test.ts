@@ -1,8 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { SelkitSelect } from './SelkitSelect'
 import type { SelkitItem, SelkitOption } from '@selkit/core'
+
+// 自動 unmount 讓 onUnmounted 清掉 clearConfirm 等計時器
+enableAutoUnmount(afterEach)
 
 const OPTIONS: SelkitItem[] = [
   { value: 'a', label: 'Apple' },
@@ -506,7 +509,6 @@ describe('作用中選項捲入視窗 scrollIntoView', () => {
     spy.mockClear()
     await w.find('.selkit__control').trigger('keydown', { key: 'ArrowDown' })
     expect(spy).toHaveBeenCalledWith({ block: 'nearest' })
-    w.unmount()
   })
 })
 
@@ -565,7 +567,6 @@ describe('dropdownParent 浮層 portal', () => {
     expect(dd).toBeTruthy()
     expect(w.element.contains(dd)).toBe(false)
     expect(dd.classList.contains('selkit')).toBe(true)
-    w.unmount()
   })
 })
 
