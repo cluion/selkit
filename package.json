@@ -9,14 +9,18 @@
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
-    "lint": "turbo run lint",
+    "lint": "oxlint --deny-warnings",
     "typecheck": "turbo run typecheck",
+    "size": "size-limit",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo run build && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
+    "@size-limit/preset-small-lib": "^12.1.0",
+    "oxlint": "^1.72.0",
+    "size-limit": "^12.1.0",
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"
   },

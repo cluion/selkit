@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["dist", "docs/.vitepress/cache", "examples"],
+  "rules": {
+    // 專案慣用三元運算式作敘述（cond ? a() : b()）
+    "no-unused-expressions": ["warn", { "allowTernary": true }],
+    // new Array(n) 為刻意的長度配置（perf-sensitive 的 virtual/highlight）
+    "unicorn/no-new-array": "off"
+  }
+}

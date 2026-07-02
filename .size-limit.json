@@ -1,0 +1,29 @@
+[
+  {
+    "name": "@selkit/core",
+    "path": "packages/core/dist/index.js",
+    "limit": "7 kB"
+  },
+  {
+    "name": "@selkit/dom (incl. core)",
+    "path": "packages/dom/dist/index.js",
+    "limit": "12 kB"
+  },
+  {
+    "name": "@selkit/vue (incl. core)",
+    "path": "packages/vue/dist/index.js",
+    "ignore": ["vue"],
+    "limit": "12 kB"
+  },
+  {
+    "name": "@selkit/react (incl. core)",
+    "path": "packages/react/dist/index.js",
+    "ignore": ["react", "react-dom"],
+    "limit": "12 kB"
+  },
+  {
+    "name": "@selkit/floating (incl. floating-ui)",
+    "path": "packages/floating/dist/index.js",
+    "limit": "8 kB"
+  }
+]

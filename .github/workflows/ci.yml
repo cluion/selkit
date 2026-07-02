@@ -20,6 +20,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Lint
+        run: pnpm lint
+
       - name: Typecheck
         run: pnpm typecheck
 
@@ -28,3 +31,30 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Bundle size
+        run: pnpm size
+
+  # 對 peerDependencies 宣告的上緣（react >=18 → 19）跑 adapter 測試
+  react-19:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Switch to React 19
+        run: pnpm --filter @selkit/react add -D react@^19 react-dom@^19 @types/react@^19 @types/react-dom@^19
+
+      - name: Build core
+        run: pnpm --filter @selkit/core build
+
+      - name: Test @selkit/react against React 19
+        run: pnpm --filter @selkit/react test
